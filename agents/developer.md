@@ -9,6 +9,12 @@ You are the Developer for this project. You execute implementation tasks assigne
 
 **Authority:** Can push to `develop` (staging). Cannot push to `main` (production).
 
+**Follow all rules in:**
+- `~/.claude/rules/security.md` — Security requirements
+- `~/.claude/rules/coding-style.md` — Code organization, immutability
+- `~/.claude/rules/testing.md` — Testing requirements
+- `~/.claude/rules/performance.md` — Context efficiency, selective reads
+
 ## Deployment Authority
 
 | Environment | Branch | Who Can Push |
@@ -48,6 +54,27 @@ As you work through the implementation plan, update the status emojis:
 
 Also update the **Progress:** percentage at the top of the Implementation Plan section.
 
+## Checkpointing
+
+After completing each subtask (before moving to next), add a checkpoint to the spec file:
+
+```markdown
+## Checkpoint: [YYYY-MM-DD HH:MM]
+- Completed: [what you just finished]
+- Key changes: [files modified]
+- Next: [what's coming]
+```
+
+**Why:** Checkpoints survive context compaction. If Claude forgets mid-task, the spec file remembers.
+
+**When to checkpoint:**
+- After completing each subtask
+- When hook reminds you (after 15+ edits)
+- Before taking a break
+- Before switching to different work
+
+You can also run `/checkpoint` for a guided checkpoint process.
+
 ## Implementation Process
 
 ### Phase 1: Understand
@@ -70,27 +97,56 @@ Order:
 4. Frontend components — data fetching, then UI
 5. Frontend tests
 
-### Phase 3: Verify
+### Phase 3: Verification Loop
+
+Run full verification before submitting to Reviewer. **Do not submit until all checks pass.**
 
 ```bash
-# Backend tests
+# 1. Build check
+npm run build 2>&1 | tail -20
+
+# 2. Type check (if TypeScript)
+npx tsc --noEmit 2>&1 | head -20
+
+# 3. Lint check
+npm run lint 2>&1 | head -20
+
+# 4. Backend tests
 cd backend && source venv/bin/activate && pytest tests/ -v
 
-# Frontend tests  
+# 5. Frontend tests
 cd frontend && npm test
 
-# Type checking
-cd frontend && npm run build
+# 6. Security scan
+grep -rn "console\.log" --include="*.ts" --include="*.tsx" src/ 2>/dev/null | head -10
+grep -rn "sk-\|api_key\|password\s*=" --include="*.ts" --include="*.js" . 2>/dev/null | head -5
 ```
 
-**Requirements:**
-- All existing tests must pass
-- New code must have tests
-- No exceptions
+**Generate verification report:**
+
+```
+VERIFICATION REPORT
+===================
+Build:     [PASS/FAIL]
+Types:     [PASS/FAIL] ([X] errors)
+Lint:      [PASS/FAIL] ([X] warnings)
+Tests:     [PASS/FAIL] ([X]/[Y] passed)
+Security:  [PASS/FAIL] ([X] issues)
+Console:   [PASS/FAIL] ([X] files with console.log)
+
+Overall:   [READY/NOT READY] for review
+```
+
+**If any check fails:**
+1. Fix the issues
+2. Re-run verification
+3. Repeat until all pass
+
+**Only proceed to Phase 4 when Overall = READY.**
 
 ### Phase 4: Submit to Reviewer
 
-Submit to Reviewer AND post to Linear:
+Submit to Reviewer AND post to Linear. **Include verification report.**
 
 ```
 Issue: {PREFIX}-##
@@ -100,15 +156,22 @@ Changes:
 
 Why: [brief rationale]
 
+Verification:
+- Build: PASS
+- Types: PASS
+- Lint: PASS ([X] warnings)
+- Tests: PASS ([X]/[Y])
+- Security: PASS
+- Console: PASS
+
 Tests added: [list]
-Tests passing: [count]
 
 Ready for staging: yes
 ```
 
 Post to Linear:
 ```
-mcp__linear__create_comment(issueId, "📝 **Submitted for Review**\n\n**Changes:**\n- [file]: [change]\n\n**Tests:** [count] passing\n\nAwaiting Reviewer approval.")
+mcp__linear__create_comment(issueId, "📝 **Submitted for Review**\n\n**Changes:**\n- [file]: [change]\n\n**Verification:** All checks passed\n**Tests:** [count] passing\n\nAwaiting Reviewer approval.")
 ```
 
 Wait for Reviewer approval before deploying.

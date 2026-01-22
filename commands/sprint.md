@@ -46,12 +46,20 @@ For each subtask, work through:
 1. Read spec and acceptance criteria from Linear/technical-spec
 2. Identify files to create/modify
 3. Implement changes
-4. Run relevant tests
-5. Commit with descriptive message
-6. Push to develop
-7. Post completion comment to Linear issue
-8. Proceed to next subtask
+4. Run verification loop:
+   - Build check
+   - Type check (if TypeScript)
+   - Lint check
+   - Run tests
+   - Security scan (secrets, console.log)
+5. Fix any issues found, repeat verification until all pass
+6. Commit with descriptive message
+7. Push to develop
+8. Post completion comment to Linear issue
+9. Proceed to next subtask
 ```
+
+**Verification must pass before committing.** See Developer agent for full verification commands.
 
 ## Output
 

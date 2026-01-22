@@ -157,6 +157,20 @@ Use `docs/roadmap.md` as fallback when Linear is unavailable.
 
 ---
 
+## MCP Configuration
+
+Disable unused MCPs to save context. Add to project's `.claude/settings.json`:
+
+\`\`\`json
+{
+  "disabledMcpServers": ["slack", "notion", "jira"]
+}
+\`\`\`
+
+Only Linear is typically needed. Disable others unless the project requires them.
+
+---
+
 ## Before You Commit
 
 Checklist:

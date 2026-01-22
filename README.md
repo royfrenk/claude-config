@@ -134,6 +134,7 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md` that 
 ```
 ~/.claude/
 ├── README.md              # This file - how we work
+├── settings.json          # Hooks configuration (auto-format, warnings, etc.)
 ├── agents/
 │   ├── em.md              # Engineering Manager agent
 │   ├── explorer.md        # Codebase analysis agent
@@ -145,8 +146,13 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md` that 
 │   ├── sprint.md          # /sprint - autonomous execution
 │   ├── create-issue.md    # /create-issue - quick issue capture
 │   ├── new-project.md     # /new-project - setup guide
+│   ├── checkpoint.md      # /checkpoint - save work state
 │   └── learning-opportunity.md  # Teaching mode
-└── settings.local.json    # Claude Code settings
+└── rules/
+    ├── security.md        # Security requirements
+    ├── coding-style.md    # Code organization, immutability
+    ├── testing.md         # Testing requirements
+    └── performance.md     # Context efficiency, selective reads
 ```
 
 ### Per-Project (in each repo)
@@ -472,6 +478,108 @@ Use the **EM agent** for task coordination and the `/sprint` command for autonom
 - If Linear unavailable, this becomes temporary source of truth
 - When Linear is added/restored, EM reconciles (shows diff, User approves)
 ```
+
+---
+
+## Hooks
+
+Hooks run automatically after certain tool uses. Configured in `~/.claude/settings.json`.
+
+### Active Hooks
+
+| Trigger | What It Does |
+|---------|--------------|
+| Edit JS/TS file | Auto-format with Prettier |
+| Edit JS/TS file | Warn if console.log found |
+| Edit TS file | Check for TypeScript errors (if tsconfig.json exists) |
+| Edit code file | Warn if hardcoded secrets detected |
+| Every 15+ edits | Remind to run `/checkpoint` |
+
+### Customizing Hooks
+
+Edit `~/.claude/settings.json` to add/modify hooks. See [Claude Code docs](https://docs.anthropic.com/claude-code) for hook syntax.
+
+---
+
+## Rules
+
+Shared rules that all agents follow. Located in `~/.claude/rules/`.
+
+| Rule File | Enforces |
+|-----------|----------|
+| `security.md` | Input validation, auth, secrets, SSRF prevention |
+| `coding-style.md` | File organization, immutability, naming conventions |
+| `testing.md` | Test coverage, test structure, verification loop |
+| `performance.md` | Context efficiency, selective file reads, checkpointing |
+
+Agents reference these rules and enforce them during development and review.
+
+---
+
+## Verification Loop
+
+Before submitting code for review, Developer runs full verification:
+
+```bash
+# 1. Build check
+npm run build 2>&1 | tail -20
+
+# 2. Type check (if TypeScript)
+npx tsc --noEmit 2>&1 | head -20
+
+# 3. Lint check
+npm run lint 2>&1 | head -20
+
+# 4. Tests
+cd backend && pytest tests/ -v
+cd frontend && npm test
+
+# 5. Security scan
+grep -rn "console\.log" --include="*.ts" src/ | head -10
+grep -rn "sk-\|api_key\|password\s*=" . | head -5
+```
+
+**All checks must pass before submitting to Reviewer.**
+
+---
+
+## Checkpointing
+
+Save work state to spec file before context compaction or breaks:
+
+```bash
+/checkpoint
+```
+
+This saves:
+- What was completed
+- Key file changes
+- Current state
+- Next steps
+
+**When to checkpoint:**
+- After completing each subtask
+- Before taking a break
+- When hook reminds you (after 15+ edits)
+- Before switching to different work
+
+---
+
+## MCP Hygiene
+
+MCPs consume context even when not used. Disable unused ones per project.
+
+In project's `.claude/settings.json`:
+```json
+{
+  "disabledMcpServers": ["slack", "notion", "jira"]
+}
+```
+
+**Rule of thumb:**
+- Have many MCPs configured globally (flexibility)
+- Enable only needed MCPs per project (efficiency)
+- Linear is usually needed; others vary by project
 
 ---
 
