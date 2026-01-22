@@ -1,6 +1,52 @@
-# How We Work with Claude Code
+# Claude Code Agent System
 
-> Overview of the agent system, documentation structure, and workflows.
+> A multi-agent workflow for managing software projects with Claude Code.
+
+---
+
+## Quick Start
+
+### Installation
+
+```bash
+# Clone to your home directory
+git clone https://github.com/royfrenkiel/claude-config.git ~/.claude
+
+# Or if you already have ~/.claude, clone elsewhere and copy:
+git clone https://github.com/royfrenkiel/claude-config.git /tmp/claude-config
+cp -r /tmp/claude-config/agents ~/.claude/
+cp -r /tmp/claude-config/commands ~/.claude/
+cp /tmp/claude-config/README.md ~/.claude/
+```
+
+### Set Up Your First Project
+
+1. Create project structure:
+   ```bash
+   cd ~/your-project
+   mkdir -p docs/technical-specs
+   ```
+
+2. Create `CLAUDE.md` in project root (see [CLAUDE.md Template](#claudemd-template) below)
+
+3. Create `docs/PROJECT_STATE.md` (document your codebase)
+
+4. Create `docs/roadmap.md` (see [Roadmap Template](#roadmap-template) below)
+
+5. (Optional) Set up Linear for task tracking
+
+### Start Working
+
+```bash
+cd ~/your-project
+# Claude Code will automatically read CLAUDE.md
+
+# Or explicitly load context:
+/context your-project
+
+# Run autonomous sprint:
+/sprint
+```
 
 ---
 
@@ -9,7 +55,7 @@
 We use a team of specialized agents coordinated by an Engineering Manager:
 
 ```
-ROY (request/issue)
+USER (request/issue)
     ↓
 ENG MANAGER — prioritizes, coordinates, approves plans
     ↓
@@ -17,7 +63,7 @@ EXPLORER — analyzes codebase → creates docs/technical-specs/{ISSUE_ID}.md
     ↓
 PLAN-WRITER — creates plan → updates docs/technical-specs/{ISSUE_ID}.md
     ↓
-ROY (approves plan) ← CHECKPOINT
+USER (approves plan) ← CHECKPOINT
     ↓
 DEVELOPER — implements → reads/updates spec file
     ↓
@@ -319,3 +365,118 @@ feature/* → develop (staging) → main (production)
 6. **roadmap.md updated when task status changes**
 7. **Agents post all updates to Linear issues**
 8. **Keep CLAUDE.md stable** - it's the "how to operate" guide
+
+---
+
+## Templates
+
+### CLAUDE.md Template
+
+```markdown
+# Claude Code Project Guide
+
+> Start here when working on this project.
+
+---
+
+## Quick Start
+
+1. **Read the project state first:** `docs/PROJECT_STATE.md`
+2. **Check roadmap:** `docs/roadmap.md`
+
+---
+
+## Running the Project
+
+### Backend
+\`\`\`bash
+# Add your run commands here
+\`\`\`
+
+### Frontend
+\`\`\`bash
+# Add your run commands here
+\`\`\`
+
+### Tests
+\`\`\`bash
+# Add your test commands here
+\`\`\`
+
+---
+
+## Working with Agents
+
+Use the **EM agent** for task coordination and the `/sprint` command for autonomous execution.
+
+---
+
+## Linear Integration
+
+| Setting | Value |
+|---------|-------|
+| Issue Prefix | `XXX` |
+| Team | YourTeam |
+| Technical Specs | `docs/technical-specs/XXX-##.md` |
+
+---
+
+## Before You Commit
+
+- [ ] Tests pass
+- [ ] No unintended file changes
+- [ ] Commit message describes the "why"
+```
+
+### Roadmap Template
+
+```markdown
+# Roadmap
+
+> **Purpose:** Index of all tasks and specs. Mirrors Linear.
+> **Updated by:** EM Agent when tasks change status
+> **Fallback:** Use this when Linear is unavailable
+
+---
+
+## Active Sprint
+
+| Priority | Issue | Title | Status | Spec |
+|----------|-------|-------|--------|------|
+| 1 | XXX-## | [Title] | 🟥 To Do | [spec](technical-specs/XXX-##.md) |
+
+**Status:** 🟥 To Do | 🟨 In Progress | 🟩 Done | ⏸️ Blocked
+
+---
+
+## Backlog
+
+| Issue | Title | Added | Notes |
+|-------|-------|-------|-------|
+| — | — | — | — |
+
+---
+
+## Completed (Last 10)
+
+| Issue | Title | Completed | Spec |
+|-------|-------|-----------|------|
+| — | — | — | — |
+
+---
+
+## Notes
+
+- **Linear is source of truth** - this file mirrors it
+- **Sync timing:** After Linear changes, at sprint start, at sprint end
+- If Linear unavailable, this becomes temporary source of truth
+- When Linear is added/restored, EM reconciles (shows diff, User approves)
+```
+
+---
+
+## Requirements
+
+- [Claude Code CLI](https://claude.ai/claude-code) installed
+- (Optional) [Linear](https://linear.app) for task tracking
+- (Optional) GitHub CLI (`gh`) for PR automation
