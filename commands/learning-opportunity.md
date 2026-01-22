@@ -8,10 +8,38 @@ When you've finished explaining the concept (all three levels), ask:
 
 > "Would you like me to add this to your Technical Learnings document?"
 
-If yes, append to `~/documents/repos/Technical-Learnings.md` with:
-- Date and topic in the Index table
-- Full entry with all three levels
-- Project context (which project prompted this learning)
+If yes, update `~/documents/repos/Technical-Learnings.md`:
+
+1. **Add to Table of Contents:**
+   ```markdown
+   | N | [Topic Title](#n-topic-title) | Category | project-name | YYYY-MM-DD |
+   ```
+
+2. **Add entry using this template:**
+   ```markdown
+   ## N. Topic Title
+
+   `Category` · `Tags` · `project-name`
+   *YYYY-MM-DD*
+
+   [↑ Back to top](#table-of-contents)
+
+   ### The Problem
+   What problem does this concept solve?
+
+   ### Level 1: Core Concept
+   What is it and why does it exist?
+
+   ### Level 2: How It Works
+   Mechanics, tradeoffs, gotchas.
+
+   ### Level 3: Deep Dive
+   Implementation details, performance, advanced patterns.
+
+   ---
+   ```
+
+**Categories:** `Claude Code` · `Architecture` · `Frontend` · `Backend` · `DevOps` · `Security`
 
 ## Teaching Approach
 
