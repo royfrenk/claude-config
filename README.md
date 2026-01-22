@@ -4,6 +4,109 @@
 
 ---
 
+## What is This?
+
+This is a **team of AI agents** that work together to build software — like having a small engineering team that never sleeps.
+
+Instead of one AI doing everything, specialized agents handle different parts of the development process:
+
+```
+You: "Add user authentication"
+    ↓
+Engineering Manager — breaks it down, prioritizes
+    ↓
+Explorer — analyzes your codebase, finds integration points
+    ↓
+Plan-Writer — creates implementation plan
+    ↓
+You — approve the plan (or request changes)
+    ↓
+Developer — writes the code
+    ↓
+Reviewer — checks for bugs, security issues
+    ↓
+You — approve for production
+```
+
+**You stay in control.** Plans require your approval. Only you can push to production.
+
+---
+
+## Why This Approach?
+
+### The Problem with "Just Ask Claude"
+
+When you ask an AI to build something complex, you often get:
+- Code that works but doesn't fit your architecture
+- No visibility into what's being changed until it's done
+- Inconsistent patterns across features
+- Security issues or forgotten edge cases
+
+### The Solution: Specialization + Checkpoints
+
+Each agent has **one job** and does it well:
+
+| Agent | Specialty | Why It Matters |
+|-------|-----------|----------------|
+| **Explorer** | Understands your codebase | Finds the right files, existing patterns, integration points |
+| **Plan-Writer** | Plans before coding | You approve the approach before any code is written |
+| **Developer** | Writes code | Follows the plan, runs tests, deploys to staging |
+| **Reviewer** | Catches mistakes | Security, code quality, edge cases |
+
+**Checkpoints** keep you informed:
+- Plans require approval before implementation
+- Code goes to staging before production
+- Every change is tracked in spec files and Linear
+
+---
+
+## Core Concepts
+
+### 1. Spec Files (External Memory)
+
+Every task gets a **spec file** at `docs/technical-specs/{ISSUE_ID}.md`. This is the "single source of truth" for that task — what was explored, what's planned, what's done.
+
+**Why it matters:** AI context is limited and gets compacted. Spec files survive restarts, can be shared, and keep everyone (human and AI) on the same page.
+
+### 2. Linear Integration
+
+Tasks live in [Linear](https://linear.app), not scattered markdown files. Agents post updates as comments, so you can track progress without watching the terminal.
+
+**Fallback:** If Linear is down, `docs/roadmap.md` mirrors the state.
+
+### 3. Git Workflow
+
+```
+feature/* → develop (staging) → main (production)
+```
+
+- **Developer** can push to `develop` (after Reviewer approval)
+- **Only you** can push to `main`
+- This is enforced by the agents — they'll refuse to push to production
+
+### 4. Hooks & Rules
+
+Automation that runs in the background:
+- **Hooks:** Auto-format code, warn about console.log, detect secrets
+- **Rules:** Security requirements, coding standards, testing requirements
+
+All agents follow the same rules, enforcing consistency across your codebase.
+
+---
+
+## Who Is This For?
+
+- **Solo developers** who want AI assistance with structure and quality control
+- **Technical PMs** who want to ship features without writing every line
+- **Small teams** who want to augment their capacity with AI agents
+
+**Prerequisites:**
+- Comfortable with git and command line
+- Have a project with clear patterns (or willing to establish them)
+- [Claude Code CLI](https://claude.ai/claude-code) installed
+
+---
+
 ## Quick Start
 
 ### Installation
