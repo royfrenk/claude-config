@@ -1,0 +1,321 @@
+# How We Work with Claude Code
+
+> Overview of the agent system, documentation structure, and workflows.
+
+---
+
+## The Agent System
+
+We use a team of specialized agents coordinated by an Engineering Manager:
+
+```
+ROY (request/issue)
+    ↓
+ENG MANAGER — prioritizes, coordinates, approves plans
+    ↓
+EXPLORER — analyzes codebase → creates docs/technical-specs/{ISSUE_ID}.md
+    ↓
+PLAN-WRITER — creates plan → updates docs/technical-specs/{ISSUE_ID}.md
+    ↓
+ROY (approves plan) ← CHECKPOINT
+    ↓
+DEVELOPER — implements → reads/updates spec file
+    ↓
+REVIEWER — validates code
+```
+
+### Agent Roles
+
+| Agent | What It Does | Can Write Code? |
+|-------|--------------|-----------------|
+| **EM** | Coordinates work, manages roadmap, filters noise | No |
+| **Explorer** | Analyzes codebase, creates spec file with findings | No |
+| **Plan-Writer** | Adds implementation plan to spec file | No |
+| **Developer** | Implements code, updates spec progress, deploys to staging | Yes |
+| **Reviewer** | Reviews code, approves/blocks staging deploys | No |
+
+### Key Rules
+
+- Only **Developer** writes code
+- Only **User** pushes to `main` (production)
+- All agents post updates to Linear issues
+- Plans require User's approval before implementation
+- One spec file per issue: `docs/technical-specs/{ISSUE_ID}.md`
+- `docs/roadmap.md` mirrors Linear as fallback
+
+---
+
+## The Spec File
+
+Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md` that evolves through the workflow:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ docs/technical-specs/{ISSUE_ID}.md                      │
+├─────────────────────────────────────────────────────────┤
+│ # {ISSUE_ID}: [Title]                                   │
+│                                                         │
+│ **Status:** [Exploration Complete → Ready for Dev → Done]│
+│                                                         │
+│ ## Summary                                               │
+│ [What and why]                                          │
+│                                                         │
+│ ## Exploration (by Explorer)                            │
+│ - Files to modify                                       │
+│ - Integration points                                    │
+│ - Edge cases                                            │
+│ - Testing requirements                                  │
+│                                                         │
+│ ## Implementation Plan (by Plan-Writer)                 │
+│ **Progress:** 0%                                        │
+│ - [ ] 🟥 Task 1                                         │
+│ - [ ] 🟥 Task 2                                         │
+│ - [ ] 🟥 Task 3                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Who updates it:**
+- Explorer creates it with exploration findings
+- Plan-Writer adds the implementation plan
+- Developer updates progress (🟥→🟨→🟩) as they work
+
+---
+
+## File Structure
+
+### Global (applies to all projects)
+
+```
+~/.claude/
+├── README.md              # This file - how we work
+├── agents/
+│   ├── em.md              # Engineering Manager agent
+│   ├── explorer.md        # Codebase analysis agent
+│   ├── plan-writer.md     # Implementation planning agent
+│   ├── developer.md       # Code implementation agent
+│   └── reviewer.md        # Code review agent
+├── commands/
+│   ├── context.md         # /context - load project context
+│   ├── sprint.md          # /sprint - autonomous execution
+│   ├── create-issue.md    # /create-issue - quick issue capture
+│   ├── new-project.md     # /new-project - setup guide
+│   └── learning-opportunity.md  # Teaching mode
+└── settings.local.json    # Claude Code settings
+```
+
+### Per-Project (in each repo)
+
+```
+project/
+├── CLAUDE.md                    # How to operate (stable, rarely changes)
+└── docs/
+    ├── PROJECT_STATE.md         # Current codebase state (living document)
+    ├── roadmap.md               # Task index - mirrors Linear (fallback)
+    └── technical-specs/         # Spec files per issue
+        └── {ISSUE_ID}.md
+```
+
+---
+
+## Documentation Philosophy
+
+### Three Files Per Project
+
+| File | Purpose | Updates |
+|------|---------|---------|
+| `CLAUDE.md` | How to operate on this project | Rarely (workflow changes) |
+| `docs/PROJECT_STATE.md` | Current codebase state | After every deployment |
+| `docs/roadmap.md` | Task index, mirrors Linear | When task status changes |
+
+### What Goes Where
+
+| Content | CLAUDE.md | PROJECT_STATE.md | roadmap.md | Linear |
+|---------|-----------|------------------|------------|--------|
+| Run commands | ✓ | | | |
+| Agent workflow | ✓ | | | |
+| Linear config | ✓ | | | |
+| File structure | | ✓ | | |
+| Database schema | | ✓ | | |
+| API endpoints | | ✓ | | |
+| Tech decisions | | ✓ | | |
+| Recent changes | | ✓ | | |
+| Sprint tasks | | | ✓ (mirror) | ✓ |
+| Backlog | | | ✓ (mirror) | ✓ |
+| Known issues | | | | ✓ |
+
+---
+
+## The Roadmap File
+
+`docs/roadmap.md` mirrors Linear and serves as a fallback when Linear is unavailable:
+
+```markdown
+## Active Sprint
+
+| Priority | Issue | Title | Status | Spec |
+|----------|-------|-------|--------|------|
+| 1 | XXX-## | [Title] | 🟨 In Progress | [spec](technical-specs/XXX-##.md) |
+
+## Backlog
+
+| Issue | Title | Added | Notes |
+|-------|-------|-------|-------|
+| XXX-## | [Title] | YYYY-MM-DD | [context] |
+
+## Completed (Last 10)
+
+| Issue | Title | Completed | Spec |
+|-------|-------|-----------|------|
+| XXX-## | [Title] | YYYY-MM-DD | [spec](technical-specs/XXX-##.md) |
+```
+
+**Status:** 🟥 To Do | 🟨 In Progress | 🟩 Done | ⏸️ Blocked
+
+### Sync Rules
+
+| Scenario | Action |
+|----------|--------|
+| Linear status changes | EM updates roadmap.md to match |
+| Sprint starts | EM marks active items as 🟨 In Progress |
+| Sprint ends | EM moves completed items to Completed section |
+| Linear unavailable | roadmap.md becomes temporary source of truth |
+| Linear restored | EM proposes reconciliation plan to User |
+
+**Reconciliation Process:**
+When Linear is added or restored after roadmap.md has work items:
+1. EM compares both sources and generates diff
+2. EM shows **Added** (in roadmap.md, not Linear) and **Changed** (status differs)
+3. User approves reconciliation plan
+4. EM creates/updates Linear issues
+5. EM syncs roadmap.md with Linear issue IDs
+
+---
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/context <project>` | Load project context (CLAUDE.md + PROJECT_STATE.md) |
+| `/sprint` | Autonomous execution of Priority 1 task from Linear |
+| `/create-issue` | Quick issue capture while coding |
+| `/new-project` | Setup guide and templates for new projects |
+| `/learning-opportunity` | Pause for teaching mode |
+
+---
+
+## Linear Integration
+
+All task tracking happens in Linear, not markdown files. `docs/roadmap.md` is a mirror/fallback.
+
+### Per-Project Config (in CLAUDE.md)
+
+```markdown
+## Linear Integration
+
+| Setting | Value |
+|---------|-------|
+| Issue Prefix | `XXX` |
+| Team | YourTeam |
+| Technical Specs | `docs/technical-specs/XXX-##.md` |
+```
+
+### What Agents Do in Linear
+
+- **EM**: Creates issues, updates priority, tracks status, updates roadmap.md
+- **Explorer**: Posts exploration summary as comment
+- **Plan-Writer**: Posts implementation plan summary as comment
+- **Developer**: Posts "Starting", "Submitted for Review", "Deployed" updates
+- **Reviewer**: Posts approval/changes requested
+
+---
+
+## Workflows
+
+### Starting Work on a Project
+
+```bash
+# Load context
+/context projectname
+
+# Or manually
+cd ~/documents/repos/projectname
+# Claude reads CLAUDE.md and PROJECT_STATE.md
+```
+
+### Autonomous Sprint
+
+```bash
+/sprint
+# Reads Linear (or roadmap.md as fallback) for Priority 1 task
+# Implements without confirmation
+# Stops at blockers or when done
+```
+
+### New Feature/Bug (Full Flow)
+
+```
+1. User describes task or creates Linear issue
+2. EM updates docs/roadmap.md with new task
+3. EM invokes Explorer
+4. Explorer analyzes → creates docs/technical-specs/{ISSUE_ID}.md
+5. EM invokes Plan-Writer
+6. Plan-Writer adds implementation plan → updates same file
+7. EM presents plan to User ← CHECKPOINT
+8. User approves
+9. EM assigns to Developer (points to spec file)
+10. Developer implements, updates spec progress (🟥→🟨→🟩)
+11. Developer submits to Reviewer
+12. Reviewer approves → Developer deploys to staging
+13. Developer updates PROJECT_STATE.md
+14. EM updates roadmap.md status to Done
+15. User approves → merge to main (production)
+```
+
+### Quick Issue Capture
+
+```bash
+/create-issue the search bar doesn't handle empty queries
+# Agent asks 2-3 questions
+# Creates Linear issue
+# Back to work
+```
+
+---
+
+## Setting Up a New Project
+
+Run `/new-project` to see full templates, or manually:
+
+1. Create `CLAUDE.md` in project root
+2. Create `docs/PROJECT_STATE.md`
+3. Create `docs/roadmap.md`
+4. Create `docs/technical-specs/` directory
+5. Set up Linear team and issue prefix
+6. Add project to `~/documents/repos/`
+
+---
+
+## Git Workflow
+
+```
+feature/* → develop (staging) → main (production)
+```
+
+| Branch | Who Can Push | Auto-deploys to |
+|--------|--------------|-----------------|
+| `feature/*` | Developer | — |
+| `develop` | Developer (after Reviewer approval) | Staging |
+| `main` | User only | Production |
+
+---
+
+## Key Principles
+
+1. **Linear is source of truth** for tasks - roadmap.md is the fallback
+2. **One spec file per issue** - Explorer creates, Plan-Writer updates, Developer reads
+3. **Plans require approval** before implementation
+4. **Developer only pushes to develop**, never main
+5. **PROJECT_STATE.md updated after every deployment**
+6. **roadmap.md updated when task status changes**
+7. **Agents post all updates to Linear issues**
+8. **Keep CLAUDE.md stable** - it's the "how to operate" guide

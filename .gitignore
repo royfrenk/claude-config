@@ -1,0 +1,17 @@
+# Auto-generated files
+history.jsonl
+projects/
+todos/
+file-history/
+debug/
+cache/
+plans/
+settings.local.json
+credentials.json
+paste-cache/
+shell-snapshots/
+stats-cache.json
+statsig/
+
+# Plugin marketplace (external)
+plugins/
