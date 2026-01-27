@@ -21,11 +21,15 @@ Plan-Writer — creates implementation plan
     ↓
 You — approve the plan (or request changes)
     ↓
-Developer — writes the code
+Developer — writes the code, deploys to staging
     ↓
 Reviewer — checks for bugs, security issues
     ↓
-You — approve for production
+You — test on staging, report issues
+    ↓
+Developer — fixes issues (iterate until ready)
+    ↓
+You — approve and deploy to production
 ```
 
 **You stay in control.** Plans require your approval. Only you can push to production.
@@ -91,6 +95,29 @@ Automation that runs in the background:
 - **Rules:** Security requirements, coding standards, testing requirements
 
 All agents follow the same rules, enforcing consistency across your codebase.
+
+### 5. Sprint & Iterate Workflow
+
+Work happens in two phases:
+
+**`/sprint`** — Initial implementation
+1. Reads Linear for Priority 1 task
+2. Creates or reads technical spec
+3. Implements code, deploys to staging
+4. Creates sprint file at `docs/sprints/sprint-###-[name].md`
+
+**`/iterate`** — Bug fixes after you test
+1. You test on staging, report issues
+2. Developer fixes bugs, tracks in sprint file
+3. Repeat until ready for production
+4. You push to main (only you can deploy to production)
+
+**The sprint file** (`docs/sprints/sprint-###-[name].md`) is external memory that tracks:
+- Which issues are in the sprint
+- Bugs found during testing
+- Fixes applied
+
+This survives context compaction — critical for longer iteration cycles.
 
 ---
 

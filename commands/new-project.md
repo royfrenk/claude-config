@@ -16,8 +16,10 @@ project/
 └── docs/
     ├── PROJECT_STATE.md         # Current codebase state (living document)
     ├── roadmap.md               # Task index - mirrors Linear (fallback)
-    └── technical-specs/         # Spec files per issue
-        └── {ISSUE_ID}.md
+    ├── technical-specs/         # Spec files per issue
+    │   └── {ISSUE_ID}.md
+    └── sprints/                 # Sprint iteration tracking
+        └── sprint-###-[name].md
 ```
 
 ### CLAUDE.md (Root)
@@ -446,13 +448,14 @@ When setting up a new project:
 3. [ ] Create `docs/PROJECT_STATE.md` using template above
 4. [ ] Create `docs/roadmap.md` using template above
 5. [ ] Create `docs/technical-specs/` directory
-6. [ ] Set up Linear team and issue prefix
-7. [ ] Add project to Linear with correct team assignment
-8. [ ] Update CLAUDE.md with actual Linear team and prefix
-9. [ ] **Get Linear status UUIDs** and add to CLAUDE.md (see below)
-10. [ ] **Set up Git branches:** Create `develop` branch, configure auto-deploy to staging
-11. [ ] **Add deployment URLs** to CLAUDE.md (staging + production)
-12. [ ] **(Production apps)** Add GitHub Actions CI/CD (see template above)
+6. [ ] Create `docs/sprints/` directory (for sprint iteration tracking)
+7. [ ] Set up Linear team and issue prefix
+8. [ ] Add project to Linear with correct team assignment
+9. [ ] Update CLAUDE.md with actual Linear team and prefix
+10. [ ] **Get Linear status UUIDs** and add to CLAUDE.md (see below)
+11. [ ] **Set up Git branches:** Create `develop` branch, configure auto-deploy to staging
+12. [ ] **Add deployment URLs** to CLAUDE.md (staging + production)
+13. [ ] **(Production apps)** Add GitHub Actions CI/CD (see template above)
 
 ### Getting Linear Status UUIDs
 
