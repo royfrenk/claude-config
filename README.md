@@ -273,6 +273,7 @@ Each sprint gets a file at `docs/sprints/sprint-###-[name].md` that tracks itera
 ├── commands/
 │   ├── context.md         # /context - load project context
 │   ├── sprint.md          # /sprint - autonomous execution
+│   ├── iterate.md         # /iterate - bug fixes after user testing
 │   ├── review-prd.md      # /review-prd - PRD review and story extraction
 │   ├── create-issue.md    # /create-issue - quick issue capture
 │   ├── new-project.md     # /new-project - setup guide

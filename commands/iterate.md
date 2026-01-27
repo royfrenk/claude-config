@@ -41,42 +41,7 @@ Continue working on the current sprint after user testing reveals bugs or issues
 
 Example: `docs/sprints/sprint-001-zillow-search.md`
 
-## Sprint File Template
-
-When creating a new sprint file, use this structure:
-
-```markdown
-# Sprint [###]: [Name]
-
-**Status:** 🟨 Iterating
-**Started:** [date]
-**Issues:** [QUO-##, QUO-##]
-
-## Issues in Sprint
-
-| Issue | Title | Spec | Status |
-|-------|-------|------|--------|
-| QUO-## | [Title] | [spec](../technical-specs/QUO-##.md) | 🟨 Iterating |
-
-## Iteration Log
-
-### Batch 1 — [date time]
-Reported by User:
-1. [ ] [description] → [QUO-## or "unclear"]
-2. [x] [description] → fixed in [commit]
-
-### Batch 2 — [date time]
-...
-
-## New Acceptance Criteria Discovered
-
-| Issue | New AC | Added to Spec |
-|-------|--------|---------------|
-| QUO-## | [description] | ✓ |
-
-## Notes
-[Context, decisions, blockers]
-```
+**Template:** See `/sprint` → Sprint File Template section. The sprint file is created by `/sprint`, this command continues it.
 
 ## Protocol Checklist (Per Fix)
 
@@ -103,13 +68,13 @@ Follow this for EVERY bug fix — don't skip steps:
 - [ ] Ask: "More issues, or ready to wrap up?"
 
 ### When All Batches Accepted
-- [ ] Update sprint file: all bugs marked [x]
-- [ ] Hand off to sprint wrap-up process (see `/sprint` Output section)
-  - Acceptance criteria report
-  - Linear status updates
-  - roadmap.md updates
-  - PROJECT_STATE.md updates
-  - Ask User about production deployment
+- [ ] Update sprint file: all bugs marked [x], status → 🟨 Ready for Production
+- [ ] Output the **Sprint Wrap-Up** format from `/sprint` Output section:
+  - Acceptance criteria report (all issues)
+  - Linear status → "In Review" (if not already)
+  - Update `docs/roadmap.md`
+  - Update `docs/PROJECT_STATE.md`
+- [ ] Ask User: "Ready to deploy to production? (Only you can push to main)"
 
 ## Rules
 
@@ -146,4 +111,6 @@ After each batch:
 
 ---
 
-**Start by reading the current sprint file from `docs/sprints/`. If none exists, ask which issues are in this sprint and create one.**
+**Start by reading the current sprint file from `docs/sprints/`.**
+
+If no sprint file exists: `/sprint` should have created one. Ask user which issues are in this sprint, then create using the template from `/sprint`.

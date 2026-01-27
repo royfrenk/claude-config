@@ -51,12 +51,44 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
    - **Update Linear status to "In Review"** using UUID from CLAUDE.md
    - Update `docs/roadmap.md` status to 🟨 In Review
 10. **Create/update sprint file:**
-    - If no sprint file exists, create `docs/sprints/sprint-###-[name].md`
+    - If no sprint file exists, create `docs/sprints/sprint-###-[name].md` using template below
     - Sprint number: increment from last sprint file (or 001 if first)
     - Name: short descriptor of main issue (e.g., "zillow-search")
     - List all issues worked on in this sprint
     - Set status to 🟨 In Review (awaiting user testing)
     - Tell user: "Sprint file created at `docs/sprints/sprint-###-[name].md`. Use `/iterate` when you find issues during testing."
+
+## Sprint File Template
+
+```markdown
+# Sprint [###]: [Name]
+
+**Status:** 🟨 In Review
+**Started:** [date]
+**Issues:** [QUO-##, QUO-##]
+
+## Issues in Sprint
+
+| Issue | Title | Spec | Status |
+|-------|-------|------|--------|
+| QUO-## | [Title] | [spec](../technical-specs/QUO-##.md) | 🟨 In Review |
+
+## Iteration Log
+
+### Batch 1 — [date time]
+Reported by User:
+1. [ ] [description] → [QUO-## or "unclear"]
+2. [x] [description] → fixed in [commit]
+
+## New Acceptance Criteria Discovered
+
+| Issue | New AC | Added to Spec |
+|-------|--------|---------------|
+| — | — | — |
+
+## Notes
+[Context, decisions, blockers]
+```
 11. **Move to next issue:** Return to step 3 and repeat until:
     - All Active Sprint items are done
     - A task is blocked
