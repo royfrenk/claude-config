@@ -11,7 +11,7 @@
 
 ```bash
 # 1. Install (one-time)
-git clone https://github.com/royfrenkiel/claude-config.git ~/.claude
+git clone https://github.com/royfrenk/claude-config.git ~/.claude
 
 # 2. Set up a project
 cd ~/your-project
@@ -20,11 +20,14 @@ mkdir -p docs/technical-specs docs/sprints
 
 # 3. Run
 /sprint
-# Claude reads your tasks, creates a spec, implements, deploys to staging
+# Claude reads your tasks, creates a spec, implements, pushes to develop
+# (If you have staging configured, it deploys there too)
 # You test, report bugs with /iterate, approve for production
 ```
 
 That's it. The rest of this README explains how it works.
+
+> **Minimum viable project:** `CLAUDE.md` + `docs/roadmap.md` with at least one task. See [Minimum Viable Project](#minimum-viable-project) for details.
 
 ---
 
@@ -63,7 +66,10 @@ You — deploy to production ← ONLY YOU
 | Only you push to `main` | Production deploys are manual and intentional |
 | One spec file per issue | External memory that survives context compaction |
 
-> **Note on enforcement:** Agents are instruction-bound — they'll refuse to push to `main`. But for real protection, enable [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) on your `main` branch.
+> **Note on enforcement:** Agents are instruction-bound — they'll refuse to push to `main`. But for real protection, enable GitHub branch protection on `main`:
+> - ✓ Require pull request before merging
+> - ✓ Require status checks to pass (if you have CI)
+> - ✓ Restrict who can push (just you)
 
 ---
 
@@ -76,6 +82,28 @@ You — deploy to production ← ONLY YOU
 | GitHub CLI (`gh`) | Optional | PR automation |
 
 **If you don't use Linear:** The workflow still works. Use `docs/roadmap.md` as your task list, and name issues manually (e.g., `PROJ-01`, `PROJ-02`).
+
+---
+
+## Minimum Viable Project
+
+To run `/sprint`, you need:
+
+**Required files:**
+- `CLAUDE.md` — at minimum, a Quick Start section pointing to your docs
+- `docs/roadmap.md` — with at least one task in Active Sprint
+
+**Required for the workflow:**
+- `docs/technical-specs/` directory (agents create spec files here)
+- `docs/sprints/` directory (for iteration tracking)
+
+**Optional but recommended:**
+- `docs/PROJECT_STATE.md` — helps agents understand your codebase
+- Linear integration — for automatic status updates
+- `develop` branch with auto-deploy to staging — for the full staging→prod flow
+
+**If you don't have staging:**
+The workflow still works. `/sprint` pushes to `develop`. You test locally or on whatever deployment you have, then push to `main` yourself.
 
 ---
 
@@ -155,7 +183,7 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 
 | Command | Purpose |
 |---------|---------|
-| `/context <project>` | Load project context |
+| `/context <project>` | Load project context (project name required) |
 | `/sprint` | Autonomous execution of Priority 1 task |
 | `/iterate` | Continue iteration after bug reports |
 | `/review-prd` | PRD review and story extraction |
@@ -163,12 +191,14 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 | `/new-project` | Setup guide and templates |
 | `/checkpoint` | Save work state to spec file |
 
+> **How commands work:** Command files live in `~/.claude/commands/`. Claude Code discovers them automatically. Each command is a markdown file with instructions.
+
 ### Sprint & Iterate Workflow
 
 **`/sprint`** — Initial implementation
 1. Reads Linear (or roadmap.md) for Priority 1 task
 2. Creates or reads technical spec
-3. Implements, deploys to staging
+3. Implements, pushes to `develop` (deploys to staging if configured)
 4. Creates sprint file
 
 **`/iterate`** — Bug fixes after testing
@@ -205,8 +235,11 @@ If you use Linear, add this to your project's `CLAUDE.md`:
 
 **Getting UUIDs:**
 ```bash
+# Use an env var to avoid leaking your API key in shell history
+export LINEAR_API_KEY="lin_api_..."
+
 curl -X POST https://api.linear.app/graphql \
-  -H "Authorization: YOUR_API_KEY" \
+  -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ team(id: \"TEAM_ID\") { states { nodes { id name } } } }"}'
 ```
@@ -255,6 +288,8 @@ For production apps, add GitHub Actions:
 | Edit TS | TypeScript error check |
 | Edit any code | Warn if secrets detected |
 | Every 15+ edits | Remind to checkpoint |
+
+> **Note:** Hooks are configured in `~/.claude/settings.json`. They depend on your repo having the required tooling installed (e.g., Prettier for auto-format).
 
 ### Rules (All Agents Follow)
 
@@ -310,13 +345,13 @@ That's why we write everything important to files.
 ### Fresh Install
 
 ```bash
-git clone https://github.com/royfrenkiel/claude-config.git ~/.claude
+git clone https://github.com/royfrenk/claude-config.git ~/.claude
 ```
 
 ### If ~/.claude Already Exists
 
 ```bash
-git clone https://github.com/royfrenkiel/claude-config.git /tmp/claude-config
+git clone https://github.com/royfrenk/claude-config.git /tmp/claude-config
 cp -r /tmp/claude-config/agents ~/.claude/
 cp -r /tmp/claude-config/commands ~/.claude/
 cp -r /tmp/claude-config/rules ~/.claude/
