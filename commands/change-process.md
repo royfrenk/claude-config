@@ -117,6 +117,7 @@ Only after the User confirms:
 1. Make all changes
 2. Verify consistency across files
 3. Summarize what was changed
+4. **Push to GitHub:** `git add` → `git commit` → `git push origin main`
 
 ## Rules
 
