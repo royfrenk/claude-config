@@ -150,7 +150,30 @@ REVIEWER — validates
 |---------|-------|
 | Issue Prefix | `XXX` |
 | Team | TeamName |
+| Team ID | `<team-uuid>` |
 | Technical Specs | `docs/technical-specs/XXX-##.md` |
+
+### Status UUIDs (for `mcp_linear_update_issue`)
+
+| Status | UUID |
+|--------|------|
+| Backlog | `<uuid>` |
+| Todo | `<uuid>` |
+| In Progress | `<uuid>` |
+| In Review | `<uuid>` |
+| Done | `<uuid>` |
+| Canceled | `<uuid>` |
+
+> **To get UUIDs:** Run `curl -X POST https://api.linear.app/graphql -H "Authorization: YOUR_API_KEY" -H "Content-Type: application/json" -d '{"query": "{ team(id: \"TEAM_ID\") { states { nodes { id name } } } }"}'`
+
+### Labels
+
+| Label | Purpose |
+|-------|---------|
+| agent | Applied to ALL issues created by Claude (not human-created) |
+| technical | Applied to backend/infra/tech-debt issues Claude inferred or initiated |
+
+> **Note:** Create these labels in Linear if they don't exist. Agent will apply them automatically.
 
 All task tracking happens in Linear. Agents post updates as comments on issues.
 Use `docs/roadmap.md` as fallback when Linear is unavailable.
@@ -168,6 +191,21 @@ Disable unused MCPs to save context. Add to project's `.claude/settings.json`:
 \`\`\`
 
 Only Linear is typically needed. Disable others unless the project requires them.
+
+---
+
+## Deployment
+
+| Environment | Branch | URL |
+|-------------|--------|-----|
+| Staging | `develop` | [your-staging-url] |
+| Production | `main` | [your-production-url] |
+
+**Git workflow:** `feature/*` → `develop` (staging) → `main` (production)
+
+**Who can push:**
+- `develop`: Developer (after Reviewer approval)
+- `main`: User only
 
 ---
 
@@ -255,7 +293,12 @@ These are established patterns - don't change without discussion:
 
 ### Deployment
 
-[Deployment platform and config]
+| Environment | Branch | URL |
+|-------------|--------|-----|
+| Staging | `develop` | [staging-url] |
+| Production | `main` | [production-url] |
+
+Platform: [Vercel/Railway/etc]
 
 ### Environment Variables
 
@@ -282,6 +325,19 @@ These are established patterns - don't change without discussion:
 > **Purpose:** Index of all tasks and specs. Mirrors Linear.
 > **Updated by:** EM Agent when tasks change status
 > **Fallback:** Use this when Linear is unavailable
+
+---
+
+## Sync Status
+
+| Status | Last Synced | Notes |
+|--------|-------------|-------|
+| ✅ In sync | [date] | — |
+
+> Update this when Linear is unavailable. Clear pending items after syncing.
+
+### Pending Updates (when Linear unavailable)
+<!-- Add items here when Linear MCP fails, remove after syncing -->
 
 ---
 
@@ -323,6 +379,64 @@ These are established patterns - don't change without discussion:
 
 ---
 
+## CI/CD (Optional - Recommended for Production Apps)
+
+For production applications, add GitHub Actions to run tests before merging.
+
+**When to add CI/CD:**
+- Production apps with real users → Yes
+- Prototypes/experiments → No (slows you down)
+- Side projects → Maybe (depends on complexity)
+
+**Suggested workflow file** (`.github/workflows/ci.yml`):
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && 'YOUR_STAGING_URL' || github.event_name == 'push' && github.ref == 'refs/heads/main' && 'YOUR_PROD_URL' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+```
+
+**Reference:** See `quo` project for a full CI/CD implementation with Vercel.
+
+---
+
 ## Setup Checklist
 
 When setting up a new project:
@@ -335,6 +449,23 @@ When setting up a new project:
 6. [ ] Set up Linear team and issue prefix
 7. [ ] Add project to Linear with correct team assignment
 8. [ ] Update CLAUDE.md with actual Linear team and prefix
+9. [ ] **Get Linear status UUIDs** and add to CLAUDE.md (see below)
+10. [ ] **Set up Git branches:** Create `develop` branch, configure auto-deploy to staging
+11. [ ] **Add deployment URLs** to CLAUDE.md (staging + production)
+12. [ ] **(Production apps)** Add GitHub Actions CI/CD (see template above)
+
+### Getting Linear Status UUIDs
+
+Run this GraphQL query (replace `YOUR_API_KEY` and `TEAM_ID`):
+
+```bash
+curl -X POST https://api.linear.app/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: YOUR_API_KEY" \
+  -d '{"query": "{ team(id: \"TEAM_ID\") { states { nodes { id name } } } }"}'
+```
+
+Copy the UUIDs into your project's CLAUDE.md under "Status UUIDs".
 
 ---
 

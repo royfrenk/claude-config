@@ -1,6 +1,18 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "START_FILE=\"/tmp/claude-session-start\"; if [ ! -f \"$START_FILE\" ]; then date +%s > \"$START_FILE\"; fi"
+          }
+        ],
+        "description": "Record session start time on first tool use"
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx|js|jsx)$'",
@@ -59,10 +71,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Glass.aiff &"
+            "command": "echo '[DEBUG] Stop hook fired - sound disabled for testing' >&2"
           }
         ],
-        "description": "Notify when Claude stops and needs input"
+        "description": "Notify when Claude stops after tasks longer than 45 seconds"
       }
     ]
   }

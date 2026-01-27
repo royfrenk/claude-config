@@ -55,15 +55,112 @@ describe('EpisodeService', () => {
 })
 ```
 
-## E2E Test Requirements
+## E2E Test Strategy
 
-Add E2E tests when:
-- New pages or routes
-- New user flows (subscribe, process, etc.)
-- Authentication changes
-- Changes to critical paths (search, login, subscriptions)
+E2E tests are expensive: slow to run, prone to flakiness, and high maintenance. Follow the **test pyramid** — E2E should be ~10% of your tests.
+
+### Feature Lifecycle: Launch vs Iteration
+
+| Phase | E2E Approach |
+|-------|--------------|
+| **Launch** (new feature) | Write E2E tests covering the happy path and critical error states |
+| **Iteration** (tweaks to existing) | Existing E2E tests catch regressions; new changes get unit tests + manual |
+
+**Launch phase** = First time a feature ships. Write E2E tests that verify:
+- The core user flow works end-to-end
+- Critical error states are handled (payment fails, auth expires, etc.)
+- Key entry points render correctly
+
+**Iteration phase** = Changes to an existing feature. The E2E tests you wrote at launch now serve as regression tests. New changes only need:
+- Unit tests for new logic
+- Manual verification for UI tweaks
+- New E2E only if the *flow itself* changes significantly
+
+### When to Write NEW E2E Tests
+
+**Always:**
+- New feature launch (first ship)
+- New critical flow (auth, payments, core journeys)
+- Regression test (something broke in production)
+
+**Sometimes (judgment call):**
+- Significant flow change to existing feature
+- New page that's a key entry point
+
+**Skip:**
+- Iterations/tweaks to existing features (existing E2E covers it)
+- Simple UI changes
+- Error messages (unit test logic, manual verify display)
+- Edge cases (unit tests)
+- Styling changes
+
+### Launch-Only vs Regression E2E Tests
+
+Every new feature gets E2E verification at launch. But not every test needs to run in CI forever.
+
+| Feature Type | At Launch | Ongoing CI |
+|--------------|-----------|------------|
+| Critical (auth, payments, core flows) | E2E test | Runs every time |
+| Non-critical (enhancements, small features) | E2E test | Skip (tagged `@launch`) |
+
+**Implementation:**
+
+```typescript
+// Critical - runs in CI always (no tag)
+test('user can complete checkout', async ({ page }) => {
+  // ...
+})
+
+// Non-critical - runs once at launch, skipped in CI
+test('user can sort favorites', { tag: '@launch' }, async ({ page }) => {
+  // ...
+})
+```
+
+```bash
+# At launch - run verification for new feature
+npx playwright test --grep @launch
+
+# Normal CI - critical tests only
+npx playwright test --grep-invert @launch
+```
+
+### Playwright Best Practices
+
+**Locators (in order of preference):**
+```typescript
+page.getByTestId('submit-btn')     // Best - stable
+page.getByRole('button', { name: 'Submit' })  // Great - accessible
+page.getByText('Submit')           // Good - user-visible
+page.locator('.btn-primary')       // Fragile - avoid
+```
+
+**Test outcomes, not implementation:**
+```typescript
+// BAD: Testing implementation details
+await expect(page.locator('.loading-spinner')).toBeHidden()
+
+// GOOD: Testing what user sees
+await expect(page.getByText('Welcome back')).toBeVisible()
+```
 
 See `docs/E2E_TESTING_PLAN.md` for patterns.
+
+## Verification Methods by Criterion Type
+
+Not everything needs E2E. Match verification to the criterion:
+
+| Criterion Type | Verification Method | Rationale |
+|----------------|---------------------|-----------|
+| Critical user flow | E2E test | Worth the investment |
+| Auth/payment works | E2E test | Too risky to skip |
+| New page renders | E2E test OR manual | Depends on importance |
+| Button triggers action | Unit test + manual | E2E overkill for simple actions |
+| Error message shows | Unit test + manual | Test logic, verify display manually |
+| Code exists | Code review | Sufficient |
+| Styling correct | Manual | E2E can't judge aesthetics |
+
+**Rule of thumb:** If it's a critical path or previously broke in production, write an E2E test. Otherwise, unit test the logic and manually verify the UI.
 
 ## Before Submitting Code
 

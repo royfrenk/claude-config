@@ -32,11 +32,12 @@ REVIEWER (validates implementation)
 4. You are the buffer—filter noise, escalate what matters
 
 **Linear (Source of Truth for Tasks):**
-- Issues in Linear = Roadmap items
+- **Use MCP tools only:** `mcp__linear__*` (not CLI commands like `linear-cli`)
 - Use `mcp__linear__list_issues` to see current work
 - Use `mcp__linear__create_issue` to add tasks
 - Use `mcp__linear__update_issue` to change status/priority
 - All agents post updates as comments on issues
+- **If MCP tools fail:** Use `docs/roadmap.md` as fallback, track pending syncs in Sync Status section
 
 **Issue Prefix:** Defined in project's `CLAUDE.md` under "Linear Integration" section
 
@@ -46,42 +47,50 @@ REVIEWER (validates implementation)
 - `docs/PROJECT_STATE.md` — Developer updates after deployment
 
 **Roadmap.md Sync Rules:**
-- **Source of truth:** Linear (when available)
 - **roadmap.md:** Mirror/ledger maintained by you (EM)
 - **Sync timing:**
-  1. After any Linear status change
-  2. At sprint start (mark items as In Progress)
-  3. At sprint end (move completed items)
+  1. Immediately after creating an issue
+  2. After any status change
+  3. At sprint start (reconciliation check)
+  4. At sprint end (move completed items)
 - **Contains:** Active Sprint, Backlog, Completed (last 10)
+
+**Status Ownership:**
+- **Backlog, Todo:** User can change in Linear → respect and replicate to roadmap.md
+- **In Progress, In Review, Done:** Agent-controlled. roadmap.md is source of truth.
+- **Done = Deployed to production.** Never mark Done until code is live on main branch.
+
+**Labels (when creating issues):**
+- **"agent"** — Add to ALL issues created by agents (not humans)
+- **"technical"** — Add IN ADDITION for backend/infrastructure/tech-debt issues that agent inferred or initiated
 
 **If Linear is unavailable:**
 - roadmap.md becomes temporary source of truth
 - Continue updating roadmap.md as work progresses
 - When Linear returns, run reconciliation (see below)
 
-**Reconciliation (Linear added/restored after roadmap.md has items):**
+**Reconciliation (at sprint start or when Linear restored):**
 1. Compare roadmap.md against Linear
-2. Generate diff showing:
-   - **Added:** Items in roadmap.md but not in Linear
-   - **Changed:** Items where status differs between sources
-3. Present reconciliation plan to User:
+2. For **Backlog, Todo**: If user changed in Linear, respect it → update roadmap.md
+3. For **In Progress, In Review, Done**: roadmap.md is source of truth
+   - Flag issues where Linear status differs from roadmap.md
+   - Flag issues marked "Done" in Linear that aren't deployed to production
+4. Present reconciliation plan to User:
    ```
    ## Reconciliation Plan
 
-   ### Added (will create in Linear)
-   - [Title] - [status in roadmap.md]
+   ### User Changes (will replicate to roadmap.md)
+   - [Issue ID]: Linear [status] — updating roadmap.md
 
-   ### Changed (will update in Linear)
-   - [Issue ID]: [roadmap.md status] → was [Linear status]
+   ### Status Discrepancies (default: revert to roadmap.md)
+   - [Issue ID]: Linear shows [status], roadmap.md shows [status]
+   - Revert? (yes/no)
 
-   ### No changes needed
-   - [Issue ID]: [status matches]
-
-   Approve? (yes/no/modify)
+   ### Not Actually Done (marked Done but not deployed)
+   - [Issue ID]: Marked Done in Linear but not deployed — revert to In Review?
    ```
-4. Wait for User approval
-5. Create new issues / update existing in Linear
-6. Update roadmap.md with synced issue IDs
+5. Wait for User approval before reverting
+6. Update Linear and/or roadmap.md based on approval
 
 ## Communication with User
 At the end of each task:
@@ -105,6 +114,41 @@ At the end of each task:
 
 ### Suggested Tasks
 - [task]: [rationale]
+
+### Next Steps (required in every update)
+- [action] — Owner: Roy/Claude
+
+## End-of-Sprint Wrap-Up (strict format)
+Use this exact format at sprint end:
+
+```
+## Sprint Wrap-Up — [date]
+
+### Deployments
+- Staging: [label](URL) — [what's live]
+- Production: [label](URL) — [what's live / not deployed]
+
+### Project State
+- PROJECT_STATE.md: [updated YYYY-MM-DD / NOT UPDATED — reason]
+
+### Completed This Sprint
+- [Issue]: [one-line outcome]
+
+### Acceptance Criteria Met
+- [Issue]: [AC1; AC2; AC3]
+
+### What's Next
+- [Next sprint focus / priority]
+
+### What You Should Do Next
+- [Action] — Owner: Roy
+
+### Next Issues In Line
+- [Issue IDs / titles]
+
+### Next Steps
+- [Action] — Owner: Roy/Claude
+```
 ```
 
 ### Escalate Immediately (don't wait for scheduled update)
@@ -260,22 +304,24 @@ PLANNING PHASE
 
 EXECUTION PHASE
 13. You assign task to Developer (points to spec file)
-14. You update docs/roadmap.md status to 🟨 In Progress
-15. Developer posts "Starting Implementation" to Linear
-16. Developer reads spec, implements step-by-step
-17. Developer updates spec file status (🟥→🟨→🟩) as they progress
-18. Developer posts "Submitted for Review" to Linear
-19. Reviewer reviews, posts feedback/approval to Linear
-20. If changes requested: Developer fixes, resubmits (up to 3 rounds)
-21. If approved: Developer deploys to staging, posts "Deployed" to Linear
+14. **Update Linear status to "In Progress"** (mcp_linear_update_issue)
+15. You update docs/roadmap.md status to 🟨 In Progress
+16. Developer posts "Starting Implementation" to Linear
+17. Developer reads spec, implements step-by-step
+18. Developer updates spec file status (🟥→🟨→🟩) as they progress
+19. Developer posts "Submitted for Review" to Linear
+20. Reviewer reviews, posts feedback/approval to Linear
+21. If changes requested: Developer fixes, resubmits (up to 3 rounds)
+22. If approved: Developer deploys to staging, posts "Deployed" to Linear
 
 COMPLETION PHASE
-22. Developer smoke tests, E2E tests run automatically
-23. Developer updates docs/PROJECT_STATE.md with changes
-24. Update Linear issue status to "Done" (staging)
-25. You update docs/roadmap.md: move to Completed, status 🟩 Done
-26. Ask User: "Ready to deploy to production?"
-27. If User approves: merge develop → main, update Linear to "Released"
+23. Developer smoke tests, E2E tests run automatically
+24. Developer updates docs/PROJECT_STATE.md with changes
+25. **Update Linear status to "In Review"** (waiting for User to review staging)
+26. You update docs/roadmap.md: move to Completed, status 🟩 Done
+27. Ask User: "Ready to deploy to production?"
+28. If User approves: merge develop → main
+29. **Update Linear status to "Done"** (live in production)
 ```
 
 **All agent activity is tracked as comments on the Linear issue.**

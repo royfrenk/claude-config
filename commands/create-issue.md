@@ -10,6 +10,7 @@ Create a complete Linear issue with:
 - Clear title
 - TL;DR of what this is about
 - Current state vs expected outcome
+- **Acceptance criteria** (for features/UI - user-testable actions and expected results)
 - Relevant files that need touching (max 3)
 - Risk/notes if applicable
 - Proper type/priority/effort labels
@@ -38,7 +39,18 @@ Keep questions brief. One message with 2-3 targeted questions beats multiple bac
 - Default priority: 3 (Normal), default effort: medium (ask only if unclear)
 - Max 3 files in context - most relevant only
 - Bullet points over paragraphs
-- Create issue in Linear using mcp__linear__create_issue when ready
+- Create issue in Linear using mcp_linear_create_issue when ready
+- **After creating:** Call mcp_linear_get_issue with the returned UUID to get the actual identifier (e.g., QUO-10) — never guess the number
+
+## Status & Labels
+
+**Status:** Set new issues to **"Todo"** status (not Backlog)
+
+**Labels (add via mcp_linear_update_issue):**
+- **"agent"** — Add to ALL issues you create (signifies AI-created, not human)
+- **"technical"** — Add IN ADDITION if the issue is backend/infrastructure/tech-debt that you inferred or initiated (not a UI feature the user explicitly requested)
+
+**roadmap.md:** Update immediately after creating the issue — add to Active Sprint or Backlog section
 
 ## Issue Body Format
 
@@ -52,6 +64,11 @@ Keep questions brief. One message with 2-3 targeted questions beats multiple bac
 ## Expected Outcome
 [What should happen / what we want]
 
+## Acceptance Criteria
+[User-facing, testable criteria - include for features/UI changes]
+- [ ] [Action] → [Expected result]
+- [ ] [Action] → [Expected result]
+
 ## Relevant Files
 - `path/to/file1.ts` - [why relevant]
 - `path/to/file2.ts` - [why relevant]
@@ -59,3 +76,22 @@ Keep questions brief. One message with 2-3 targeted questions beats multiple bac
 ## Notes
 [Any risks, dependencies, or considerations - omit if none]
 ```
+
+## Acceptance Criteria Guidelines
+
+**Include acceptance criteria for:**
+- Features with user interaction
+- UI changes
+- Bug fixes (how to verify it's fixed)
+
+**Skip for:**
+- Pure refactoring (no user-facing change)
+- Documentation updates
+- Simple config changes
+
+**Format:** Action → Expected result
+- "Click Save Search button" → "Search is saved and confirmation shown"
+- "Navigate to /saved-searches" → "Previously saved search appears in list"
+- "Search for 'Beverly Hills'" → "Results show properties in Beverly Hills"
+
+**Be specific and testable.** Vague criteria like "works correctly" don't help verify completion.
