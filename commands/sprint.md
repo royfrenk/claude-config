@@ -7,6 +7,8 @@ description: Run the engineering sprint autonomously. Reads the roadmap and exec
 Run the engineering sprint autonomously. Reads Linear for Priority 1 task and executes with proper spec creation and plan approval.
 
 > **Tip:** Clear context before starting a new sprint to maximize available context and avoid mid-sprint compaction.
+>
+> **Shorthand:** If user writes "CC" (not referencing something else), it means "clear context".
 
 ## Workflow
 
