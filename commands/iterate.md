@@ -102,11 +102,19 @@ Follow this for EVERY bug fix — don't skip steps:
 - [ ] Show user: what's fixed, what's still open
 - [ ] Ask: "More issues, or ready to wrap up?"
 
-### When Sprint Completes
-- [ ] Update Linear status to "In Review" (if not already)
-- [ ] Update `docs/roadmap.md` status
-- [ ] Update `docs/PROJECT_STATE.md` if significant changes
+### When Iteration Complete (Ready for User Review)
+- [ ] Update Linear status to "In Review"
+- [ ] Update `docs/roadmap.md` status to 🟨 In Review
+- [ ] Update sprint file status to 🟨 Awaiting Production
 - [ ] Final output with acceptance criteria report
+- [ ] Ask User: "Ready to deploy to production?"
+
+### When User Approves Production
+- [ ] **User pushes to `main`** (only User can do this)
+- [ ] Update Linear status to "Done"
+- [ ] Update `docs/roadmap.md` status to 🟩 Done
+- [ ] Update `docs/PROJECT_STATE.md`
+- [ ] Update sprint file status to 🟩 Complete
 
 ## Rules
 
