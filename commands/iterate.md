@@ -78,12 +78,42 @@ Reported by User:
 [Context, decisions, blockers]
 ```
 
+## Protocol Checklist (Per Fix)
+
+Follow this for EVERY bug fix — don't skip steps:
+
+### Before Fixing
+- [ ] Read sprint file to understand current state
+- [ ] Read relevant spec file for context
+- [ ] Identify which issue this bug belongs to
+
+### Fixing
+- [ ] Run verification loop (build, lint, types, tests)
+- [ ] Commit with proper format (see `~/.claude/rules/task-completion.md`)
+
+### After Fixing
+- [ ] Push to `develop`
+- [ ] **Verify deployment succeeded** (poll status or ask user)
+- [ ] Update sprint file: mark bug as [x] fixed with commit hash
+- [ ] Post comment to Linear issue: "Fixed [description] in [commit]"
+
+### After Each Batch
+- [ ] Update sprint file with batch summary
+- [ ] Show user: what's fixed, what's still open
+- [ ] Ask: "More issues, or ready to wrap up?"
+
+### When Sprint Completes
+- [ ] Update Linear status to "In Review" (if not already)
+- [ ] Update `docs/roadmap.md` status
+- [ ] Update `docs/PROJECT_STATE.md` if significant changes
+- [ ] Final output with acceptance criteria report
+
 ## Rules
 
-- **Same protocols apply:** Commit format, deployment verification, Linear updates
 - **Track everything:** Every bug goes in the iteration log
 - **New ACs go to spec file:** If user discovers a new requirement, add it to the spec file (with approval)
 - **Don't lose context:** Sprint file is your external memory — read it when unsure
+- **Don't skip deployment verification:** Every push must be verified before marking fixed
 
 ## When to Use
 
