@@ -230,6 +230,32 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md` that 
 
 ---
 
+## The Sprint File
+
+Each sprint gets a file at `docs/sprints/sprint-###-[name].md` that tracks iteration state:
+
+- **Which issues** are in the sprint
+- **Iteration log** — bugs reported and fixed
+- **New ACs discovered** during testing
+
+**Why it exists:** During iteration, context gets long and details get lost. The sprint file is external memory that survives context compaction.
+
+**Lifecycle:**
+1. Created at end of `/sprint` (after initial implementation)
+2. Updated during `/iterate` (bugs added, fixed, checked off)
+3. Archived when sprint ships to production
+
+**What goes where:**
+
+| Content | Sprint File | Spec File |
+|---------|-------------|-----------|
+| Bug found during testing | ✓ (iteration log) | |
+| New acceptance criterion | | ✓ (with approval) |
+| Implementation tasks | | ✓ |
+| Fix history | ✓ (iteration log) | |
+
+---
+
 ## File Structure
 
 ### Global (applies to all projects)
@@ -247,10 +273,14 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md` that 
 ├── commands/
 │   ├── context.md         # /context - load project context
 │   ├── sprint.md          # /sprint - autonomous execution
+│   ├── review-prd.md      # /review-prd - PRD review and story extraction
 │   ├── create-issue.md    # /create-issue - quick issue capture
 │   ├── new-project.md     # /new-project - setup guide
 │   ├── checkpoint.md      # /checkpoint - save work state
 │   └── learning-opportunity.md  # Teaching mode
+├── guides/
+│   ├── design.md          # Design review lens (UX, accessibility, states)
+│   └── legal.md           # Legal review lens (privacy, consumer protection)
 └── rules/
     ├── security.md        # Security requirements
     ├── coding-style.md    # Code organization, immutability
@@ -266,8 +296,10 @@ project/
 └── docs/
     ├── PROJECT_STATE.md         # Current codebase state (living document)
     ├── roadmap.md               # Task index - mirrors Linear (fallback)
-    └── technical-specs/         # Spec files per issue
-        └── {ISSUE_ID}.md
+    ├── technical-specs/         # Spec files per issue
+    │   └── {ISSUE_ID}.md
+    └── sprints/                 # Sprint iteration tracking
+        └── sprint-###-[name].md
 ```
 
 ---
@@ -330,8 +362,10 @@ project/
 
 | Scenario | Action |
 |----------|--------|
-| Linear status changes | EM updates roadmap.md to match |
-| Sprint starts | EM marks active items as 🟨 In Progress |
+| Issue created | EM updates roadmap.md immediately |
+| Backlog/Todo changes in Linear | EM replicates to roadmap.md (user can change these) |
+| In Progress/In Review/Done changes in Linear | EM flags discrepancy, asks before reverting (roadmap.md is source of truth) |
+| Sprint starts | EM runs reconciliation check, flags discrepancies |
 | Sprint ends | EM moves completed items to Completed section |
 | Linear unavailable | roadmap.md becomes temporary source of truth |
 | Linear restored | EM proposes reconciliation plan to User |
@@ -352,9 +386,44 @@ When Linear is added or restored after roadmap.md has work items:
 |---------|---------|
 | `/context <project>` | Load project context (CLAUDE.md + PROJECT_STATE.md) |
 | `/sprint` | Autonomous execution of Priority 1 task from Linear |
+| `/iterate` | Continue sprint iteration after user finds bugs |
+| `/review-prd` | PRD review, Q&A, story extraction, Linear issue creation |
 | `/create-issue` | Quick issue capture while coding |
 | `/new-project` | Setup guide and templates for new projects |
 | `/learning-opportunity` | Pause for teaching mode |
+
+---
+
+## PRD Review Workflow
+
+For major features or significant changes, use `/review-prd` before sprint work:
+
+```
+1. User uploads PRD
+    ↓
+2. Claude reviews from 3 perspectives:
+   ├── Technical (scope, architecture, edge cases)
+   ├── Design (UX, states, accessibility)
+   └── Legal (privacy, data, compliance)
+    ↓
+3. Q&A dialogue until gaps are resolved
+    ↓
+4. Claude extracts stories (tmp-1, tmp-2, etc.)
+    ↓
+5. User approves (all or some)
+    ↓
+6. Claude creates Linear issues + updates roadmap.md
+```
+
+**Key principles:**
+- PRD is a point-in-time artifact (never modified after review)
+- Stories use temporary IDs (`tmp-1`) until Linear creation
+- Linear issue prefix comes from project's CLAUDE.md
+- Issues go to Backlog; normal sprint workflow takes over
+
+**Review guides:**
+- `~/.claude/guides/design.md` — UX, accessibility, state design
+- `~/.claude/guides/legal.md` — Privacy, consumer protection, compliance
 
 ---
 
@@ -371,16 +440,59 @@ All task tracking happens in Linear, not markdown files. `docs/roadmap.md` is a 
 |---------|-------|
 | Issue Prefix | `XXX` |
 | Team | YourTeam |
+| Team ID | `uuid-here` |
 | Technical Specs | `docs/technical-specs/XXX-##.md` |
+
+### Status UUIDs (for mcp_linear_update_issue)
+
+| Status | UUID |
+|--------|------|
+| Backlog | `uuid` |
+| Todo | `uuid` |
+| In Progress | `uuid` |
+| In Review | `uuid` |
+| Done | `uuid` |
+| Canceled | `uuid` |
+```
+
+**Getting Status UUIDs:** Query Linear GraphQL API:
+```bash
+curl -X POST https://api.linear.app/graphql \
+  -H "Authorization: YOUR_API_KEY" \
+  -d '{"query": "{ team(id: \"TEAM_ID\") { states { nodes { id name } } } }"}'
 ```
 
 ### What Agents Do in Linear
 
-- **EM**: Creates issues, updates priority, tracks status, updates roadmap.md
+- **EM**: Creates issues (with labels), updates priority, updates roadmap.md
 - **Explorer**: Posts exploration summary as comment
 - **Plan-Writer**: Posts implementation plan summary as comment
-- **Developer**: Posts "Starting", "Submitted for Review", "Deployed" updates
+- **Developer**: Updates status, posts progress comments
 - **Reviewer**: Posts approval/changes requested
+
+### Labels
+
+| Label | When Applied | Purpose |
+|-------|--------------|---------|
+| **agent** | ALL issues created by Claude | Distinguishes AI-created from human-created issues |
+| **technical** | Backend/infra/tech-debt issues | Issues Claude inferred or initiated (not explicit user requests) |
+
+### Linear Status Transitions
+
+```
+Backlog → Todo → In Progress → In Review → Done
+                 (agent working) (user reviewing) (DEPLOYED to production)
+```
+
+| Status | Who Sets It | Source of Truth | Notes |
+|--------|-------------|-----------------|-------|
+| Backlog | EM or User | Linear (User can change) | Issue created, not prioritized |
+| Todo | EM or User | Linear (User can change) | Issue prioritized for sprint |
+| In Progress | Developer | roadmap.md | Agent working on implementation |
+| In Review | Developer | roadmap.md | Deployed to staging, awaiting User review |
+| Done | EM | roadmap.md | **Must be deployed to production** |
+
+**Important:** Done = Deployed. Never mark Done until code is live on main branch. At sprint start, any "Done" issues in Linear that aren't actually deployed will be flagged.
 
 ---
 
@@ -462,6 +574,23 @@ feature/* → develop (staging) → main (production)
 | `develop` | Developer (after Reviewer approval) | Staging |
 | `main` | User only | Production |
 
+**Best practice:** All projects should use this branching structure with Vercel (or similar) auto-deploying each branch to its environment.
+
+### CI/CD (Recommended for Production Apps)
+
+For production apps, add GitHub Actions to gate merges on passing tests:
+
+| Trigger | What Runs |
+|---------|-----------|
+| PR to `develop` | Build, lint, e2e tests against preview |
+| Push to `develop` | E2e tests against staging |
+| PR to `main` | E2e tests against staging (gate for prod) |
+| Push to `main` | E2e tests against production |
+
+**Skip CI for:** Prototypes, experiments, early-stage projects where speed matters more than safety.
+
+**Reference:** See `quo` project (`.github/workflows/ci.yml`) for a complete implementation.
+
 ---
 
 ## Key Principles
@@ -474,6 +603,55 @@ feature/* → develop (staging) → main (production)
 6. **roadmap.md updated when task status changes**
 7. **Agents post all updates to Linear issues**
 8. **Keep CLAUDE.md stable** - it's the "how to operate" guide
+
+---
+
+## Update Standards (Global)
+
+### Required in Every Update
+Include a **Next Steps** section with owner:
+```
+### Next Steps
+- [Action] — Owner: Roy/Claude
+```
+
+### PROJECT_STATE.md Requirement
+At sprint end, `docs/PROJECT_STATE.md` must be updated.
+If no deployment occurred, explicitly note:
+```
+PROJECT_STATE.md: NOT UPDATED — [reason]
+```
+
+### End-of-Sprint Wrap-Up (Strict)
+Use this exact format at sprint end:
+```
+## Sprint Wrap-Up — [date]
+
+### Deployments
+- Staging: [label](URL) — [what's live]
+- Production: [label](URL) — [what's live / not deployed]
+
+### Project State
+- PROJECT_STATE.md: [updated YYYY-MM-DD / NOT UPDATED — reason]
+
+### Completed This Sprint
+- [Issue]: [one-line outcome]
+
+### Acceptance Criteria Met
+- [Issue]: [AC1; AC2; AC3]
+
+### What's Next
+- [Next sprint focus / priority]
+
+### What You Should Do Next
+- [Action] — Owner: Roy
+
+### Next Issues In Line
+- [Issue IDs / titles]
+
+### Next Steps
+- [Action] — Owner: Roy/Claude
+```
 
 ---
 
@@ -527,6 +705,26 @@ Use the **EM agent** for task coordination and the `/sprint` command for autonom
 | Issue Prefix | `XXX` |
 | Team | YourTeam |
 | Technical Specs | `docs/technical-specs/XXX-##.md` |
+
+---
+
+## Deployment
+
+| Environment | Branch | URL |
+|-------------|--------|-----|
+| Staging | `develop` | [staging-url] |
+| Production | `main` | [prod-url] |
+
+### Deployment Check Commands (optional)
+\`\`\`bash
+# Check deployment status (poll until complete)
+# Example for Vercel: vercel list --scope=your-scope | head -5
+# Example for Railway: railway status
+
+# Fetch deployment logs on failure
+# Example for Vercel: vercel logs <deployment-id>
+# Example for Railway: railway logs
+\`\`\`
 
 ---
 
