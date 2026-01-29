@@ -46,19 +46,30 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
    - Deploy to staging (push to `develop`)
    - **Verify deployment succeeded** (poll status using CLAUDE.md commands, or ask user if no check command configured)
    - Post update to Linear issue
-9. When all subtasks complete and deployed to staging:
-   - **MANDATORY: Verify ALL acceptance criteria are met** before proceeding
-   - Generate acceptance criteria report (see Output section)
-   - If any criteria are ⚠️ or ❌, get User approval before marking In Review
-   - **Update Linear status to "In Review"** using UUID from CLAUDE.md
-   - Update `docs/roadmap.md` status to 🟨 In Review
-10. **Create/update sprint file:**
+9. **Pre-handoff verification (MANDATORY before user testing):**
+   - Run full test suite (backend + frontend) — not just changed code
+   - Check: do tests exist for the flows user will test?
+     - If missing → create them or verify via API/curl yourself
+   - Test the flow yourself locally (start servers, verify it works)
+   - Only proceed after YOU confirm it works
+10. When all subtasks complete and deployed to staging:
+    - **MANDATORY: Verify ALL acceptance criteria are met** before proceeding
+    - Generate acceptance criteria report (see Output section)
+    - If any criteria are ⚠️ or ❌, get User approval before marking In Review
+    - **Update Linear status to "In Review"** using UUID from CLAUDE.md
+    - Update `docs/roadmap.md` status to 🟨 In Review
+11. **Create/update sprint file:**
     - If no sprint file exists, create `docs/sprints/sprint-###-[name].md` using template below
     - Sprint number: increment from last sprint file (or 001 if first)
     - Name: short descriptor of main issue (e.g., "zillow-search")
     - List all issues worked on in this sprint
     - Set status to 🟨 In Review (awaiting user testing)
     - Tell user: "Sprint file created at `docs/sprints/sprint-###-[name].md`. Use `/iterate` when you find issues during testing."
+12. **Move to next issue:** Return to step 3 and repeat until:
+    - All Active Sprint items are done
+    - A task is blocked
+    - A security issue is found
+    - Critical decision needed from the User
 
 ## Sprint File Template
 
@@ -91,19 +102,16 @@ Reported by User:
 ## Notes
 [Context, decisions, blockers]
 ```
-11. **Move to next issue:** Return to step 3 and repeat until:
-    - All Active Sprint items are done
-    - A task is blocked
-    - A security issue is found
-    - Critical decision needed from the User
 
 ## Rules
 
+- **Test before handoff:** Never ask user to test without first running all tests and verifying the flow yourself
 - **Spec-first:** Never implement without a technical spec file
 - **Plan approval required:** Present the implementation plan and wait for User's approval before coding
 - **No confirmation needed within a task:** Once a plan is approved, execute subtasks without asking
 - **All acceptance criteria must be met:** Before marking any issue "In Review" or "Done", verify ALL acceptance criteria are implemented. If a criterion can't be met, flag it and get User approval to proceed without it.
-- Push only to `develop` (staging) - never `main`
+- Push only to `develop` (staging) by default
+- **Production deployment:** When user explicitly says "deploy", "push to main", or "deploy to production", merge develop → main and push immediately without asking for separate confirmation
 - Run tests before each commit
 - Update spec file progress (🟥→🟨→🟩) as you complete tasks
 - Post status updates to Linear issue as comments

@@ -170,6 +170,30 @@ Not everything needs E2E. Match verification to the criterion:
 - [ ] Error scenarios tested
 - [ ] No skipped tests without explanation
 
+## Before Handoff to User
+
+**MANDATORY** — Before telling the user "ready to test" or "test at [URL]":
+
+1. **Run full test suite** — not just the changed code's tests
+   ```bash
+   # Backend
+   cd backend && pytest tests/ -v
+
+   # Frontend
+   cd frontend && npm test
+   ```
+
+2. **Check test coverage for the flow being tested:**
+   - Does the flow have tests? (e.g., if user will test auth, do auth tests exist?)
+   - If no tests exist → create them or verify via API/curl yourself first
+
+3. **Verify locally before handoff:**
+   - Start backend + frontend
+   - Test the flow yourself (curl, browser, or automated)
+   - Only after YOU verify it works → ask user to test
+
+**Never ask the user to test something you haven't verified yourself.**
+
 ## Verification Loop
 
 Before submitting to Reviewer, run full verification:
