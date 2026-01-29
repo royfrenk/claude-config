@@ -59,12 +59,13 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
     - **Update Linear status to "In Review"** using UUID from CLAUDE.md
     - Update `docs/roadmap.md` status to 🟨 In Review
 11. **Create/update sprint file:**
-    - If no sprint file exists, create `docs/sprints/sprint-###-[name].md` using template below
+    - If no active sprint file exists, create `docs/sprints/sprint-###-[name].active.md` using template below
     - Sprint number: increment from last sprint file (or 001 if first)
     - Name: short descriptor of main issue (e.g., "zillow-search")
+    - **Naming convention:** `.active.md` = in progress, `.done.md` = completed
     - List all issues worked on in this sprint
     - Set status to 🟨 In Review (awaiting user testing)
-    - Tell user: "Sprint file created at `docs/sprints/sprint-###-[name].md`. Use `/iterate` when you find issues during testing."
+    - Tell user: "Sprint file created at `docs/sprints/sprint-###-[name].active.md`. Use `/iterate` when you find issues during testing."
 12. **Move to next issue:** Return to step 3 and repeat until:
     - All Active Sprint items are done
     - A task is blocked
@@ -119,6 +120,7 @@ Reported by User:
 - Update `docs/PROJECT_STATE.md` at sprint end (even if not deployed; mark "NOT UPDATED — reason")
 - Update `docs/roadmap.md` when status changes (immediately, not just at sprint end)
 - **Done = Deployed to production.** Never mark Done until code is live on main branch.
+- **Sprint file lifecycle:** When sprint is deployed to production, rename `*.active.md` → `*.done.md`
 - **Linear sync:** If any `mcp__linear__*` call fails:
   1. Continue using `docs/roadmap.md` as source of truth
   2. Add pending updates to roadmap.md Sync Status section
