@@ -114,10 +114,36 @@ Ask: "Does this look right? Any adjustments before I make the changes?"
 ## Phase 6: Execute
 
 Only after the User confirms:
-1. Make all changes
+1. Make all changes to `~/.claude/` (the live config)
 2. Verify consistency across files
 3. Summarize what was changed
-4. **Push to GitHub:** `git add` → `git commit` → `git push origin main`
+4. **Sync to repo and push:**
+   ```bash
+   # Copy shareable files to repo
+   cp -R ~/.claude/agents ~/Documents/repos/claude-config/
+   cp -R ~/.claude/commands ~/Documents/repos/claude-config/
+   cp -R ~/.claude/rules ~/Documents/repos/claude-config/
+   cp -R ~/.claude/guides ~/Documents/repos/claude-config/
+   cp ~/.claude/README.md ~/Documents/repos/claude-config/
+   cp ~/.claude/settings.json ~/Documents/repos/claude-config/
+
+   # Commit and push
+   cd ~/Documents/repos/claude-config
+   git add -A && git commit -m "process: [description]" && git push origin main
+   ```
+
+**What gets synced:**
+- `agents/` - Agent definitions
+- `commands/` - Slash commands
+- `rules/` - Coding standards
+- `guides/` - Reference guides
+- `README.md` - Overview
+- `settings.json` - Hooks and MCP config
+
+**Never synced (stays in ~/.claude/ only):**
+- `.credentials.json` - OAuth tokens
+- `settings.local.json` - Local overrides
+- `history.jsonl`, `todos/`, `projects/`, etc. - Session state
 
 ## Rules
 
