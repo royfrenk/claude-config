@@ -1,4 +1,8 @@
-# Auto-generated files
+# Sensitive
+.credentials.json
+settings.local.json
+
+# Auto-generated state
 history.jsonl
 projects/
 todos/
@@ -6,12 +10,18 @@ file-history/
 debug/
 cache/
 plans/
-settings.local.json
-credentials.json
 paste-cache/
 shell-snapshots/
 stats-cache.json
 statsig/
+ide/
+tasks/
+telemetry/
+session-env/
+skills/
 
-# Plugin marketplace (external)
+# External plugins (downloaded)
 plugins/
+
+# OS files
+.DS_Store

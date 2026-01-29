@@ -74,7 +74,8 @@ Follow this for EVERY bug fix — don't skip steps:
   - Linear status → "In Review" (if not already)
   - Update `docs/roadmap.md`
   - Update `docs/PROJECT_STATE.md`
-- [ ] Ask User: "Ready to deploy to production? (Only you can push to main)"
+- [ ] If user hasn't already said "deploy" or "push to main": Ask "Ready to deploy to production?"
+- [ ] When user confirms (or already said "deploy"/"push to main"): Merge develop → main and push immediately
 
 ## Rules
 

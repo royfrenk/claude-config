@@ -1,5 +1,19 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__*",
+      "mcp__linear__get_issue"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -9,8 +23,7 @@
             "type": "command",
             "command": "START_FILE=\"/tmp/claude-session-start\"; if [ ! -f \"$START_FILE\" ]; then date +%s > \"$START_FILE\"; fi"
           }
-        ],
-        "description": "Record session start time on first tool use"
+        ]
       }
     ],
     "PostToolUse": [
@@ -21,8 +34,7 @@
             "type": "command",
             "command": "prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
           }
-        ],
-        "description": "Auto-format JS/TS files with Prettier after edits"
+        ]
       },
       {
         "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx|js|jsx)$'",
@@ -31,8 +43,7 @@
             "type": "command",
             "command": "grep -n 'console\\.log' \"$CLAUDE_FILE_PATH\" 2>/dev/null && echo '[Warning] console.log found - remove before committing' >&2 || true"
           }
-        ],
-        "description": "Warn about console.log statements after edits"
+        ]
       },
       {
         "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx)$'",
@@ -41,8 +52,7 @@
             "type": "command",
             "command": "if [ -f \"$(dirname \"$CLAUDE_FILE_PATH\")/tsconfig.json\" ] || [ -f \"$(git rev-parse --show-toplevel 2>/dev/null)/tsconfig.json\" ]; then cd \"$(git rev-parse --show-toplevel 2>/dev/null)\" && npx tsc --noEmit 2>&1 | grep -E 'error TS' | head -5 >&2 || true; fi"
           }
-        ],
-        "description": "TypeScript check after .ts/.tsx edits (if tsconfig.json exists)"
+        ]
       },
       {
         "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx|js|jsx|py)$'",
@@ -51,8 +61,7 @@
             "type": "command",
             "command": "grep -nE '(sk-[a-zA-Z0-9]{20,}|api_key\\s*=\\s*[\"\\x27][^\"\\x27]+[\"\\x27]|password\\s*=\\s*[\"\\x27][^\"\\x27]+[\"\\x27])' \"$CLAUDE_FILE_PATH\" 2>/dev/null && echo '[SECURITY] Possible hardcoded secret detected!' >&2 || true"
           }
-        ],
-        "description": "Warn about possible hardcoded secrets after edits"
+        ]
       },
       {
         "matcher": "tool == 'Edit'",
@@ -61,8 +70,7 @@
             "type": "command",
             "command": "COUNT_FILE=\"/tmp/claude-edit-count-$$\"; COUNT=$(cat \"$COUNT_FILE\" 2>/dev/null || echo 0); COUNT=$((COUNT + 1)); echo $COUNT > \"$COUNT_FILE\"; if [ $COUNT -eq 15 ]; then echo '[Info] 15 edits this session. Consider /checkpoint if working on a long task.' >&2; fi; if [ $((COUNT % 25)) -eq 0 ] && [ $COUNT -gt 15 ]; then echo \"[Info] $COUNT edits. Context may be getting full. Consider /checkpoint.\" >&2; fi"
           }
-        ],
-        "description": "Remind about checkpointing after many edits"
+        ]
       }
     ],
     "Stop": [
@@ -73,9 +81,11 @@
             "type": "command",
             "command": "echo '[DEBUG] Stop hook fired - sound disabled for testing' >&2"
           }
-        ],
-        "description": "Notify when Claude stops after tasks longer than 45 seconds"
+        ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "figma@claude-plugins-official": true
   }
 }
