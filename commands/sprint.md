@@ -13,12 +13,7 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
 ## Workflow
 
 1. Read `CLAUDE.md` to get Linear team and issue prefix
-2. **Reconciliation check:** Compare Linear vs `docs/roadmap.md` for status discrepancies:
-   - For **In Progress, In Review, Done**: roadmap.md is source of truth
-   - Flag any issues where Linear status differs from roadmap.md
-   - Flag any issues marked "Done" in Linear that aren't deployed to production
-   - Ask user before reverting: "Linear shows [X] as [status], but roadmap.md shows [status]. Revert to roadmap.md?"
-   - For **Backlog, Todo**: respect user's Linear changes, replicate to roadmap.md
+2. **Run `/sync-roadmap`** to reconcile any Linear changes before starting work
 3. Query Linear for Priority 1 issue in current sprint (`mcp__linear__list_issues`)
    - **If Linear unavailable (any MCP call fails):**
      - Use `docs/roadmap.md` as fallback
@@ -252,6 +247,9 @@ For each completed issue, verify all acceptance criteria:
 - [Issue]: [what changed - status, created, etc.]
 
 Please update Linear manually or ask User to repair integration.
+
+### Before Closing Sprint
+Run `/sync-roadmap` to reconcile any Linear changes made during the sprint.
 ```
 
 ---

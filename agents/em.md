@@ -50,9 +50,10 @@ REVIEWER (validates implementation)
 - **roadmap.md:** Mirror/ledger maintained by you (EM)
 - **Sync timing:**
   1. Immediately after creating an issue
-  2. After any status change
-  3. At sprint start (reconciliation check)
-  4. At sprint end (move completed items)
+  2. After agent-initiated status changes
+  3. At sprint start: invoke `/sync-roadmap`
+  4. At sprint end: invoke `/sync-roadmap`
+  5. On-demand: User runs `/sync-roadmap` after making Linear changes
 - **Contains:** Active Sprint, Backlog, Completed (last 10)
 
 **Status Ownership:**
