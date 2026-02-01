@@ -11,7 +11,8 @@
       "WebFetch(*)",
       "WebSearch(*)",
       "mcp__*",
-      "mcp__linear__get_issue"
+      "mcp__linear__get_issue",
+      "mcp__linear__update_issue"
     ]
   },
   "hooks": {
