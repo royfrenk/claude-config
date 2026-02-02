@@ -65,9 +65,13 @@ Keep questions brief. One message with 2-3 targeted questions beats multiple bac
 [What should happen / what we want]
 
 ## Acceptance Criteria
-[User-facing, testable criteria - include for features/UI changes]
+
+**Functional (pass/fail):**
 - [ ] [Action] → [Expected result]
 - [ ] [Action] → [Expected result]
+
+**Quality (requires evals):**
+- [ ] [Action] → [Quality outcome - will be expanded into detailed evals during planning]
 
 ## Relevant Files
 - `path/to/file1.ts` - [why relevant]
@@ -89,9 +93,18 @@ Keep questions brief. One message with 2-3 targeted questions beats multiple bac
 - Documentation updates
 - Simple config changes
 
-**Format:** Action → Expected result
+**Categorize criteria:**
+
+**Functional (pass/fail)** - Binary tests:
 - "Click Save Search button" → "Search is saved and confirmation shown"
 - "Navigate to /saved-searches" → "Previously saved search appears in list"
-- "Search for 'Beverly Hills'" → "Results show properties in Beverly Hills"
+- "Submit empty form" → "Error message displays"
+
+**Quality (requires evals)** - Subjective/performance measures:
+- "Search for 'Beverly Hills'" → "Results are relevant (Beverly Hills properties)"
+- "Load search results" → "Page loads quickly (good UX)"
+- "View recommendations" → "Suggestions are accurate and useful"
+
+**Note:** Quality criteria will be expanded into detailed quality evals during planning phase (eval-writer will create measurable benchmarks).
 
 **Be specific and testable.** Vague criteria like "works correctly" don't help verify completion.

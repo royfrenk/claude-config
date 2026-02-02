@@ -178,6 +178,9 @@ project/
 └── docs/
     ├── PROJECT_STATE.md         # Codebase state (updated after deploys)
     ├── roadmap.md               # Task index (mirrors Linear)
+    ├── evals/                   # Quality evaluation criteria (evergreen)
+    │   ├── README.md
+    │   └── {feature}.eval.md
     ├── technical-specs/         # Spec files per issue
     │   └── {ISSUE_ID}.md
     └── sprints/                 # Sprint iteration tracking
@@ -585,6 +588,12 @@ project/
 |--------|----------|-------------|
 | GET | /api/... | ... |
 
+## Deployment CLI
+
+| Platform | CLI Linked | Project ID | Notes |
+|----------|-----------|------------|-------|
+| [platform] | [yes/no] | [id] | [branch mappings] |
+
 ## Recent Changes
 
 | Date | Change | Commit |
@@ -598,9 +607,10 @@ project/
 
 | Agent | What It Does | Can Write Code? | Can Spawn Sub-Agents? |
 |-------|--------------|-----------------|------------------------|
-| **EM** | Coordinates work, manages roadmap, orchestrates parallelization | No | Yes (Explorer, Plan-Writer, Developer, Reviewer) |
+| **EM** | Coordinates work, manages roadmap, orchestrates parallelization | No | Yes (Explorer, Plan-Writer, Eval-Writer, Developer, Reviewer) |
 | **Explorer** | Analyzes codebase, creates spec file | No | No (but can run in parallel with other Explorers) |
 | **Plan-Writer** | Adds implementation plan + dependency analysis | No | No |
+| **Eval-Writer** | Writes quality benchmarks for subjective features | No | No |
 | **Developer** | Implements code, deploys to staging | Yes | No (but can run in parallel with other Developers) |
 | **Reviewer** | Reviews code, approves/blocks deploys | No | Yes (sub-Reviewers for parallel review) |
 

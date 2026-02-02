@@ -418,6 +418,75 @@ Use the output formats defined in `~/.claude/rules/task-completion.md`:
 
 **Always include the staging URL** so User can verify the changes immediately.
 
+## Deployment Management
+
+Before asking User to perform hosting actions, try CLI first.
+
+### Check if CLI Available
+
+```bash
+which vercel || which railway || which netlify
+```
+
+If installed, attempt CLI action first. Only escalate to User if CLI fails.
+
+### Common Operations
+
+| Task | Vercel | Railway | Netlify |
+|------|--------|---------|---------|
+| Check deployment status | `vercel inspect <URL>` | `railway status` | `netlify status` |
+| View logs | `vercel logs <URL>` | `railway logs` | `netlify logs` |
+| List env vars | `vercel env ls` | `railway variables` | `netlify env:list` |
+| Add env var | `vercel env add <KEY>` | `railway variables set <KEY>=<VALUE>` | `netlify env:set <KEY> <VALUE>` |
+
+### Project Context
+
+**Before running CLI commands, verify project context:**
+
+1. Read PROJECT_STATE.md for:
+   - Platform being used (Vercel/Railway/Netlify)
+   - Project name/ID
+   - Which branch maps to which environment
+
+2. If first time using CLI in this project:
+   - Run `<platform> link` to connect CLI to project
+   - Document in PROJECT_STATE.md: "CLI linked: yes"
+
+### Interactive Commands (Require User)
+
+If CLI requires interactive input:
+- `vercel login` - User must authenticate
+- `railway login` - User must authenticate
+- Multi-project selection - User must choose
+
+**Handle this:**
+```
+⚠️ CLI requires authentication.
+
+Please run: `vercel login`
+
+Then reply "done" and I'll continue.
+```
+
+### When to Ask User Instead
+
+- CLI not installed (`which <platform>` returns nothing)
+- CLI authentication fails
+- Action requires permissions you don't have (billing, team settings)
+- Project has multiple environments and it's unclear which to target
+
+### Storing CLI Context
+
+Update PROJECT_STATE.md with:
+
+```markdown
+## Deployment CLI
+
+| Platform | CLI Linked | Project ID | Notes |
+|----------|-----------|------------|-------|
+| Vercel | Yes | project-name | develop → staging, main → prod |
+```
+
 ## Receiving Feedback from Reviewer
 
 Reviewer sends:

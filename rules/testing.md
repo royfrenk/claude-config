@@ -17,6 +17,28 @@ Test **behavior**, not implementation. Tests should:
 | Unit tests | New utilities, services, complex logic | Single function/class |
 | Integration tests | New API endpoints, database operations | Multiple components |
 | E2E tests | New user flows, critical path changes | Full user journey |
+| Quality evals | Ranking, performance, subjective quality features | Feature-level benchmarks |
+
+## Quality Evals
+
+For features where correctness isn't binary (search, recommendations, performance), write **quality evals**.
+
+**Evals live in:**
+- `docs/evals/{feature}.eval.md` - Criteria, scenarios, baselines
+- `tests/evals/{feature}.eval.ts` - Automated benchmarks (optional)
+
+**When to write evals:**
+- New feature with ranking/scoring/subjective quality
+- Existing feature with quality requirements
+- Performance requirements (speed, accuracy)
+
+**Evals are:**
+- ✓ Evergreen (persist across issues)
+- ✓ Regression-aware (document what NOT to break)
+- ✓ Human-verified (not a replacement for judgment)
+- ✗ NOT per-issue (don't put in spec files)
+
+**See:** Eval-Writer agent for creating evals
 
 ## When to Write Tests
 

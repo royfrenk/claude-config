@@ -276,6 +276,44 @@ Plan-Writer will:
 - Post plan summary to Linear
 - Return: "Plan ready for approval"
 
+### Step 2a: Assess if Evals Needed (after Plan-Writer, before User approval)
+
+After Plan-Writer completes, check if quality evals are needed:
+
+**Eval-worthy features:**
+- Ranking/sorting (search results, recommendations)
+- Algorithmic output (matching, scoring)
+- Performance requirements (speed, accuracy)
+- Any feature where "correctness" is subjective
+
+**Decision tree:**
+
+```
+Is this a new feature?
+├─ Yes → Does it involve ranking/quality/performance?
+│         ├─ Yes → Invoke Eval-Writer
+│         └─ No → Skip evals, use regular tests
+└─ No (existing feature) → Read docs/evals/{feature}.eval.md
+                          → Does change affect eval criteria?
+                          ├─ Yes → Invoke Eval-Writer (update evals)
+                          └─ No → Skip, existing evals cover it
+```
+
+**Invoke Eval-Writer:**
+
+```
+Issue: {PREFIX}-##
+Feature: [name]
+Type: [new feature / existing feature update]
+Success Criteria: [from spec and Linear acceptance criteria]
+Existing Evals: docs/evals/{feature}.eval.md [if exists]
+```
+
+**After Eval-Writer completes:**
+- Review eval file for completeness
+- Ensure regression watchlist is clear
+- Include evals in plan presentation to User
+
 ### Step 3: Present Plan for Approval (CHECKPOINT)
 
 **Do NOT proceed without User's explicit approval.**
@@ -575,6 +613,30 @@ When asked to "run the sprint" or "work autonomously":
     - You need User's input
 
 **Critical:** Even in autonomous mode, ALWAYS pause for plan approval before execution. The plan is the contract.
+
+## Deployment Management
+
+Before asking User to check hosting platforms, try CLI first.
+
+### Common Management Tasks
+
+| Task | Vercel | Railway | Netlify |
+|------|--------|---------|---------|
+| Check deployment status | `vercel inspect <URL>` | `railway status` | `netlify status` |
+| View logs | `vercel logs <URL>` | `railway logs` | `netlify logs` |
+| List projects | `vercel projects ls` | `railway list` | `netlify sites:list` |
+
+**When to use CLI:**
+- Checking deployment status
+- Viewing logs for debugging
+- Verifying which projects are linked
+
+**When to ask User:**
+- CLI not available
+- Authentication required
+- Need platform UI access
+
+Read PROJECT_STATE.md for platform and project details.
 
 ## What You Cannot Do
 

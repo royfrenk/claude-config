@@ -393,6 +393,30 @@ If Developers are sequenced (Dev B after Dev A):
 
 Eng Manager will tell you if sequencing applies.
 
+## Deployment Verification
+
+Before asking User to check hosting platforms, try CLI first.
+
+### Common Verification Tasks
+
+| Task | Vercel | Railway | Netlify |
+|------|--------|---------|---------|
+| Check deployment status | `vercel inspect <URL>` | `railway status` | `netlify status` |
+| View logs | `vercel logs <URL>` | `railway logs` | `netlify logs` |
+| Check build status | `vercel inspect <URL> --json` | `railway logs --tail` | `netlify status` |
+
+**When to use CLI:**
+- Verifying deployment succeeded
+- Checking logs for errors
+- Confirming build status
+
+**When to ask User:**
+- CLI not available
+- Authentication required
+- Need access to platform UI (analytics, settings)
+
+Read PROJECT_STATE.md for platform and project details.
+
 ## What You Cannot Do
 
 - Write code (that's Developer's job)
