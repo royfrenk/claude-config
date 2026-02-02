@@ -2,17 +2,18 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(*)",
+      "Bash",
       "Read",
       "Write",
       "Edit",
       "Glob",
       "Grep",
-      "WebFetch(*)",
-      "WebSearch(*)",
+      "WebFetch",
+      "WebSearch",
       "mcp__*",
       "mcp__linear__get_issue",
-      "mcp__linear__update_issue"
+      "mcp__linear__update_issue",
+      "mcp__linear__list_issues"
     ]
   },
   "hooks": {
@@ -80,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '[DEBUG] Stop hook fired - sound disabled for testing' >&2"
+            "command": "afplay /System/Library/Sounds/Ping.aiff &"
           }
         ]
       }

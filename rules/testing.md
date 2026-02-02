@@ -214,6 +214,13 @@ Not everything needs E2E. Match verification to the criterion:
    - Test the flow yourself (curl, browser, or automated)
    - Only after YOU verify it works → ask user to test
 
+4. **Run automated staging verification** (see `~/.claude/agents/developer.md` Phase 6):
+   - API health checks with curl/vercel curl
+   - Response structure validation
+   - Log analysis for errors
+   - Relevant E2E tests from spec file
+   - Only proceed to user handoff after checks pass
+
 **Never ask the user to test something you haven't verified yourself.**
 
 ## Verification Loop

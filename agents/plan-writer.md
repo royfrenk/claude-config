@@ -83,6 +83,17 @@ Read `docs/technical-specs/{ISSUE_ID}.md` and replace the "Implementation Plan" 
   - Files: docs/api.md
   - Independent: Can run in parallel with Task 1, Task 4
   - [ ] 🟥 Subtask 5.1: Document search API
+
+### Relevant E2E Tests
+
+**Purpose:** Identifies which E2E test files cover features being changed. Developer runs these tests during automated staging verification (Phase 6).
+
+| Test File | What It Tests | Why Relevant |
+|-----------|---------------|--------------|
+| tests/search.spec.ts | Property search flow, filters, results display | Modified search API and UI |
+| tests/property-detail.spec.ts | Property detail page rendering | Changed property data structure |
+
+**No relevant E2E tests:** If no existing tests cover this feature, mark as "None - manual verification only" and note that E2E tests should be written if this is a new critical flow (auth, payments, core journey).
 ```
 
 Also update the file header:

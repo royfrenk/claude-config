@@ -373,50 +373,195 @@ Wait for user confirmation before proceeding to Phase 6.
 
 **Do not mark task as "deployed to staging" until deployment actually succeeds.**
 
-### Phase 6: Verify and Update State
+### Phase 6: Automated Staging Verification
 
-**Smoke test on staging:**
+**Purpose:** Verify deployment works correctly BEFORE asking User to test. This prevents wasted time when fixes are deployed but broken.
 
-| Check | How |
-|-------|-----|
-| Backend endpoint(s) respond | `curl` affected endpoint(s) with valid auth |
-| Expected data returned | Verify response matches acceptance criteria |
-| Frontend reflects changes | Open staging URL, test the UI flow |
-| No errors in logs | `railway logs` |
+**MANDATORY** — This phase runs automatically after every push to develop. Do not skip.
 
-If smoke test fails, do NOT update PROJECT_STATE.md. Investigate and fix.
+#### Step 1: Identify Relevant Checks
 
-**After smoke test passes, update PROJECT_STATE.md:**
-- Add new files to structure
-- Remove fixed items from known issues
-- Add entry to recent changes log
+Read the spec file to determine what needs verification:
 
-**Ask User about production deployment:**
-After E2E tests pass on staging, ask the User:
+1. **API Health Checks** (if backend changes):
+   - Which endpoints were modified/added?
+   - What HTTP methods and paths?
+   - What auth required?
+
+2. **Response Structure Validation** (if API changes):
+   - What fields should the response contain?
+   - What data types?
+   - What range of values?
+
+3. **Log Checking** (always):
+   - Check for errors, warnings, exceptions
+   - Look for deployment failures or startup issues
+
+4. **Relevant E2E Tests** (from spec file):
+   - Read "Relevant E2E Tests" section from spec file (added by Plan-Writer)
+   - Identifies which test files cover features being changed
+   - Only run tests that exercise the changed code
+
+5. **Platform-Specific Checks**:
+   - **Web app:** Full URL health check + E2E tests
+   - **CLI/library:** Build success + unit tests only (no URL to check)
+
+#### Step 2: Run Automated Verification
+
+Execute checks in parallel when possible:
+
+**2.1 API Health Checks** (if applicable):
+```bash
+# Use vercel curl for authenticated staging endpoints
+vercel curl "https://[staging-url]/api/property/search?q=Sacramento"
+
+# Check:
+# - HTTP 200 status
+# - Response is valid JSON
+# - Contains expected fields
+# - No error fields in response
 ```
-E2E tests passed on staging for [task title].
-Ready to deploy to production?
+
+**Performance threshold:** Warn if >2 seconds, but don't fail (may be API throttling or cold start).
+
+**2.2 Response Structure Validation** (if API changes):
+```bash
+# Validate response matches spec
+# Example: Search API should return { properties: [], total: number, source: string }
+
+RESPONSE=$(vercel curl "https://[staging-url]/api/property/search?q=Sacramento")
+echo "$RESPONSE" | jq '.properties | length' # Should be > 0
+echo "$RESPONSE" | jq '.source' # Should be "datafiniti" or "repliers"
 ```
 
-Wait for User's approval before notifying Eng Manager about production readiness.
+**2.3 Log Checking**:
+```bash
+# Check for errors in recent logs
+vercel logs [staging-url] --since=5m | grep -i "error\|exception\|failed"
 
-**Update Linear status to "In Review"** (use UUID from project's CLAUDE.md):
-```
-mcp_linear_update_issue(issueId, status: "<In Review UUID from CLAUDE.md>")
-```
-
-**Post completion to Linear:**
-```
-mcp__linear__create_comment(issueId, "✅ **Deployed to Staging**\n\n- Smoke test: passed\n- E2E tests: passed\n- PROJECT_STATE.md: updated YYYY-MM-DD\n\nAwaiting User's approval for production.")
+# If errors found: Review to determine if they're related to your changes
 ```
 
-**Notify Eng Manager (and User):**
+**2.4 Relevant E2E Tests** (from spec file):
+```bash
+# Read spec file "Relevant E2E Tests" section
+# Example: "tests/property-search.spec.ts, tests/search-filters.spec.ts"
 
-Use the output formats defined in `~/.claude/rules/task-completion.md`:
-- After each commit → commit format
-- After completing full issue → task complete format with acceptance criteria
+# Run only the relevant tests
+npx playwright test tests/property-search.spec.ts tests/search-filters.spec.ts --grep-invert @launch
+```
 
-**Always include the staging URL** so User can verify the changes immediately.
+**Known limitation:** E2E tests can't verify visual design (colors, spacing, alignment). Mark these as "Manual verification needed" in report.
+
+#### Step 3: Generate Automated Verification Report
+
+Output results in structured format:
+
+```
+## Automated Staging Verification
+
+**Timestamp:** [YYYY-MM-DD HH:MM:SS]
+**Deployment:** [staging-url]
+
+### API Health Checks
+| Endpoint | Status | Response Time | Notes |
+|----------|--------|---------------|-------|
+| GET /api/property/search?q=Sacramento | ✅ 200 | 1.2s | 20 properties returned |
+| GET /api/property/[id] | ✅ 200 | 0.8s | Valid property data |
+
+### Response Structure Validation
+| Check | Status | Details |
+|-------|--------|---------|
+| properties[] exists | ✅ | Array with 20 items |
+| source field | ✅ | "datafiniti" |
+| total matches count | ✅ | 20 |
+
+### Log Analysis
+| Check | Status | Details |
+|-------|--------|---------|
+| Error count (last 5m) | ✅ | 0 errors |
+| Warning count | ⚠️ | 2 warnings (unrelated to changes) |
+
+### E2E Tests
+| Test File | Status | Duration | Notes |
+|-----------|--------|----------|-------|
+| tests/property-search.spec.ts | ✅ PASS | 12s | All 5 tests passed |
+| tests/search-filters.spec.ts | ✅ PASS | 8s | All 3 tests passed |
+
+### Overall Status: ✅ PASSED
+
+**Manual Verification Needed:**
+- Visual design (card spacing, colors, alignment)
+- Performance with large result sets (100+ properties)
+- Edge case: Search with special characters in query
+
+**Ready for User Testing:** Yes
+```
+
+#### Step 4: Handle Failures
+
+**If any check fails:**
+
+1. **Attempt 1-3:** Fix and retry
+   - Identify root cause
+   - Make targeted fix
+   - Push to develop
+   - Re-run Phase 6 verification
+
+2. **After 3 failed attempts:**
+   - Generate failure report
+   - Escalate to Eng Manager
+   - Include: what failed, what was tried, current blocker
+
+**Example failure report:**
+```
+## Automated Verification FAILED (Attempt 3/3)
+
+**Failed Check:** API Health - GET /api/property/search returns 500
+
+**Error:** "DATAFINITI_TOKEN is not defined"
+
+**Attempts:**
+1. Added token to .env.local → still failing
+2. Checked Vercel env vars → token exists
+3. Restarted deployment → still failing
+
+**Blocker:** Token may not be propagating to staging environment
+
+**Escalating to Eng Manager for investigation.**
+```
+
+**Circuit breaker:** Max 3 attempts. After that, stop and escalate. Don't loop indefinitely.
+
+#### Step 5: Proceed to User Notification
+
+**Only after automated checks pass:**
+
+1. **Update PROJECT_STATE.md:**
+   - Add new files to structure
+   - Remove fixed items from known issues
+   - Add entry to recent changes log
+
+2. **Update Linear status to "In Review"** (use UUID from project's CLAUDE.md):
+   ```
+   mcp_linear_update_issue(issueId, status: "<In Review UUID from CLAUDE.md>")
+   ```
+
+3. **Post to Linear with automated verification results:**
+   ```
+   mcp__linear__create_comment(issueId, "✅ **Deployed to Staging - Automated Checks Passed**\n\n**Automated Verification:**\n- API Health: ✅ All endpoints responding\n- Response Structure: ✅ Valid data returned\n- Logs: ✅ No errors\n- E2E Tests: ✅ 8/8 passed\n\n**Manual Verification Needed:**\n- Visual design (spacing, colors)\n- Performance with 100+ results\n\n**Staging:** [URL]\n\nReady for your testing.")
+   ```
+
+4. **Notify User with full report:**
+   Use the output formats defined in `~/.claude/rules/task-completion.md`:
+   - After each commit → commit format
+   - After completing full issue → task complete format with acceptance criteria + automated verification results
+
+**Always include:**
+- Staging URL
+- Automated verification report
+- List of what still needs manual testing
+- Known limitations of automated checks
 
 ## Deployment Management
 

@@ -58,9 +58,14 @@ Follow this for EVERY bug fix — don't skip steps:
 
 ### After Fixing
 - [ ] Push to `develop`
-- [ ] **Verify deployment succeeded** (poll status or ask user)
+- [ ] **Run automated staging verification** (see `~/.claude/agents/developer.md` Phase 6)
+  - API health checks
+  - Response structure validation
+  - Log analysis
+  - Relevant E2E tests
+  - Only proceed after checks pass
 - [ ] Update sprint file: mark bug as [x] fixed with commit hash
-- [ ] Post comment to Linear issue: "Fixed [description] in [commit]"
+- [ ] Post comment to Linear issue: "Fixed [description] in [commit]" with verification results
 
 ### After Each Batch
 - [ ] Update sprint file with batch summary

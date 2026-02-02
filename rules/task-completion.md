@@ -63,6 +63,17 @@ Commit: [short-hash]
 Staging: [URL]
 Linear: [status updated to In Review]
 
+### Automated Verification
+
+**Overall Status:** ✅ PASSED
+
+| Check | Status | Details |
+|-------|--------|---------|
+| API Health | ✅ | All endpoints responding (avg 1.2s) |
+| Response Structure | ✅ | Valid data returned, all fields present |
+| Logs | ✅ | No errors in last 5 minutes |
+| E2E Tests | ✅ | 8/8 tests passed |
+
 ### Acceptance Criteria
 
 | Criteria | Status | Verification |
@@ -70,6 +81,11 @@ Linear: [status updated to In Review]
 | [Criterion 1] | ✅ | [How verified - file, test, or manual check] |
 | [Criterion 2] | ⚠️ | [Partial - what's missing] |
 | [Criterion 3] | ❌ | [Not met - reason] |
+
+**Manual Verification Needed:**
+- [What automation can't check - e.g., visual design, UX feel]
+- [Performance under load]
+- [Edge cases not covered by E2E tests]
 
 **Gaps:** (if any ⚠️ or ❌)
 - [What's not fully met]
