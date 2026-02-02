@@ -4,6 +4,23 @@ description: Update the agent/command process systematically. Reviews all files,
 
 # Change Process
 
+**Note:** This command always runs as a subagent to keep main context clean during process changes.
+
+## Invocation
+
+When this command is invoked, immediately spawn a subagent to handle the work:
+
+Use the Task tool with:
+- `subagent_type: "general-purpose"`
+- `description: "Process change request"`
+- `prompt`: Pass the user's request ($ARGUMENTS) and all instructions below
+
+The subagent will follow the Change Process workflow below and handle all phases including syncing to repo.
+
+---
+
+## Instructions for Subagent
+
 You are helping the User update the engineering process. Your goal is to ensure changes are consistent across all files and don't add noise.
 
 ## Phase 1: Understand the Change
