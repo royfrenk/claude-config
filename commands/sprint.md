@@ -24,23 +24,121 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
    - **If spec exists:** Read it and proceed to step 7
    - **If spec does NOT exist:** Create it first (step 6)
 6. **Create technical spec (if missing):**
-   - Analyze the codebase for integration points
-   - Create `docs/technical-specs/{PREFIX}-##.md` with:
-     - Summary of what needs to be built
-     - Files to create/modify
-     - Implementation plan with tasks (🟥 To Do status)
-     - Acceptance criteria
-   - **Present plan to User for approval** ← CHECKPOINT
-   - Wait for User's "yes" before proceeding
+   - **Analyze task complexity to decide on exploration strategy:**
+     - Simple tasks (bug fix, one-file change): Single Explorer
+     - Complex tasks (2+ areas: frontend, backend, db, integrations): Parallel Explorers
+   - **Spawn Explorer(s) with Task tool:**
+     - **Single Explorer:**
+       ```
+       Issue: {PREFIX}-## (Linear issue ID)
+       Task: [short title]
+       Context: [why this matters]
+       Spec: [what to build]
+       ```
+     - **Parallel Explorers (if complex):**
+       ```
+       Issue: {PREFIX}-##
+       Task: [short title]
+
+       Spawning 3 Explorers in parallel:
+       - Explorer A: Frontend UI exploration (src/components/, src/pages/)
+       - Explorer B: Backend API exploration (src/api/, src/services/)
+       - Explorer C: Database schema exploration (src/db/)
+       ```
+   - **Explorer(s) create `docs/technical-specs/{PREFIX}-##.md`** with exploration findings
+   - **After exploration completes, spawn Plan-Writer** to add implementation plan to spec
 7. **Update Linear status to "In Progress"** using UUID from CLAUDE.md
-8. For each subtask in the spec:
-   - Update spec status (🟥→🟨) when starting
-   - Implement the code changes
-   - Run tests to verify
-   - Update spec status (🟨→🟩) when complete
-   - Deploy to staging (push to `develop`)
-   - **Verify deployment succeeded** (poll status using CLAUDE.md commands, or ask user if no check command configured)
-   - Post update to Linear issue
+7a. **Parallelization Decision (after Plan-Writer, before User approval):**
+   - Read the Implementation Plan from spec file
+   - **Analyze task dependencies:**
+     - Read "Task Dependencies" table from spec
+     - Group tasks by dependency level (Level 0 = no deps, Level 1 = depends on Level 0, etc.)
+   - **Within each level, analyze file conflicts:**
+     - For each task, list files it will modify
+     - Detect overlaps between tasks at same dependency level
+     - **If no overlap:** Tasks can run in parallel
+     - **If overlap exists:** Assign file zones OR sequence the tasks
+   - **Create Execution Plan in spec file:**
+     ```markdown
+     ## Execution Plan
+
+     **Wave 1 (parallel):**
+     - Dev A: Task 1 [schema migration] - Files: src/db/*
+     - Dev B: Task 4 [logging utility] - Files: src/utils/logger.ts
+
+     **Wave 2 (after Wave 1, parallel):**
+     - Dev C: Task 2 [backend API] - Files: src/api/*
+     - Dev D: Task 5 [update docs] - Files: docs/*
+
+     **Wave 3 (after Wave 2):**
+     - Dev E: Task 3 [frontend UI] - Files: src/components/*
+
+     **File Conflict Management:**
+     | Developer | File Zone | Sequence Notes |
+     |-----------|-----------|----------------|
+     | Dev A | src/db/* | First |
+     | Dev C | src/api/* | After Dev A (may need schema) |
+     ```
+   - **Present Execution Plan + Implementation Plan to User for approval** ← CHECKPOINT
+   - Wait for User's "yes" before proceeding
+8. **Execute according to Execution Plan:**
+
+   **For each wave in the Execution Plan:**
+
+   a. **Spawn Developer(s) using Task tool:**
+      - **Single Developer (sequential):**
+        ```
+        Issue: {PREFIX}-##
+        Task: [task name]
+        Spec: docs/technical-specs/{PREFIX}-##.md
+        Assigned Tasks: Task 1
+        ```
+      - **Multiple Developers (parallel wave):**
+        ```
+        # Spawn these in ONE message (parallel execution):
+
+        Developer A:
+          Issue: {PREFIX}-##
+          Task: Task 1 - Schema migration
+          Spec: docs/technical-specs/{PREFIX}-##.md
+          Assigned Tasks: Task 1
+          File Zone: src/db/*
+          Parallel Mode: true
+          Sequence: first
+
+        Developer B:
+          Issue: {PREFIX}-##
+          Task: Task 4 - Logging utility
+          Spec: docs/technical-specs/{PREFIX}-##.md
+          Assigned Tasks: Task 4
+          File Zone: src/utils/logger.ts
+          Parallel Mode: true
+          Sequence: independent
+        ```
+
+   b. **Each Developer (runs automatically):**
+      - Updates spec status (🟥→🟨→🟩) for their assigned tasks
+      - Implements code changes
+      - Runs verification
+      - **Automatically submits to Reviewer** (no user input)
+      - Waits for Reviewer decision
+      - If approved: Deploys to staging (automatic)
+      - If changes requested: Fixes and resubmits (automatic loop, max 3 rounds)
+
+   c. **Reviewer reviews all submissions from the wave:**
+      - If multiple Developers in wave → spawn parallel Reviewer sub-agents
+      - Each Reviewer posts approval/changes to Linear
+      - Parent Reviewer consolidates: "Wave 1: All approved" or "Dev A approved, Dev B needs changes"
+
+   d. **After wave approval:**
+      - All Developers in wave deploy to staging (push to develop)
+      - Update spec: mark wave complete
+      - Post wave completion to Linear
+
+   e. **Move to next wave** (if any)
+
+   f. **Repeat until all waves complete**
+
 9. **Pre-handoff verification (MANDATORY before user testing):**
    - Run full test suite (backend + frontend) — not just changed code
    - Check: do tests exist for the flows user will test?
@@ -101,6 +199,11 @@ Reported by User:
 
 ## Rules
 
+- **MANDATORY REVIEW GATE:** Cannot mark "In Review" or deploy to staging without Reviewer approval
+- **Reviewer must approve before ANY deployment to develop branch**
+- **If Reviewer requests changes, must re-submit for re-review before deploying**
+- **"In Review" status means "Under review by Reviewer", not "ready for User"**
+- Invoke Reviewer immediately after verification passes, before any deployment
 - **Test before handoff:** Never ask user to test without first running all tests and verifying the flow yourself
 - **Spec-first:** Never implement without a technical spec file
 - **Plan approval required:** Present the implementation plan and wait for User's approval before coding
@@ -178,9 +281,12 @@ For each subtask, work through:
 7. Fix any issues found, repeat verification until all pass
 8. Update spec status: 🟨 → 🟩 (task complete)
 9. Commit with descriptive message
-10. Push to develop
-11. Post completion comment to Linear issue
-12. Proceed to next subtask
+10. **MANDATORY: Submit to Reviewer for code review**
+11. **Wait for Reviewer approval (may require multiple fix rounds)**
+12. **GATE: Cannot proceed without approval**
+13. After approval: Push to develop
+14. Post completion comment to Linear issue
+15. Proceed to next subtask
 ```
 
 **Verification must pass before committing.** See Developer agent for full verification commands.

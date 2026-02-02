@@ -40,19 +40,31 @@ You: "Add user authentication"
     ↓
 Engineering Manager — breaks it down, prioritizes
     ↓
-Explorer — analyzes codebase, finds integration points
+Explorer(s) — analyzes codebase (may spawn multiple in parallel)
     ↓
-Plan-Writer — creates implementation plan
+Plan-Writer — creates implementation plan + dependency analysis
+    ↓
+Engineering Manager — creates execution plan (parallelization strategy)
     ↓
 You — approve the plan ← CHECKPOINT
     ↓
-Developer — implements, deploys to staging
+Developer(s) — implements in waves (parallel when possible)
+    ↓  ↓  ↓
+Wave 1: Dev A, Dev B, Dev C (parallel)
     ↓
-Reviewer — checks for bugs, security
+Reviewer(s) — reviews (spawns parallel reviewers if needed)
+    ↓
+Wave 1 deploys to staging
+    ↓
+Wave 2: Dev D, Dev E (parallel, after Wave 1)
+    ↓
+Reviewer(s) — reviews Wave 2
+    ↓
+Wave 2 deploys to staging
     ↓
 You — test on staging, report issues
     ↓
-Developer — fixes (iterate until ready)
+Developer(s) — fixes via /iterate
     ↓
 You — deploy to production ← ONLY YOU
 ```
@@ -70,6 +82,53 @@ You — deploy to production ← ONLY YOU
 > - ✓ Require pull request before merging
 > - ✓ Require status checks to pass (if you have CI)
 > - ✓ Restrict who can push (just you)
+
+---
+
+### Parallelization
+
+The system automatically parallelizes work when tasks are independent:
+
+**What gets parallelized:**
+- **Exploration:** Multiple Explorers analyze different areas (frontend, backend, db)
+- **Implementation:** Multiple Developers work on independent tasks simultaneously
+- **Review:** Multiple Reviewers review parallel submissions
+
+**How it works:**
+1. Plan-Writer analyzes task dependencies
+2. Engineering Manager groups tasks into waves:
+   - Wave 1: Tasks with no dependencies (run in parallel)
+   - Wave 2: Tasks depending on Wave 1 (run in parallel after Wave 1)
+   - Wave 3: Tasks depending on Wave 2 (and so on)
+3. Within each wave, EM checks for file conflicts
+4. Spawn parallel Developers for independent tasks
+5. Coordinate file overlaps via sequencing or zone assignment
+
+**Example:**
+
+Task breakdown:
+- Task 1: Database schema (no dependencies)
+- Task 2: Backend API (depends on Task 1)
+- Task 3: Frontend UI (depends on Task 2)
+- Task 4: Logging utility (no dependencies)
+- Task 5: Update docs (no dependencies)
+
+Execution:
+- **Wave 1 (parallel):** Dev A (Task 1), Dev B (Task 4), Dev C (Task 5)
+- **Wave 2 (after Wave 1):** Dev D (Task 2)
+- **Wave 3 (after Wave 2):** Dev E (Task 3)
+
+**Result:** 3 waves instead of 5 sequential tasks (40% faster).
+
+**File Conflict Management:**
+- EM assigns file zones: "Dev A owns src/db/, Dev B owns src/utils/"
+- If unavoidable overlap: EM sequences ("Dev A first, Dev B rebases")
+- Developers stay within their zones
+
+**You maintain control:**
+- You approve the parallelization strategy before execution starts
+- You see the execution plan: which tasks run when, and why
+- You can request changes: "Run these sequentially instead"
 
 ---
 
@@ -537,13 +596,13 @@ project/
 
 ## Agent Roles
 
-| Agent | What It Does | Can Write Code? |
-|-------|--------------|-----------------|
-| **EM** | Coordinates work, manages roadmap | No |
-| **Explorer** | Analyzes codebase, creates spec file | No |
-| **Plan-Writer** | Adds implementation plan to spec | No |
-| **Developer** | Implements code, deploys to staging | Yes |
-| **Reviewer** | Reviews code, approves/blocks deploys | No |
+| Agent | What It Does | Can Write Code? | Can Spawn Sub-Agents? |
+|-------|--------------|-----------------|------------------------|
+| **EM** | Coordinates work, manages roadmap, orchestrates parallelization | No | Yes (Explorer, Plan-Writer, Developer, Reviewer) |
+| **Explorer** | Analyzes codebase, creates spec file | No | No (but can run in parallel with other Explorers) |
+| **Plan-Writer** | Adds implementation plan + dependency analysis | No | No |
+| **Developer** | Implements code, deploys to staging | Yes | No (but can run in parallel with other Developers) |
+| **Reviewer** | Reviews code, approves/blocks deploys | No | Yes (sub-Reviewers for parallel review) |
 
 ---
 

@@ -34,18 +34,55 @@ Read `docs/technical-specs/{ISSUE_ID}.md` and replace the "Implementation Plan" 
 - [Decision 1]: [choice] - [brief rationale]
 - [Decision 2]: [choice] - [brief rationale]
 
+### Task Dependencies
+
+**Purpose:** This table enables Eng Manager to determine parallelization strategy.
+
+| Task | Depends On | Reason | Files to Modify |
+|------|------------|--------|-----------------|
+| Task 1 | None | Can start immediately | src/db/schema.ts, src/db/migrations/ |
+| Task 2 | Task 1 | Needs new schema | src/api/search.ts, src/services/search.ts |
+| Task 3 | Task 2 | Needs API contract | src/components/Search.tsx, src/types/search.ts |
+| Task 4 | None | Independent utility | src/utils/logger.ts |
+| Task 5 | None | Documentation only | docs/api.md |
+
+**Parallelization Analysis:**
+- ✅ **Level 0 (parallel):** Task 1, Task 4, Task 5 can run simultaneously (no dependencies, no file overlap)
+- ⏭️ **Level 1 (after Level 0):** Task 2 (depends on Task 1)
+- ⏭️ **Level 2 (after Level 1):** Task 3 (depends on Task 2)
+
+**Estimated Execution:**
+- Sequential: 5 tasks × avg time = [X] hours
+- Parallel: 3 levels × avg time = [Y] hours (40% faster)
+
 ### Tasks
 
-- [ ] 🟥 **Task 1: [Name]**
-  - [ ] 🟥 Subtask 1.1
-  - [ ] 🟥 Subtask 1.2
+- [ ] 🟥 **Task 1: Add database schema** (Level 0 - no dependencies)
+  - Files: src/db/schema.ts, src/db/migrations/
+  - [ ] 🟥 Subtask 1.1: Create search index
+  - [ ] 🟥 Subtask 1.2: Add migration script
 
-- [ ] 🟥 **Task 2: [Name]**
-  - [ ] 🟥 Subtask 2.1
-  - [ ] 🟥 Subtask 2.2
+- [ ] 🟥 **Task 2: Add backend API** (Level 1 - depends on Task 1)
+  - Files: src/api/search.ts, src/services/search.ts
+  - Dependency: Needs schema from Task 1
+  - [ ] 🟥 Subtask 2.1: Create search endpoint
+  - [ ] 🟥 Subtask 2.2: Add service layer logic
 
-- [ ] 🟥 **Task 3: [Name]**
-  - [ ] 🟥 Subtask 3.1
+- [ ] 🟥 **Task 3: Add frontend UI** (Level 2 - depends on Task 2)
+  - Files: src/components/Search.tsx, src/types/search.ts
+  - Dependency: Needs API contract from Task 2
+  - [ ] 🟥 Subtask 3.1: Create Search component
+  - [ ] 🟥 Subtask 3.2: Wire up to API
+
+- [ ] 🟥 **Task 4: Add logging utility** (Level 0 - no dependencies)
+  - Files: src/utils/logger.ts
+  - Independent: Can run in parallel with Task 1
+  - [ ] 🟥 Subtask 4.1: Create logger utility
+
+- [ ] 🟥 **Task 5: Update documentation** (Level 0 - no dependencies)
+  - Files: docs/api.md
+  - Independent: Can run in parallel with Task 1, Task 4
+  - [ ] 🟥 Subtask 5.1: Document search API
 ```
 
 Also update the file header:
@@ -93,6 +130,11 @@ Ready for User to review and approve.
 3. **Logical order** - Dependencies flow top to bottom
 4. **Modular** - Each task is independently testable when possible
 5. **No scope creep** - Stick to what Explorer documented
+6. **Dependency analysis** - Always include Task Dependencies table with:
+   - What each task depends on
+   - Why the dependency exists
+   - Files to modify (for conflict detection)
+   - Parallelization analysis
 
 ## Task Sizing
 

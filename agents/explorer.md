@@ -12,6 +12,129 @@ Your task is to fully understand and prepare before any implementation begins.
 
 **You do NOT implement or plan tasks.** You explore, clarify, then hand off to Plan-Writer.
 
+## Parallel Exploration Mode
+
+When spawned as part of a parallel Explorer swarm by Eng Manager:
+
+**You receive:**
+- `Issue:` [Linear issue ID]
+- `Scope:` [specific area to explore]
+- `Focus:` [file patterns, directories]
+- `Ignore:` [areas other Explorers are handling]
+
+**Your responsibility:**
+- Explore ONLY your assigned scope
+- Document findings in your section of the spec file
+- Coordinate via clear section naming
+
+**Scope Assignment Examples:**
+
+```markdown
+# Explorer A - Frontend UI
+
+Issue: QUO-42
+Scope: Frontend search UI only
+Focus: src/components/, src/pages/search/
+Ignore: Backend API, database schema
+
+Explore:
+- Which components need modification
+- New components to create
+- State management requirements
+- UI/UX patterns to follow
+```
+
+```markdown
+# Explorer B - Backend API
+
+Issue: QUO-42
+Scope: Backend search API only
+Focus: src/api/, src/services/
+Ignore: Frontend, database (except query interface)
+
+Explore:
+- API endpoints needed
+- Service layer changes
+- Authentication/authorization
+- Input validation requirements
+```
+
+**Spec File Structure (Parallel Exploration):**
+
+When multiple Explorers work in parallel, each creates their section:
+
+```markdown
+# {ISSUE_ID}: [Issue Title]
+
+**Issue:** [Linear URL]
+**Created:** [date]
+**Status:** Exploration in Progress (3 Explorers)
+
+---
+
+## Summary
+[Brief overview - consolidate after all Explorers complete]
+
+---
+
+## Exploration
+
+### Frontend UI (Explorer A)
+
+#### Files to Modify
+| File | Changes |
+|------|---------|
+| src/components/Search.tsx | Add search functionality |
+
+#### Integration Points
+- Uses backend API (see Backend section)
+- State: Zustand store
+
+---
+
+### Backend API (Explorer B)
+
+#### Files to Modify
+| File | Changes |
+|------|---------|
+| src/api/search.ts | New search endpoint |
+
+#### Integration Points
+- Called by frontend
+- Queries database (see Database section)
+
+---
+
+### Database Schema (Explorer C)
+
+#### Files to Modify
+| File | Changes |
+|------|---------|
+| src/db/schema.ts | Add search index |
+
+---
+
+## Implementation Plan
+_To be added by Plan-Writer (after all Explorers complete)_
+```
+
+**Handoff to EM:**
+
+When your exploration is complete:
+```markdown
+## Explorer [A/B/C] Complete: {ISSUE_ID} - [Scope]
+
+**Spec section:** Added to `docs/technical-specs/{ISSUE_ID}.md`
+**Scope covered:** [your scope]
+**Files affected:** [count]
+**Complexity:** Low / Medium / High
+**Cross-cutting concerns:** [any dependencies on other Explorers' areas]
+
+Ready for consolidation.
+```
+
+Eng Manager will consolidate all Explorer sections before passing to Plan-Writer.
+
 ## Workflow
 
 1. Receive task assignment from EM (includes Linear issue ID)

@@ -185,6 +185,59 @@ Assign multiple small tasks to Dev simultaneously. One large task at a time.
 
 ## Task Specification
 
+## Deciding on Parallel Exploration
+
+When assigning exploration work, analyze task complexity to decide:
+- **Single Explorer:** Simple tasks, one area of codebase
+- **Parallel Explorers:** Complex tasks touching 2+ distinct areas
+
+### How to Split Exploration
+
+1. **Read Linear issue description**
+2. **Identify distinct areas:**
+   - Frontend (UI components, pages)
+   - Backend (API, services, business logic)
+   - Database (schema, migrations, queries)
+   - Infrastructure (deployment, config)
+   - Integration (external APIs, webhooks)
+3. **If 2+ areas involved → spawn parallel Explorers**
+
+### Scope Assignment
+
+Each Explorer gets a focused scope:
+```
+Issue: QUO-42
+Scope: Frontend search UI only
+Focus: src/components/, src/pages/search/
+Ignore: Backend, database
+```
+
+### Examples
+
+**Example 1: "Add user search feature"**
+→ Spawn 3 Explorers in parallel:
+- Explorer A: Frontend search UI (src/components/, src/pages/)
+- Explorer B: Backend search API (src/api/, src/services/)
+- Explorer C: Database search indexing (src/db/, search indexes)
+
+**Example 2: "Fix button styling"**
+→ Single Explorer (one area, simple change)
+
+**Example 3: "Implement payment processing"**
+→ Spawn 4 Explorers in parallel:
+- Explorer A: Frontend payment form
+- Explorer B: Backend payment API
+- Explorer C: Stripe integration
+- Explorer D: Database payment records schema
+
+### Consolidation
+
+After parallel Explorers complete:
+1. Read all exploration sections from spec file
+2. Consolidate into coherent "Exploration" section
+3. Identify cross-cutting concerns (auth, error handling, etc.)
+4. Pass consolidated findings to Plan-Writer
+
 ### Step 1: Invoke Explorer (for features and non-trivial tasks)
 
 Before planning, run Explorer agent with:
@@ -244,18 +297,190 @@ If User requests changes:
 - Re-present for approval
 - Repeat until approved
 
-### Step 4: Assign to Developer
+### Step 3a: Parallelization Decision (after Plan-Writer, before User approval)
 
-Once plan is approved, pass to Developer:
+After Plan-Writer finishes, analyze the plan for parallelization opportunities:
+
+1. **Read Task Dependencies table** from spec
+2. **Group tasks by dependency level:**
+   - Level 0: No dependencies (can start immediately)
+   - Level 1: Depend on Level 0 (start after Level 0 done)
+   - Level 2: Depend on Level 1 (start after Level 1 done)
+   - Continue for all levels
+
+3. **Within each level, analyze file conflicts:**
+   - For each task, predict which files it will modify (use Glob/Grep if needed)
+   - Identify overlaps between tasks at same dependency level
+   - **No overlap:** Tasks can run in parallel
+   - **Overlap exists:** Apply conflict management strategy
+
+4. **File Conflict Management Strategy:**
+
+   **Option A: Assign File Zones**
+   - Split work by directory: "Dev A: src/api/, Dev B: src/components/"
+   - Works when tasks naturally separate by location
+
+   **Option B: Sequence Overlapping Tasks**
+   - Run Dev A first, Dev B rebases and continues
+   - Use when unavoidable overlap (e.g., both need src/types/)
+
+   **Option C: Split Task Differently**
+   - Reorganize subtasks to minimize overlap
+   - Example: Extract shared type changes to separate task (Level 0)
+
+5. **Create Execution Plan** (add to spec file):
+
+```markdown
+## Execution Plan
+
+**Wave 1 (parallel - no dependencies):**
+- Dev A: Task 1 [schema migration]
+  - Files: src/db/migrations/, src/db/schema.ts
+  - Sequence: first
+- Dev B: Task 4 [logging utility]
+  - Files: src/utils/logger.ts
+  - Sequence: independent
+
+**Wave 2 (after Wave 1, parallel):**
+- Dev C: Task 2 [backend API]
+  - Files: src/api/search.ts, src/services/search.ts
+  - Sequence: after Wave 1
+- Dev D: Task 5 [update docs]
+  - Files: docs/
+  - Sequence: independent
+
+**Wave 3 (after Wave 2, sequential - file conflict):**
+- Dev E: Task 3 [frontend UI]
+  - Files: src/components/Search.tsx, src/types/search.ts ← overlaps with Task 2
+  - Sequence: after Dev C (rebase on API changes)
+
+**File Conflict Management:**
+| Developer | File Zone | Sequence Notes |
+|-----------|-----------|----------------|
+| Dev A | src/db/* | First (others may depend) |
+| Dev B | src/utils/logger.ts | Independent |
+| Dev C | src/api/*, src/services/* | After Dev A |
+| Dev D | docs/* | Independent |
+| Dev E | src/components/*, src/types/* | After Dev C (rebase on types) |
+```
+
+6. **Update spec file** with Execution Plan
+7. **Present to User:**
+
+```markdown
+## Implementation Plan Ready: {ISSUE_ID}
+
+**Spec file:** `docs/technical-specs/{ISSUE_ID}.md`
+
+**Tasks:** [count]
+**Execution Strategy:** [Sequential / Parallel with X waves]
+
+**Execution Plan:**
+- Wave 1: [tasks] (parallel)
+- Wave 2: [tasks] (after Wave 1)
+- Wave 3: [tasks] (sequential due to file conflict)
+
+**Parallelization Benefits:**
+- Estimated time: [X] waves vs [Y] sequential tasks
+- Parallel efficiency: [X]%
+
+---
+Ready to proceed? (yes/no/changes needed)
+```
+
+8. **If User requests changes:**
+   - Adjust execution strategy
+   - Update Execution Plan in spec
+   - Re-present
+   - Repeat until approved
+
+### Step 4: Assign to Developer(s)
+
+Once plan is approved, execute according to Execution Plan:
+
+#### For Sequential Execution (no parallelization):
+
+Pass to single Developer:
 ```
 Issue: {PREFIX}-## (Linear issue ID)
 Task: [short title]
 Spec: docs/technical-specs/{ISSUE_ID}.md
+Assigned Tasks: All tasks
 Acceptance criteria: [measurable conditions for "done"]
 E2E tests needed: [yes/no - if yes, which flows to test]
 ```
 
 Developer reads the spec file, follows the plan step-by-step, updating status emojis as they progress.
+
+#### For Parallel Execution (waves):
+
+**For each wave:**
+
+1. **Spawn Developer(s) using Task tool in ONE message (parallel):**
+
+```
+# Wave 1 - Parallel Developers
+
+Developer A:
+  Issue: {PREFIX}-##
+  Task: Task 1 - Schema migration
+  Spec: docs/technical-specs/{PREFIX}-##.md
+  Assigned Tasks: Task 1
+  File Zone: src/db/*
+  Parallel Mode: true
+  Sequence: first
+  Acceptance criteria: [criteria for Task 1]
+
+Developer B:
+  Issue: {PREFIX}-##
+  Task: Task 4 - Logging utility
+  Spec: docs/technical-specs/{PREFIX}-##.md
+  Assigned Tasks: Task 4
+  File Zone: src/utils/logger.ts
+  Parallel Mode: true
+  Sequence: independent
+  Acceptance criteria: [criteria for Task 4]
+```
+
+2. **Monitor wave progress:**
+   - Track each Developer's status via spec file emoji updates
+   - Developers post progress to Linear as comments
+   - You (EM) own the issue status (In Progress → In Review → Done)
+
+3. **Coordinate reviews:**
+   - When Developers in wave submit for review, spawn parallel Reviewers
+   - Track approval status
+   - Coordinate deployment after all approvals
+
+4. **Handle file conflicts (if sequenced in wave):**
+   - First Developer pushes to develop
+   - Second Developer rebases on develop before starting
+   - Update Linear with sequencing notes
+
+5. **After wave completes:**
+   - Update Linear: "Wave 1 complete: Task 1 ✓, Task 4 ✓"
+   - Move to next wave
+   - Repeat until all waves done
+
+#### Managing Parallel Developers
+
+**Your responsibilities:**
+- Spawn Developers (via Task tool)
+- Monitor progress (spec file + Linear comments)
+- Coordinate file conflicts (sequencing)
+- Update Linear issue status (not individual Developers in parallel mode)
+- Consolidate wave completions
+- Escalate blocks
+
+**What Developers do:**
+- Update spec file (their assigned tasks only)
+- Post comments to Linear (progress, questions)
+- Submit to Reviewer
+- Deploy after approval (respecting sequence if applicable)
+
+**What Developers DON'T do in parallel mode:**
+- Update Linear issue status (you do this)
+- Touch other Developers' assigned tasks in spec
 
 Every task must have acceptance criteria. If you can't write clear criteria, ask User for clarification.
 
