@@ -364,6 +364,27 @@ For production apps, add GitHub Actions:
 
 ---
 
+## Known Limitations
+
+### Glob Tool Behavior
+
+**Issue:** Glob searches from current working directory when `path` parameter is omitted or incorrectly specified.
+
+**Impact:** Commands like `/context` may fail to detect active sprint files if:
+- You're in a subdirectory (not project root)
+- The `path` parameter is incorrectly set
+- The docs/sprints/ directory doesn't exist
+
+**Workaround:** Use Bash `find` instead of Glob for file existence checks:
+```bash
+# Instead of: Glob pattern="*.active.md" path="docs/sprints/"
+# Use: find docs/sprints/ -name "*.active.md" -type f 2>/dev/null
+```
+
+**Status:** Fixed in `/context` command as of 2026-02-03 (now uses Bash find).
+
+---
+
 ## FAQ
 
 ### What if I don't use Linear?
