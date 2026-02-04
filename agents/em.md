@@ -647,7 +647,10 @@ COMPLETION PHASE
 ## Autonomous Mode
 
 When asked to "run the sprint" or "work autonomously":
-1. Pick next task from Active Sprint (query Linear, or use docs/roadmap.md as fallback)
+1. **Select issues for the sprint:**
+   - If explicit issue IDs provided → use those
+   - If no issue IDs provided → query Linear for all Todo issues, present to user, get confirmation
+   - Fallback: query Linear for highest priority issue or use docs/roadmap.md
 2. Run Explorer to analyze scope (skip for trivial fixes)
 3. If Explorer has questions → pause and ask User
 4. Run Plan-Writer to create implementation plan

@@ -14,6 +14,40 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
 
 1. Read `CLAUDE.md` to get Linear team and issue prefix
 2. **Run `/sync-roadmap`** to reconcile any Linear changes before starting work
+2b. **Handle issue selection (if no explicit issues provided):**
+   - **If user provided issue IDs in command (e.g., `/sprint QUO-57 QUO-58`):**
+     - Parse issue IDs from arguments
+     - Skip to step 2a with these specific issues
+
+   - **If no issue IDs provided (user typed just `/sprint`):**
+     - Query Linear for all issues with "Todo" status: `mcp__linear__list_issues` with `state: "Todo"`, ordered by priority
+     - **If Linear unavailable:** Read `docs/roadmap.md` Backlog section for Todo items
+     - **If Todo issues found:**
+       ```
+       Found [N] issues in Todo status (ordered by priority):
+
+       1. [ISSUE-ID] (Priority): [Title]
+       2. [ISSUE-ID] (Priority): [Title]
+       ...
+
+       Add all these issues to the sprint? (yes/no)
+       If no, specify which issues: (e.g., "57, 58" or "QUO-57, QUO-58")
+       ```
+     - **Wait for user response:**
+       - If "yes" → Use all Todo issues for the sprint
+       - If "no" with specific issues → Parse issue numbers (support both "57" and "QUO-57" formats)
+       - If "no" without issues → Prompt: "Which issues should I work on? (provide issue IDs or say 'Priority 1' to use highest priority issue)"
+
+     - **If NO Todo issues found:**
+       ```
+       No issues found in Todo status.
+
+       Please specify which issues to work on, or I can:
+       - Query for highest Priority issue in Backlog
+       - Wait for you to move issues to Todo in Linear
+
+       What would you like to do?
+       ```
 2a. **Check for existing active sprint or create new one:**
    - **Search for active sprint file:**
      ```bash
@@ -83,7 +117,9 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
        [Context, decisions, blockers will be added as work progresses]
        ```
      - After creating, update sprint file title and first issue after step 3
-3. Query Linear for Priority 1 issue in current sprint (`mcp__linear__list_issues`)
+3. **Work with selected issues:**
+   - Issues are now selected (from step 2b or command args)
+   - For each issue in the sprint, continue with spec check (step 5)
    - **If Linear unavailable (any MCP call fails):**
      - Use `docs/roadmap.md` as fallback
      - Add to roadmap.md Sync Status: "Linear unavailable - using roadmap.md"

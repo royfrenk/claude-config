@@ -246,7 +246,7 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 | Command | Purpose |
 |---------|---------|
 | `/context <project>` | Load project context (project name required) |
-| `/sprint` | Autonomous execution of Priority 1 task |
+| `/sprint` | Autonomous execution. Suggests Todo issues if no args provided |
 | `/iterate` | Continue iteration after bug reports |
 | `/review-prd` | PRD review and story extraction |
 | `/create-issue` | Quick issue capture |
@@ -258,8 +258,11 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 ### Sprint & Iterate Workflow
 
 **`/sprint`** — Initial implementation
-1. Reads Linear (or roadmap.md) for Priority 1 task
-2. Creates or reads technical spec
+1. Selects issues:
+   - If no args provided: suggests all Todo issues, waits for confirmation
+   - If args provided (e.g., `/sprint QUO-57 QUO-58`): uses specified issues
+   - Fallback: queries for Priority 1 task
+2. Creates or reads technical spec(s)
 3. Implements, pushes to `develop` (deploys to staging if configured)
 4. Creates sprint file
 
