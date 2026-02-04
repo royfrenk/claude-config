@@ -98,8 +98,12 @@ Follow this for EVERY bug fix — don't skip steps:
   - Linear status → "In Review" (if not already)
   - Update `docs/roadmap.md`
   - Update `docs/PROJECT_STATE.md`
-- [ ] If user hasn't already said "deploy" or "push to main": Ask "Ready to deploy to production?"
-- [ ] When user confirms (or already said "deploy"/"push to main"): Merge develop → main and push immediately
+- [ ] **Check if user already triggered deployment:**
+  - If user said "deploy", "push to main", or **"close the sprint"** (or variants): Proceed to deployment immediately
+  - If not: Ask "Ready to deploy to production?"
+- [ ] **Before deploying:** Verify all safety gates (see `/sprint` production deployment rules)
+- [ ] **After safety checks pass:** Merge develop → main and push immediately
+- [ ] **After deploy:** Rename sprint file `.active.md` → `.done.md` and update roadmap.md
 
 ## Rules
 

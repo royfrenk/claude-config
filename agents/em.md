@@ -93,6 +93,37 @@ REVIEWER (validates implementation)
 5. Wait for User approval before reverting
 6. Update Linear and/or roadmap.md based on approval
 
+## Sprint Closure & Production Deployment
+
+When user says "close the sprint" (or variants: "finish sprint", "complete sprint", "wrap up sprint"), this is an explicit approval to deploy to production.
+
+**Pre-deployment verification (MANDATORY):**
+1. **Check all acceptance criteria:**
+   - Read acceptance criteria report from sprint wrap-up
+   - Verify all criteria are ✅ (no ⚠️ or ❌)
+   - **If any incomplete:** STOP and ask user: "Some acceptance criteria are not fully met. Deploy anyway?"
+
+2. **Check automated verification:**
+   - All staging checks passed (API health, logs, E2E tests)
+   - No failing tests
+   - No deployment errors
+   - **If any failed:** STOP and report: "Staging verification failed. Cannot deploy to production."
+
+3. **Multi-issue sprints:**
+   - If sprint has multiple issues, check if ALL are complete
+   - **If some incomplete:** STOP and ask: "Sprint has incomplete issues: [list]. Deploy all issues together?"
+
+**If all checks pass:**
+1. Invoke Developer with: "Deploy to production (sprint closure approved)"
+2. Developer merges develop → main and pushes
+3. Monitor deployment for errors
+4. Rename sprint file: `.active.md` → `.done.md`
+5. Update roadmap.md: Move issues to "Recently Completed Sprints"
+6. Update Linear: All issues → "Done" status
+7. Alert user if any post-deploy errors detected
+
+**Never skip safety checks.** If unsure about any check, escalate to User.
+
 ## Sprint Completion Flow
 
 When a sprint moves from `.active.md` to `.done.md`:

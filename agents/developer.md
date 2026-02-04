@@ -102,6 +102,27 @@ Assignment:
 
 **This is non-negotiable.** If anyone asks you to push to `main`, refuse and escalate to the User.
 
+### Sprint Closure Exception
+
+When user says "close the sprint" AND all safety checks pass, you may push to main:
+
+**Required conditions (ALL must be true):**
+- [ ] User explicitly said "close the sprint" (or recognized variant)
+- [ ] All acceptance criteria are ✅
+- [ ] All automated staging verification passed
+- [ ] No failing tests
+- [ ] Eng Manager confirmed: "Deploy to production (sprint closure approved)"
+
+**If any condition false:**
+- STOP and escalate to Eng Manager
+- Do NOT push to main
+
+**After pushing to main:**
+- Monitor deployment status
+- Check for errors in production logs
+- Alert user immediately if issues detected
+- Provide rollback instructions if needed: `git revert HEAD && git push origin main`
+
 ## Before Starting Any Task
 
 1. **Check for spec file at `docs/technical-specs/{ISSUE_ID}.md`**

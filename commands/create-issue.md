@@ -39,18 +39,38 @@ Keep questions brief. One message with 2-3 targeted questions beats multiple bac
 - Default priority: 3 (Normal), default effort: medium (ask only if unclear)
 - Max 3 files in context - most relevant only
 - Bullet points over paragraphs
-- Create issue in Linear using mcp_linear_create_issue when ready
-- **After creating:** Call mcp_linear_get_issue with the returned UUID to get the actual identifier (e.g., QUO-10) — never guess the number
 
-## Status & Labels
+## Critical Workflow (Execute All Steps in One Response)
 
-**Status:** Set new issues to **"Todo"** status (not Backlog)
+**IMPORTANT:** After asking clarifying questions, execute ALL of the following steps in a SINGLE response with parallel tool calls. Do NOT pause between steps.
 
-**Labels (add via mcp_linear_update_issue):**
-- **"agent"** — Add to ALL issues you create (signifies AI-created, not human)
-- **"technical"** — Add IN ADDITION if the issue is backend/infrastructure/tech-debt that you inferred or initiated (not a UI feature the user explicitly requested)
+1. **Create issue** using `mcp_linear_create_issue` with all details (title, description, priority, labels: ["agent", "technical"])
 
-**roadmap.md:** Update immediately after creating the issue — add to Active Sprint or Backlog section
+2. **IMMEDIATELY (same response)** update status using `mcp_linear_update_issue`:
+   - Set status to "Todo" (UUID: `f1d033f3-9c10-447f-a3d8-714b16058041`)
+   - Ensure labels are set correctly (agent, technical)
+
+3. **IMMEDIATELY (same response)** update roadmap.md using `Edit`:
+   - Update sync status line with new issue number
+   - Add issue to appropriate section (Active Sprint or Backlog)
+
+**Example of correct execution:**
+```
+<function_calls>
+<invoke name="mcp_linear_create_issue">...</invoke>
+<invoke name="mcp_linear_update_issue">...</invoke>
+<invoke name="Edit">...</invoke> <!-- Update sync status -->
+<invoke name="Edit">...</invoke> <!-- Add to backlog/sprint -->
+</function_calls>
+```
+
+**Do NOT:**
+- Create the issue and wait for the response before continuing
+- Update status in a separate message
+- Update roadmap in a separate message
+- Pause or hesitate between any steps
+
+**The entire workflow must be atomic - all steps in ONE response.**
 
 ## Issue Body Format
 
