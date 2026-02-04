@@ -71,3 +71,4 @@ Present findings before making changes:
 - Never auto-sync In Progress/In Review/Done — these need confirmation
 - Flag any "Done" issues that aren't actually deployed to production
 - If Linear MCP fails, report the error and skip sync
+- **Roadmap structure:** Respect "Active Sprint", "Recently Completed Sprints" (2-3 most recent), and "Backlog" (prioritized: High/Medium/Low) sections

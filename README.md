@@ -562,17 +562,23 @@ npm run test     # Tests
 
 **Status:** 🟥 To Do | 🟨 In Progress | 🟩 Done | ⏸️ Blocked
 
+## Recently Completed Sprints
+
+### Sprint 001: [Name] (Completed YYYY-MM-DD)
+[Sprint file](sprints/sprint-001-[name].done.md)
+
+| Priority | Issue | Title | Status | Spec |
+|----------|-------|-------|--------|------|
+| 1 | PROJ-## | [Title] | 🟩 Done | [spec](technical-specs/PROJ-##.md) |
+
 ## Backlog
 
-| Issue | Title | Added |
-|-------|-------|-------|
-| — | — | — |
+Sort by priority (High → Medium → Low), then by issue number.
 
-## Completed (Last 10)
-
-| Issue | Title | Completed |
-|-------|-------|-----------|
-| — | — | — |
+| Priority | Issue | Title | Added | Notes |
+|----------|-------|-------|-------|-------|
+| High | PROJ-## | [Title] | YYYY-MM-DD | [context] |
+| Medium | PROJ-## | [Title] | YYYY-MM-DD | [context] |
 ```
 
 ### PROJECT_STATE.md Template

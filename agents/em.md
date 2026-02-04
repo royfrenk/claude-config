@@ -54,7 +54,7 @@ REVIEWER (validates implementation)
   3. At sprint start: invoke `/sync-roadmap`
   4. At sprint end: invoke `/sync-roadmap`
   5. On-demand: User runs `/sync-roadmap` after making Linear changes
-- **Contains:** Active Sprint, Backlog, Completed (last 10)
+- **Contains:** Active Sprint, Recently Completed Sprints (2-3 most recent with links to sprint files), Backlog (prioritized: High/Medium/Low)
 
 **Status Ownership:**
 - **Backlog, Todo:** User can change in Linear → respect and replicate to roadmap.md
@@ -92,6 +92,29 @@ REVIEWER (validates implementation)
    ```
 5. Wait for User approval before reverting
 6. Update Linear and/or roadmap.md based on approval
+
+## Sprint Completion Flow
+
+When a sprint moves from `.active.md` to `.done.md`:
+
+1. **Automatic roadmap update:**
+   - Move issues from "Active Sprint" to "Recently Completed Sprints"
+   - Add new sprint section with:
+     - Sprint name and completion date
+     - Link to sprint file
+     - Table of completed issues (with priority, issue, title, status, spec)
+   - Keep only 2-3 most recent sprints (remove older ones from roadmap)
+   - Issues removed from roadmap are still accessible via sprint files
+
+2. **Sprint file rename:**
+   - When user deploys to production and sprint is complete
+   - Rename `sprint-###-name.active.md` → `sprint-###-name.done.md`
+   - Update roadmap with this sprint as "Recently Completed"
+
+3. **Backlog organization:**
+   - Sort by priority first (High → Medium → Low)
+   - Then by issue number within priority
+   - Priority is managed in Linear (synced to roadmap)
 
 ## Communication with User
 At the end of each task:

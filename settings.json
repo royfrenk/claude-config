@@ -13,7 +13,8 @@
       "mcp__*",
       "mcp__linear__get_issue",
       "mcp__linear__update_issue",
-      "mcp__linear__list_issues"
+      "mcp__linear__list_issues",
+      "mcp__linear__create_comment"
     ]
   },
   "hooks": {

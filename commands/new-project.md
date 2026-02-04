@@ -354,19 +354,26 @@ Platform: [Vercel/Railway/etc]
 
 ---
 
-## Backlog
+## Recently Completed Sprints
 
-| Issue | Title | Added | Notes |
-|-------|-------|-------|-------|
-| XXX-## | [Title] | YYYY-MM-DD | [brief context] |
+### Sprint 001: [Name] (Completed YYYY-MM-DD)
+[Sprint file](sprints/sprint-001-[name].done.md)
+
+| Priority | Issue | Title | Status | Spec |
+|----------|-------|-------|--------|------|
+| 1 | XXX-## | [Title] | 🟩 Done | [spec](technical-specs/XXX-##.md) |
 
 ---
 
-## Completed (Last 10)
+## Backlog
 
-| Issue | Title | Completed | Spec |
-|-------|-------|-----------|------|
-| XXX-## | [Title] | YYYY-MM-DD | [spec](technical-specs/XXX-##.md) |
+Sort by priority (High → Medium → Low), then by issue number.
+
+| Priority | Issue | Title | Added | Notes |
+|----------|-------|-------|-------|-------|
+| High | XXX-## | [Title] | YYYY-MM-DD | [brief context] |
+| Medium | XXX-## | [Title] | YYYY-MM-DD | [brief context] |
+| Low | XXX-## | [Title] | YYYY-MM-DD | [brief context] |
 
 ---
 

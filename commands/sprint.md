@@ -225,7 +225,15 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
     - Update status to 🟨 In Review (awaiting user testing)
     - Add completion notes and next steps
     - Tell user: "Use `/iterate` when you find issues during testing."
-12. **Move to next issue:**
+12. **When sprint completes and user deploys to production:**
+    - Rename sprint file from `.active.md` to `.done.md`
+    - Update `docs/roadmap.md`:
+      - Move issues from "Active Sprint" to new section under "Recently Completed Sprints"
+      - Include sprint name, completion date, link to sprint file
+      - Show table of completed issues with priority, issue, title, status, spec
+      - Keep only 2-3 most recent completed sprints (remove older entries)
+    - Clear "Active Sprint" section (or leave empty if no next sprint)
+13. **Move to next issue:**
     - Ensure completed issue is tracked in active sprint file
     - Return to step 3 and repeat until:
     - All Active Sprint items are done
@@ -286,7 +294,10 @@ Reported by User:
 - Update `docs/PROJECT_STATE.md` at sprint end (even if not deployed; mark "NOT UPDATED — reason")
 - Update `docs/roadmap.md` when status changes (immediately, not just at sprint end)
 - **Done = Deployed to production.** Never mark Done until code is live on main branch.
-- **Sprint file lifecycle:** When sprint is deployed to production, rename `*.active.md` → `*.done.md`
+- **Sprint file lifecycle:** When sprint is deployed to production:
+  1. Rename `*.active.md` → `*.done.md`
+  2. Update roadmap.md to move issues to "Recently Completed Sprints" section (with sprint file link)
+  3. Keep 2-3 most recent completed sprints in roadmap (older ones remain accessible via sprint files)
 - **Linear sync:** If any `mcp__linear__*` call fails:
   1. Continue using `docs/roadmap.md` as source of truth
   2. Add pending updates to roadmap.md Sync Status section
