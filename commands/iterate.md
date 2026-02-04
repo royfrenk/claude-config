@@ -11,9 +11,28 @@ Continue working on the current sprint after user testing reveals bugs or issues
 ## Workflow
 
 1. **Load sprint context:**
-   - Read current sprint file from `docs/sprints/` (most recent or user-specified)
-   - Read all linked spec files
-   - Show summary: "Sprint [name] — [X] issues, [Y] open bugs"
+   - **Search for active sprint file:**
+     ```bash
+     find docs/sprints/ -name "*.active.md" 2>/dev/null
+     ```
+   - **If no active sprint found:**
+     ```
+     ❌ ERROR: No active sprint found
+
+     /iterate requires an active sprint file (.active.md)
+
+     Please either:
+     1. Run /sprint to start a new sprint
+     2. If a sprint was completed, rename it from .done.md to .active.md
+
+     Cannot proceed with iteration.
+     ```
+     **EXIT**
+
+   - **If active sprint found:**
+     - Read sprint file
+     - Read all linked spec files
+     - Show summary: "Sprint [name] — [X] issues, [Y] open bugs"
 
 2. **Receive bug batch from user:**
    - User provides list of issues found
@@ -119,4 +138,4 @@ After each batch:
 
 **Start by reading the current sprint file from `docs/sprints/`.**
 
-If no sprint file exists: `/sprint` should have created one. Ask user which issues are in this sprint, then create using the template from `/sprint`.
+**Note:** `/iterate` requires an existing active sprint file. If none exists, use `/sprint` to start one.

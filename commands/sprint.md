@@ -14,6 +14,75 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
 
 1. Read `CLAUDE.md` to get Linear team and issue prefix
 2. **Run `/sync-roadmap`** to reconcile any Linear changes before starting work
+2a. **Check for existing active sprint or create new one:**
+   - **Search for active sprint file:**
+     ```bash
+     find docs/sprints/ -name "*.active.md" 2>/dev/null
+     ```
+   - **If multiple active sprints found:**
+     ```
+     ❌ BLOCKING ERROR
+
+     Found multiple active sprint files:
+     [list files]
+
+     Only ONE active sprint should exist at a time.
+
+     Please resolve manually:
+     1. Rename completed sprint to .done.md
+     2. Or delete the old sprint file
+     3. Then run /sprint again
+
+     CANNOT PROCEED until resolved.
+     ```
+     **EXIT - Do not proceed**
+
+   - **If one active sprint found:**
+     ```
+     ✓ Resuming active sprint: [filename]
+
+     Current sprint: [name]
+     Issues in sprint: [list from sprint file]
+     Status: [status from sprint file]
+     ```
+     **CONTINUE** - Use this sprint file for all subsequent work
+
+   - **If no active sprint found:**
+     - Create new sprint file at `docs/sprints/sprint-###-[name].active.md`
+     - Sprint number: increment from highest existing sprint number (or 001 if none)
+     - Name: short descriptor from Priority 1 issue (will update after step 3)
+     - **Blocking enforcement:**
+       - Directory creation must succeed or EXIT with error
+       - File write must succeed or EXIT with error
+       - If file created but unreadable, WARN and ask user to continue/cancel
+     - **Initial content** (skeleton format):
+       ```markdown
+       # Sprint [###]: [Placeholder - will update after querying Linear]
+
+       **Status:** 🔵 Starting
+       **Started:** [date]
+       **Issues:** [Will be populated as issues are worked on]
+
+       ## Issues in Sprint
+
+       | Issue | Title | Spec | Status |
+       |-------|-------|------|--------|
+       | — | — | — | — |
+
+       ## Iteration Log
+
+       [Will be populated during iteration]
+
+       ## New Acceptance Criteria Discovered
+
+       | Issue | New AC | Added to Spec |
+       |-------|--------|---------------|
+       | — | — | — |
+
+       ## Notes
+       [Context, decisions, blockers will be added as work progresses]
+       ```
+     - After creating, update sprint file title and first issue after step 3
 3. Query Linear for Priority 1 issue in current sprint (`mcp__linear__list_issues`)
    - **If Linear unavailable (any MCP call fails):**
      - Use `docs/roadmap.md` as fallback
@@ -151,15 +220,14 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
     - If any criteria are ⚠️ or ❌, get User approval before marking In Review
     - **Update Linear status to "In Review"** using UUID from CLAUDE.md
     - Update `docs/roadmap.md` status to 🟨 In Review
-11. **Create/update sprint file:**
-    - If no active sprint file exists, create `docs/sprints/sprint-###-[name].active.md` using template below
-    - Sprint number: increment from last sprint file (or 001 if first)
-    - Name: short descriptor of main issue (e.g., "zillow-search")
-    - **Naming convention:** `.active.md` = in progress, `.done.md` = completed
-    - List all issues worked on in this sprint
-    - Set status to 🟨 In Review (awaiting user testing)
-    - Tell user: "Sprint file created at `docs/sprints/sprint-###-[name].active.md`. Use `/iterate` when you find issues during testing."
-12. **Move to next issue:** Return to step 3 and repeat until:
+11. **Update sprint file:**
+    - Add completed issue to sprint file Issues table (if not already there)
+    - Update status to 🟨 In Review (awaiting user testing)
+    - Add completion notes and next steps
+    - Tell user: "Use `/iterate` when you find issues during testing."
+12. **Move to next issue:**
+    - Ensure completed issue is tracked in active sprint file
+    - Return to step 3 and repeat until:
     - All Active Sprint items are done
     - A task is blocked
     - A security issue is found
