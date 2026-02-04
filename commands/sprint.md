@@ -256,6 +256,14 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
     - If any criteria are ⚠️ or ❌, get User approval before marking In Review
     - **Update Linear status to "In Review"** using UUID from CLAUDE.md
     - Update `docs/roadmap.md` status to 🟨 In Review
+
+10a. **OpenAI Codex peer review (before production):**
+    - When User is ready to deploy to production (says "close the sprint"), invoke Reviewer
+    - Reviewer requests OpenAI Codex peer review via script
+    - Reviewer evaluates Codex recommendations
+    - If accepted recommendations: Developer implements, resubmits to Reviewer
+    - If no accepted recommendations: Proceed to step 11
+
 11. **Update sprint file:**
     - Add completed issue to sprint file Issues table (if not already there)
     - Update status to 🟨 In Review (awaiting user testing)
@@ -322,14 +330,16 @@ Reported by User:
 - **No confirmation needed within a task:** Once a plan is approved, execute subtasks without asking
 - **All acceptance criteria must be met:** Before marking any issue "In Review" or "Done", verify ALL acceptance criteria are implemented. If a criterion can't be met, flag it and get User approval to proceed without it.
 - Push only to `develop` (staging) by default
-- **Production deployment:** When user explicitly says "deploy", "push to main", "deploy to production", or **"close the sprint"** (or variants like "finish sprint", "complete sprint"), merge develop → main and push immediately without asking for separate confirmation
+- **Production deployment:** When user explicitly says "deploy", "push to main", "deploy to production", or **"close the sprint"** (or variants like "finish sprint", "complete sprint"), follow sprint closure protocol:
   - **Safety requirement:** Before auto-pushing on "close the sprint", verify:
     - [ ] All acceptance criteria are ✅ (no ⚠️ or ❌)
     - [ ] All automated staging verification checks passed
     - [ ] No failing tests
     - [ ] No deployment errors on staging
+    - [ ] **OpenAI Codex peer review complete** (either no recommendations accepted, or accepted recommendations implemented and approved)
   - **If any check fails:** STOP and ask user what to do before proceeding
   - **If ACs are incomplete:** STOP and confirm user wants to proceed anyway
+  - **If Codex review blocked:** Notify user which recommendations are pending implementation
 - Run tests before each commit
 - Update spec file progress (🟥→🟨→🟩) as you complete tasks
 - Post status updates to Linear issue as comments

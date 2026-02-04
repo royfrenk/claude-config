@@ -66,6 +66,16 @@ You — test on staging, report issues
     ↓
 Developer(s) — fixes via /iterate
     ↓
+[Sprint Complete - Ready for Production]
+    ↓
+OpenAI Codex Peer Review — second perspective on sprint changes
+    ↓
+Reviewer — evaluates Codex recommendations, passes accepted items to Developer
+    ↓
+Developer — implements accepted recommendations (if any)
+    ↓
+Reviewer — final approval
+    ↓
 You — deploy to production ← ONLY YOU
 ```
 

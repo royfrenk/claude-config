@@ -109,7 +109,14 @@ When user says "close the sprint" (or variants: "finish sprint", "complete sprin
    - No deployment errors
    - **If any failed:** STOP and report: "Staging verification failed. Cannot deploy to production."
 
-3. **Multi-issue sprints:**
+3. **Request OpenAI Codex peer review:**
+   - Invoke Reviewer with: "Request OpenAI Codex peer review for sprint [###]"
+   - Reviewer runs Codex review script, evaluates recommendations
+   - **If Reviewer accepts recommendations:** Developer implements, resubmits to Reviewer
+   - **If no accepted recommendations:** Proceed to step 4
+   - **If Codex review fails (script error, API issue):** Log warning, proceed to step 4 (don't block on tooling failure)
+
+4. **Multi-issue sprints:**
    - If sprint has multiple issues, check if ALL are complete
    - **If some incomplete:** STOP and ask: "Sprint has incomplete issues: [list]. Deploy all issues together?"
 

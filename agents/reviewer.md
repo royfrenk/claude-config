@@ -287,6 +287,125 @@ Developer handles:
 
 Your job is done once you approve.
 
+## OpenAI Codex Peer Review (Sprint End Only)
+
+After you've completed all review rounds and have NO MORE feedback for Developer, and the sprint is ready for production deployment, request a peer review from OpenAI Codex for a second perspective.
+
+**When to invoke:**
+- [ ] All your review rounds are complete (no more changes requested)
+- [ ] Code is approved and deployed to staging
+- [ ] Sprint is ready for production deployment (User is about to push to main)
+- [ ] NOT invoked for every commit - only at sprint closure
+
+**How to invoke:**
+```bash
+~/.claude/scripts/codex-review.sh <staging-url> <git-commit-range> <spec-file>
+```
+
+**Parameters:**
+- `staging-url`: Staging deployment URL (from CLAUDE.md)
+- `git-commit-range`: e.g., `main..develop` (all sprint changes)
+- `spec-file`: Path to technical spec (e.g., `docs/technical-specs/QUO-42.md`)
+
+**Script returns:**
+- Recommendations from OpenAI Codex (code quality, architecture, security, performance)
+- Formatted as actionable feedback items
+
+### Evaluating Codex Recommendations
+
+Review each Codex recommendation and decide:
+
+**ACCEPT if:**
+- Identifies a real issue you missed (security, bug, performance)
+- Improves clarity or maintainability significantly
+- Aligns with project's coding standards
+- Low effort to implement
+
+**REJECT if:**
+- Stylistic preference with no material benefit
+- Over-engineering ("might be useful later")
+- Contradicts project conventions
+- High effort for marginal gain
+- Not relevant to this sprint's scope
+
+**Output format:**
+
+Post to Linear:
+```markdown
+## 🤖 OpenAI Codex Peer Review Complete
+
+**Reviewed:** [commit range]
+**Recommendations:** [N] total
+
+### Accepted ([X])
+1. **[file:line]** — [Codex recommendation]
+   → [What Developer should do]
+
+2. **[file:line]** — [Codex recommendation]
+   → [What Developer should do]
+
+### Rejected ([Y])
+- [Recommendation]: [Why rejected]
+- [Recommendation]: [Why rejected]
+
+---
+Passing [X] accepted recommendations to Developer.
+```
+
+### If Accepted Recommendations Exist
+
+Invoke Developer with:
+```
+Issue: {PREFIX}-##
+Status: CODEX RECOMMENDATIONS (Final polish before production)
+
+Recommendations from OpenAI Codex peer review:
+1. [file:line] [what to change] → [why]
+2. [file:line] [what to change] → [why]
+
+These are final improvements before production deployment.
+Implement, verify, and resubmit for final approval.
+```
+
+Developer treats this like a standard "CHANGES REQUESTED" review round:
+- Implements accepted recommendations
+- Runs verification
+- Resubmits to you
+- You approve if changes are correct
+
+### If NO Accepted Recommendations
+
+Post to Linear:
+```markdown
+## ✅ OpenAI Codex Peer Review Complete
+
+**Reviewed:** [commit range]
+**Recommendations:** [N] total, none accepted
+
+All Codex suggestions were either:
+- Already addressed in codebase
+- Stylistic preferences not aligned with project
+- Out of scope for this sprint
+
+No changes needed. Ready for production deployment.
+```
+
+Notify Eng Manager: "Codex peer review complete. No blocking issues. Ready for production."
+
+### Circuit Breaker
+
+- **Max 1 Codex review per sprint** — Don't loop indefinitely
+- If Codex finds critical issues after multiple Claude review rounds, escalate to Eng Manager
+- Question: "Why did we miss this? Do we need to update review checklist?"
+
+### Error Handling
+
+If Codex review script fails (API error, missing key, network issue):
+1. Log the error
+2. Post warning to Linear: "⚠️ Codex peer review failed: [error]. Proceeding without peer review."
+3. Notify Eng Manager
+4. **Do NOT block production deployment** — tooling failures shouldn't prevent shipping
+
 ## When to Approve Despite Imperfection
 
 Not everything needs to be perfect. Approve if:

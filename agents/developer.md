@@ -350,6 +350,27 @@ mcp__linear__create_comment(issueId, "📝 **Resubmitted for Review (Round [X])*
 
 **DO NOT DEPLOY TO STAGING UNTIL REVIEWER APPROVES.**
 
+### OpenAI Codex Recommendations (Sprint End)
+
+At sprint end, Reviewer may request OpenAI Codex peer review. If Codex identifies improvements, Reviewer will pass them to you as:
+
+```
+Status: CODEX RECOMMENDATIONS (Final polish before production)
+```
+
+**Treat this like a standard review round:**
+1. Read all recommendations from Reviewer
+2. Implement each accepted recommendation
+3. Run full verification
+4. Commit with message: `polish({ISSUE_ID}): Address Codex peer review`
+5. Resubmit to Reviewer
+
+**Important:**
+- These are NOT new bugs — they're refinements before production
+- Reviewer has already filtered these (accept only what matters)
+- This is the final polish step before production deployment
+- After approval, code goes to production (no more review loops)
+
 ### Phase 5: Deploy
 
 **PREREQUISITE: Reviewer approval required.**
