@@ -584,9 +584,20 @@ Output results in structured format:
    - Remove fixed items from known issues
    - Add entry to recent changes log
 
-2. **Update Linear status to "In Review"** (use UUID from project's CLAUDE.md):
+2. **Sync with Linear (Push - In Review status, soft retry):**
    ```
-   mcp_linear_update_issue(issueId, status: "<In Review UUID from CLAUDE.md>")
+   # Attempt 1
+   result = mcp_linear_update_issue(issueId, status: "<In Review UUID>")
+
+   # If failed, wait and retry
+   if result.failed:
+       wait 2 seconds
+       result = mcp_linear_update_issue(issueId, status: "<In Review UUID>")
+
+   # If still failed, log and continue
+   if result.failed:
+       log warning: "Linear sync failed - mark for manual update"
+       add to sprint file: "Pending Manual Sync: [ISSUE-ID] → In Review"
    ```
 
 3. **Post to Linear with automated verification results:**
@@ -594,7 +605,32 @@ Output results in structured format:
    mcp__linear__create_comment(issueId, "✅ **Deployed to Staging - Automated Checks Passed**\n\n**Automated Verification:**\n- API Health: ✅ All endpoints responding\n- Response Structure: ✅ Valid data returned\n- Logs: ✅ No errors\n- E2E Tests: ✅ 8/8 passed\n\n**Manual Verification Needed:**\n- Visual design (spacing, colors)\n- Performance with 100+ results\n\n**Staging:** [URL]\n\nReady for your testing.")
    ```
 
-4. **Notify User with full report:**
+4. **Check-in to Sprint File (Automatic):**
+
+   After automated verification passes, update sprint file with checkpoint:
+
+   ```markdown
+   ## Check-in: Issue [ISSUE-ID] Complete — [YYYY-MM-DD HH:MM]
+
+   **Status:** 🟨 In Review (Staging)
+   **Issue:** [ISSUE-ID] - [Title]
+   **Deployed:** [staging URL]
+   **Automated Verification:** ✅ PASSED
+   **AC Status:** [Summary - e.g., "5/5 met" or "4/5 met (1 ⚠️)"]
+   **Linear Sync:** [success/failed]
+   **Next:** User testing on staging
+
+   **Pending Manual Sync (if any):**
+   - [ISSUE-ID]: Status update to "In Review" failed - sync manually
+   ```
+
+   **Why this check-in matters:**
+   - Survives context compaction
+   - Helps resume sprint if interrupted during testing
+   - Tracks Linear sync failures for manual reconciliation
+   - Documents what's ready for user testing
+
+5. **Notify User with full report:**
    Use the output formats defined in `~/.claude/rules/task-completion.md`:
    - After each commit → commit format
    - After completing full issue → task complete format with acceptance criteria + automated verification results

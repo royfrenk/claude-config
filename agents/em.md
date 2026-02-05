@@ -65,10 +65,22 @@ REVIEWER (validates implementation)
 - **"agent"** — Add to ALL issues created by agents (not humans)
 - **"technical"** — Add IN ADDITION for backend/infrastructure/tech-debt issues that agent inferred or initiated
 
+**Linear Sync Strategy (3 touchpoints):**
+- **Sprint start:** Pull latest issue details (non-blocking)
+- **Staging deploy:** Push "In Review" status (soft retry)
+- **Production deploy:** Push "Done" status (soft retry)
+
+**Soft retry logic:**
+- Attempt 1: Try Linear MCP call
+- If fails: Wait 2 seconds
+- Attempt 2: Try again
+- If still fails: Log warning, track in sprint file "Pending Manual Sync", continue sprint
+
 **If Linear is unavailable:**
-- roadmap.md becomes temporary source of truth
+- roadmap.md becomes source of truth
 - Continue updating roadmap.md as work progresses
-- When Linear returns, run reconciliation (see below)
+- Track failed syncs in sprint file
+- Run `/sync-linear` at sprint end for manual reconciliation
 
 **Reconciliation (at sprint start or when Linear restored):**
 1. Compare roadmap.md against Linear
@@ -629,7 +641,10 @@ PLANNING PHASE
 
 EXECUTION PHASE
 13. You assign task to Developer (points to spec file)
-14. **Update Linear status to "In Progress"** (mcp_linear_update_issue)
+14. **Sync with Linear (Pull at sprint start - non-blocking)**
+    - Try fetching latest issue details: `mcp__linear__get_issue`
+    - If success: Use Linear data
+    - If fails: Log warning, use roadmap.md, track for manual sync
 15. You update docs/roadmap.md status to 🟨 In Progress
 16. Developer posts "Starting Implementation" to Linear
 17. Developer reads spec, implements step-by-step

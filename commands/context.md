@@ -20,6 +20,28 @@ Load the project context for: $ARGUMENTS
      - Resume instructions from the file
    - If multiple active sprints exist, list them all
    - If no active sprints but spec files show "In Progress", warn: "Orphaned spec files detected - no sprint file exists"
+   - **If active sprint found, check for incomplete work:**
+     - Read sprint file check-ins (look for "Check-in:" sections)
+     - Identify last check-in timestamp
+     - Compare to spec file checkpoints
+     - If gaps detected:
+       ```
+       ⚠️ Active sprint detected with potential gaps:
+
+       **Last Check-in:** [timestamp] - [status]
+       **Sprint Status:** [from sprint file]
+
+       **Resume Instructions:**
+       1. Read last check-in to understand where work stopped
+       2. Check spec files for latest task status (🟥/🟨/🟩)
+       3. Verify what's deployed to staging
+       4. Use `/iterate` to continue if issues are in testing
+       5. Use `/sprint` to continue if issues are in development
+
+       **Pending Linear Syncs (if any):**
+       - [List from sprint file "Pending Manual Sync" section]
+       - Run `/sync-linear` to reconcile when ready
+       ```
 6. Summarize the key context points for the user
 7. Use this context to inform all subsequent interactions about this project
 

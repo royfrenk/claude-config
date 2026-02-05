@@ -152,7 +152,11 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
        ```
    - **Explorer(s) create `docs/technical-specs/{PREFIX}-##.md`** with exploration findings
    - **After exploration completes, spawn Plan-Writer** to add implementation plan to spec
-7. **Update Linear status to "In Progress"** using UUID from CLAUDE.md
+7. **Sync with Linear (Pull - try once, non-blocking):**
+   - Attempt: `mcp__linear__get_issue` to fetch latest issue details
+   - If success: Use Linear data (priority, labels, description updates)
+   - If fails: Log warning, continue using `docs/roadmap.md` as source of truth
+   - Add to sprint file Notes: "Linear sync: [success/failed at sprint start]"
 7a. **Parallelization Decision (after Plan-Writer, before User approval):**
    - Read the Implementation Plan from spec file
    - **Analyze task dependencies:**
@@ -186,6 +190,20 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
      ```
    - **Present Execution Plan + Implementation Plan to User for approval** ← CHECKPOINT
    - Wait for User's "yes" before proceeding
+7b. **Check-in: Plan Approved**
+   - Update sprint file with checkpoint:
+     ```markdown
+     ## Check-in: Plan Approved — [YYYY-MM-DD HH:MM]
+
+     **Status:** 🔵 Development Starting
+     **Plan:** Approved by user
+     **Execution Strategy:** [Sequential / X waves]
+     **Next:** Begin Wave 1 implementation
+
+     **Issues in Sprint:**
+     - QUO-##: [Title] - Plan approved, ready to implement
+     ```
+   - This check-in helps resume if sprint is interrupted before development starts
 8. **Execute according to Execution Plan:**
 
    **For each wave in the Execution Plan:**
@@ -238,7 +256,20 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
    d. **After wave approval:**
       - All Developers in wave deploy to staging (push to develop)
       - Update spec: mark wave complete
-      - Post wave completion to Linear
+      - Post wave completion to Linear (non-blocking - log if fails)
+      - **Check-in: Wave Complete**
+        ```markdown
+        ## Check-in: Wave [X] Complete — [YYYY-MM-DD HH:MM]
+
+        **Status:** 🟨 In Progress
+        **Wave:** [X] of [Y]
+        **Completed Tasks:** [list]
+        **Next:** Wave [X+1] [or "Final verification" if last wave]
+
+        **Wave [X] Details:**
+        - Dev A: Task [#] - ✅ Deployed
+        - Dev B: Task [#] - ✅ Deployed
+        ```
 
    e. **Move to next wave** (if any)
 
@@ -254,8 +285,29 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
     - **MANDATORY: Verify ALL acceptance criteria are met** before proceeding
     - Generate acceptance criteria report (see Output section)
     - If any criteria are ⚠️ or ❌, get User approval before marking In Review
-    - **Update Linear status to "In Review"** using UUID from CLAUDE.md
+    - **Sync with Linear (Push - In Review status, soft retry):**
+      - Attempt 1: `mcp_linear_update_issue(issueId, status: "<In Review UUID>")`
+      - If fails: Wait 2 seconds, attempt 2
+      - If still fails: Log warning, continue (mark for manual sync later)
+      - Update sprint file Notes: "Linear sync: [success/failed at In Review]"
     - Update `docs/roadmap.md` status to 🟨 In Review
+
+10a. **Check-in: Issue Complete**
+    - Update sprint file with checkpoint:
+      ```markdown
+      ## Check-in: Issue [QUO-##] Complete — [YYYY-MM-DD HH:MM]
+
+      **Status:** 🟨 In Review (Staging)
+      **Issue:** [QUO-##] - [Title]
+      **Deployed:** [staging URL]
+      **AC Status:** [X/Y criteria met - ✅/⚠️/❌]
+      **Linear Sync:** [success/failed - needs manual update if failed]
+      **Next:** User testing on staging
+
+      **Pending Manual Sync (if any):**
+      - [QUO-##]: Status update to "In Review" failed
+      ```
+    - This check-in helps resume if sprint is interrupted during testing phase
 
 10a. **OpenAI Codex peer review (before production):**
     - When User is ready to deploy to production (says "close the sprint"), invoke Reviewer
@@ -270,6 +322,11 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
     - Add completion notes and next steps
     - Tell user: "Use `/iterate` when you find issues during testing."
 12. **When sprint completes and user deploys to production:**
+    - **Sync with Linear (Push - Done status, soft retry):**
+      - Attempt 1: `mcp_linear_update_issue(issueId, status: "<Done UUID>")`
+      - If fails: Wait 2 seconds, attempt 2
+      - If still fails: Log warning, add to sprint file for manual sync
+      - Update sprint file Notes: "Linear sync: [success/failed at Done]"
     - Rename sprint file from `.active.md` to `.done.md`
     - Update `docs/roadmap.md`:
       - Move issues from "Active Sprint" to new section under "Recently Completed Sprints"
@@ -351,10 +408,14 @@ Reported by User:
   1. Rename `*.active.md` → `*.done.md`
   2. Update roadmap.md to move issues to "Recently Completed Sprints" section (with sprint file link)
   3. Keep 2-3 most recent completed sprints in roadmap (older ones remain accessible via sprint files)
-- **Linear sync:** If any `mcp__linear__*` call fails:
-  1. Continue using `docs/roadmap.md` as source of truth
-  2. Add pending updates to roadmap.md Sync Status section
-  3. Report sync issues in sprint summary at end
+- **Linear sync strategy (3 touchpoints):**
+  1. **Sprint start (Pull):** Fetch issue details from Linear - non-blocking if fails
+  2. **Staging deploy (Push):** Update status to "In Review" - soft retry (2 attempts), non-blocking
+  3. **Production deploy (Push):** Update status to "Done" - soft retry (2 attempts), non-blocking
+  - **Soft retry logic:** Try once, wait 2s, try again. If fails, log and continue.
+  - **Fallback:** If Linear unavailable, use `docs/roadmap.md` as source of truth
+  - **Pending syncs:** Track failed syncs in sprint file "Pending Manual Sync" section
+  - **Manual reconciliation:** Run `/sync-linear` at sprint end if syncs failed
 - Stop and report if:
   - Tests fail and can't be fixed
   - External dependency is missing (secrets, credentials, etc.)

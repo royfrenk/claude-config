@@ -50,6 +50,21 @@ Continue working on the current sprint after user testing reveals bugs or issues
    - After push: verify deployment succeeded
    - Continue until batch complete
 
+4a. **Check-in: Batch Complete (Automatic):**
+   - Update sprint file with checkpoint:
+     ```markdown
+     ## Check-in: Iteration Batch [#] Complete — [YYYY-MM-DD HH:MM]
+
+     **Status:** 🟨 In Review (Staging)
+     **Batch:** [#]
+     **Fixed:** [X] issues
+     **Commits:** [list commit hashes]
+     **Deployed:** [staging URL]
+     **Remaining Open:** [Y] issues
+     **Next:** [More testing / Ready for production]
+     ```
+   - This check-in helps resume if iteration is interrupted mid-testing
+
 5. **Report status:**
    - Show remaining open bugs
    - Ask: "More issues to report, or ready to wrap up?"
@@ -93,6 +108,10 @@ Follow this for EVERY bug fix — don't skip steps:
 
 ### When All Batches Accepted
 - [ ] Update sprint file: all bugs marked [x], status → 🟨 Ready for Production
+- [ ] **Sync with Linear (Push - Done status, soft retry):**
+  - Attempt 1: Update all issues in sprint to "Done" status
+  - If fails: Wait 2s, attempt 2
+  - If still fails: Log warning, add to sprint file for manual sync via `/sync-linear`
 - [ ] Output the **Sprint Wrap-Up** format from `/sprint` Output section:
   - Acceptance criteria report (all issues)
   - Linear status → "In Review" (if not already)
