@@ -74,6 +74,17 @@
             "command": "COUNT_FILE=\"/tmp/claude-edit-count-$$\"; COUNT=$(cat \"$COUNT_FILE\" 2>/dev/null || echo 0); COUNT=$((COUNT + 1)); echo $COUNT > \"$COUNT_FILE\"; if [ $COUNT -eq 15 ]; then echo '[Info] 15 edits this session. Consider /checkpoint if working on a long task.' >&2; fi; if [ $((COUNT % 25)) -eq 0 ] && [ $COUNT -gt 15 ]; then echo \"[Info] $COUNT edits. Context may be getting full. Consider /checkpoint.\" >&2; fi"
           }
         ]
+      },
+      {
+        "matcher": "tool matches '^mcp__linear__'",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sleep 1 && pkill -f 'mcp-remote.*linear' 2>/dev/null || true",
+            "async": true,
+            "statusMessage": "Cleaning up Linear processes..."
+          }
+        ]
       }
     ],
     "Stop": [
@@ -89,6 +100,6 @@
     ]
   },
   "enabledPlugins": {
-    "figma@claude-plugins-official": true
+    "figma@claude-plugins-official": false
   }
 }
