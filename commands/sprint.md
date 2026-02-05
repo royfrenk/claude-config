@@ -253,27 +253,37 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
       - Each Reviewer posts approval/changes to Linear
       - Parent Reviewer consolidates: "Wave 1: All approved" or "Dev A approved, Dev B needs changes"
 
-   d. **After wave approval:**
+   d. **After wave completes (MANDATORY GATE — do not skip):**
       - All Developers in wave deploy to staging (push to develop)
-      - Update spec: mark wave complete
+      - Update spec: mark wave tasks complete
       - Post wave completion to Linear (non-blocking - log if fails)
-      - **Check-in: Wave Complete**
+      - **MANDATORY: Write Wave Checkpoint to sprint file:**
         ```markdown
         ## Check-in: Wave [X] Complete — [YYYY-MM-DD HH:MM]
 
         **Status:** 🟨 In Progress
-        **Wave:** [X] of [Y]
+        **Wave:** [X] of [Y] total waves
         **Completed Tasks:** [list]
-        **Next:** Wave [X+1] [or "Final verification" if last wave]
+        **Remaining Waves:** [list wave numbers and their tasks]
+        **Next:** Wave [X+1]: [task names] [or "Final verification" if last wave]
 
         **Wave [X] Details:**
         - Dev A: Task [#] - ✅ Deployed
         - Dev B: Task [#] - ✅ Deployed
         ```
+      - **MANDATORY: Re-read the Execution Plan from the spec file** to confirm remaining waves
+      - **MANDATORY: Verify the sprint todo list still includes remaining waves**
+      - Only then proceed to next wave
 
-   e. **Move to next wave** (if any)
+   e. **Move to next wave (MANDATORY — never stop between waves):**
+      - If remaining waves exist, you MUST proceed to the next wave
+      - Do NOT stop, summarize, or ask the user if you should continue
+      - The approved execution plan is the contract — execute all waves
+      - If you are running low on context, checkpoint and tell the user to run `/sprint` to resume
 
-   f. **Repeat until all waves complete**
+   f. **Repeat until ALL waves complete**
+      - A sprint is not done until every wave in the execution plan has been executed
+      - Stopping after Wave 1 when Wave 2+ exists is a FAILURE — treat it as a blocker and flag it
 
 9. **Pre-handoff verification (MANDATORY before user testing):**
    - Run full test suite (backend + frontend) — not just changed code
@@ -420,6 +430,33 @@ Reported by User:
   - Tests fail and can't be fixed
   - External dependency is missing (secrets, credentials, etc.)
   - Spec is ambiguous and blocks work
+
+## Subagent Result Handling
+
+When a Developer subagent returns results:
+- **Do NOT absorb the full subagent output into your context**
+- Extract only: (1) pass/fail status, (2) files changed, (3) test results summary, (4) any errors needing attention
+- If tests are failing after a subagent completes, **spawn a new Developer subagent** to fix them
+- **NEVER fix code yourself** — you are the orchestrator, not a developer
+- If you catch yourself reading source files or editing code, STOP — spawn a Developer subagent instead
+
+## Wave Completion is Non-Negotiable
+
+- An approved execution plan with N waves means ALL N waves must execute
+- Stopping after wave K < N without explicit user cancellation is a sprint failure
+- If context is running low between waves:
+  1. Write a checkpoint to the sprint file with remaining waves
+  2. Tell the user: "Context is getting full. Remaining work: [waves]. Please run `/sprint` to resume."
+  3. Do NOT silently stop
+
+## Sprint Resume
+
+When `/sprint` detects an active sprint with incomplete waves:
+- Read the sprint file for the latest "Check-in: Wave X Complete" entry
+- Read the execution plan from the spec file
+- Identify which waves have NOT been completed
+- Resume from the next incomplete wave
+- Do NOT re-run completed waves
 
 ## Technical Spec Template
 

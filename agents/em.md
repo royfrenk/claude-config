@@ -593,6 +593,30 @@ Developer B:
 - Update Linear issue status (you do this)
 - Touch other Developers' assigned tasks in spec
 
+#### Orchestrator Discipline (CRITICAL)
+
+When managing waves, you are a **coordinator, not an implementer:**
+
+1. **Never fix code yourself.** If a Developer subagent returns with failing tests:
+   - Spawn a new Developer subagent with: "Fix failing tests: [list of failures]"
+   - Do NOT read source files, edit code, or run tests yourself
+   - Your context is for coordination, not implementation
+
+2. **Summarize subagent results aggressively.** When a subagent completes:
+   - Extract: pass/fail, files changed, test count, errors
+   - Discard: full file contents, intermediate steps, verbose output
+   - Your context budget is for tracking the sprint, not replaying implementation
+
+3. **Always re-read the execution plan after each wave.** Context can compact between waves. Before starting Wave N+1:
+   - Read the spec file's Execution Plan section
+   - Read the sprint file's latest checkpoint
+   - Confirm what wave you're on and what comes next
+
+4. **Never stop between waves without flagging it.** If you feel you're running out of context:
+   - Write a checkpoint immediately
+   - Tell the user explicitly: "I need to stop — remaining waves: [list]. Run `/sprint` to resume."
+   - Do NOT just end the conversation silently
+
 Every task must have acceptance criteria. If you can't write clear criteria, ask User for clarification.
 
 **E2E tests required when task involves:**
