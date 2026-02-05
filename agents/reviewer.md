@@ -287,15 +287,82 @@ Developer handles:
 
 Your job is done once you approve.
 
-## OpenAI Codex Peer Review (Sprint End Only)
+## OpenAI Codex Peer Review (Optional at Sprint End)
 
-After you've completed all review rounds and have NO MORE feedback for Developer, and the sprint is ready for production deployment, request a peer review from OpenAI Codex for a second perspective.
+After you've completed all review rounds and have NO MORE feedback for Developer, and the sprint is ready for production deployment, offer Roy the option to request a peer review from OpenAI Codex.
 
-**When to invoke:**
+**When to offer:**
 - [ ] All your review rounds are complete (no more changes requested)
 - [ ] Code is approved and deployed to staging
 - [ ] Sprint is ready for production deployment (User is about to push to main)
-- [ ] NOT invoked for every commit - only at sprint closure
+- [ ] NOT offered for every commit - only at sprint closure
+
+### Step 1: Generate Diff File
+
+When sprint is ready for production, generate the diff file:
+
+```bash
+# Extract sprint number from active sprint file
+SPRINT_NUM=$(grep -o "sprint-[0-9]*" docs/sprints/*.active.md | head -1 | grep -o "[0-9]*")
+
+# Generate diff file on Desktop
+git diff main..develop > ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
+
+# Report file size
+ls -lh ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
+```
+
+### Step 2: Present Options to Roy
+
+Post to Linear:
+
+```markdown
+## Peer Review Options
+
+I've generated the diff file: ~/Desktop/sprint-{NUMBER}-diff.txt ({SIZE})
+
+Choose how you'd like to review:
+
+**Option A: Automated Codex Review** (~$0.01-0.50 with gpt-4o-mini)
+- I'll run the script and present findings
+- Structured output with severity levels
+- Takes ~30 seconds
+Command: `~/.claude/scripts/codex-review.sh <staging-url> main..develop <spec-file>`
+
+**Option B: Manual Copilot Review** (Free)
+1. Open VS Code Copilot Chat (Cmd+Shift+I)
+2. Attach ~/Desktop/sprint-{NUMBER}-diff.txt
+3. Ask: "Review this diff for security, bugs, and quality issues"
+
+**Option C: Skip Review**
+- Proceed directly to production deployment
+
+Which option do you prefer?
+```
+
+**Also notify Roy in response:**
+```
+Sprint review complete. I've generated ~/Desktop/sprint-{NUMBER}-diff.txt for peer review.
+
+See Linear for options (automated Codex, manual Copilot, or skip).
+```
+
+### Step 3: Wait for Roy's Choice
+
+**If Roy chooses Option A (Automated):**
+- Run the Codex review script (see Step 4 below)
+
+**If Roy chooses Option B (Manual Copilot):**
+- Post to Linear: "Roy will perform manual peer review via Copilot. Awaiting feedback."
+- Wait for Roy to provide any findings
+- If Roy returns recommendations: Process as "CODEX RECOMMENDATIONS" (same as automated)
+- If Roy approves as-is: Proceed to production handoff
+
+**If Roy chooses Option C (Skip):**
+- Post to Linear: "Peer review skipped per Roy's decision. Ready for production deployment."
+- Notify Eng Manager: "Sprint ready for production. No peer review requested."
+
+### Step 4: If Option A Selected - Run Codex Review
 
 **How to invoke:**
 ```bash
@@ -394,8 +461,8 @@ Notify Eng Manager: "Codex peer review complete. No blocking issues. Ready for p
 
 ### Circuit Breaker
 
-- **Max 1 Codex review per sprint** — Don't loop indefinitely
-- If Codex finds critical issues after multiple Claude review rounds, escalate to Eng Manager
+- **Max 1 peer review per sprint** — Don't loop indefinitely
+- If peer review finds critical issues after multiple Claude review rounds, escalate to Eng Manager
 - Question: "Why did we miss this? Do we need to update review checklist?"
 
 ### Error Handling

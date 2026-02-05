@@ -2,13 +2,19 @@
 
 ## Purpose
 
-A **second-opinion** review of sprint changes before production deployment. This is an **advisory** review that provides an external perspective on code quality, security, and architecture.
+An **optional second-opinion** review of sprint changes before production deployment. This is an **advisory** review that provides an external perspective on code quality, security, and architecture.
 
 **Key principles:**
+- **Optional** - Roy chooses automated Codex, manual Copilot, or skip
 - **Advisory, not blocking** - Reviewer evaluates recommendations and decides what to implement
-- **Once per sprint** - Run when Roy signals sprint closure ("close the sprint", "deploy to production")
+- **Once per sprint** - Offered when Roy signals sprint closure ("close the sprint", "deploy to production")
 - **Second opinion** - Complements Claude Reviewer (primary gate), doesn't replace it
 - **Safety first** - Includes automatic secrets detection and validation
+
+**Three Options:**
+1. **Automated Codex Review** - Script-driven with gpt-4o-mini (~$0.01-0.50)
+2. **Manual Copilot Review** - Roy reviews diff in VS Code Copilot (free)
+3. **Skip Review** - Proceed directly to production
 
 ---
 
@@ -30,11 +36,17 @@ A **second-opinion** review of sprint changes before production deployment. This
 
 ---
 
-## Who Runs It
+## Who Decides
 
-**Owner:** Reviewer agent
+**Owner:** Roy (User)
 
-**When:** At step 10a of `/sprint` workflow, after:
+**Reviewer's role:**
+1. Generate diff file: `~/Desktop/sprint-{NUMBER}-diff.txt`
+2. Present three options to Roy (Automated / Manual / Skip)
+3. Wait for Roy's choice
+4. Execute chosen path
+
+**When offered:** At step 10a of `/sprint` workflow, after:
 1. All Developer-Reviewer loops complete
 2. All changes approved and deployed to staging
 3. User signals readiness for production deployment
@@ -184,17 +196,88 @@ Please verify branches and try again.
 
 ## Reviewer's Workflow
 
-### Step 1: Run Codex Review
+### Step 1: Generate Diff File
 
-When Roy signals sprint closure, Reviewer runs the script:
+When Roy signals sprint closure, generate the diff file:
 
+```bash
+# Extract sprint number
+SPRINT_NUM=$(grep -o "sprint-[0-9]*" docs/sprints/*.active.md | head -1 | grep -o "[0-9]*")
+
+# Generate diff on Desktop
+git diff main..develop > ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
+
+# Report size
+ls -lh ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
+echo "Diff saved to: ~/Desktop/sprint-${SPRINT_NUM}-diff.txt"
+```
+
+### Step 2: Present Options to Roy
+
+Post to Linear AND respond in thread:
+
+```markdown
+## Peer Review Options
+
+I've generated the diff file: ~/Desktop/sprint-{NUMBER}-diff.txt ({SIZE})
+
+Choose how you'd like to review:
+
+**Option A: Automated Codex Review** (~$0.01-0.50 with gpt-4o-mini)
+- I'll run the script and present findings
+- Structured output with severity levels
+- Takes ~30 seconds
+Command: `~/.claude/scripts/codex-review.sh <staging-url> main..develop <spec-file>`
+
+**Option B: Manual Copilot Review** (Free)
+1. Open VS Code Copilot Chat (Cmd+Shift+I)
+2. Attach ~/Desktop/sprint-{NUMBER}-diff.txt
+3. Ask: "Review this diff for security, bugs, and quality issues"
+
+**Option C: Skip Review**
+- Proceed directly to production deployment
+
+Which option do you prefer?
+```
+
+### Step 3: Execute Based on Choice
+
+**Option A: Automated Codex Review**
+
+Run the script:
 ```bash
 ~/.claude/scripts/codex-review.sh <staging-url> <commit-range> <spec-file>
 ```
 
-### Step 2: Evaluate Recommendations
+Then proceed to Step 4 (Evaluate Recommendations) below.
 
-Review each Codex recommendation and categorize:
+**Option B: Manual Copilot Review**
+
+Post to Linear:
+```markdown
+## Manual Peer Review in Progress
+
+Roy is performing manual peer review via VS Code Copilot.
+Awaiting feedback.
+```
+
+Wait for Roy to provide findings. If Roy returns recommendations, treat them as "peer review recommendations" and follow Step 4 evaluation process.
+
+**Option C: Skip Review**
+
+Post to Linear:
+```markdown
+## Peer Review Skipped
+
+Per Roy's decision, proceeding without peer review.
+Ready for production deployment.
+```
+
+Notify Eng Manager: "Sprint ready for production. No peer review requested."
+
+### Step 4: Evaluate Recommendations (Option A or B)
+
+Review each recommendation and categorize:
 
 **ACCEPT if:**
 - Identifies real security issue
@@ -210,22 +293,22 @@ Review each Codex recommendation and categorize:
 - High effort for marginal gain
 - Out of scope for this sprint
 
-### Step 3: Post to Linear
+### Step 5: Post Evaluation to Linear
 
 **Format:**
 
 ```markdown
-## 🤖 OpenAI Codex Peer Review Complete
+## 🤖 Peer Review Complete
 
+**Source:** [OpenAI Codex / VS Code Copilot]
 **Reviewed:** [commit range]
-**Model:** [model used]
 **Recommendations:** [N] total
 
 ### Accepted ([X])
-1. **[file:line]** — [Codex recommendation]
+1. **[file:line]** — [Recommendation]
    → [What Developer should do]
 
-2. **[file:line]** — [Codex recommendation]
+2. **[file:line]** — [Recommendation]
    → [What Developer should do]
 
 ### Rejected ([Y])
@@ -236,16 +319,16 @@ Review each Codex recommendation and categorize:
 [Next steps based on outcome - see below]
 ```
 
-### Step 4: Next Steps Based on Outcome
+### Step 6: Next Steps Based on Outcome
 
 **If accepted recommendations exist:**
 
 Invoke Developer with:
 ```
 Issue: {PREFIX}-##
-Status: CODEX RECOMMENDATIONS (Final polish before production)
+Status: PEER REVIEW RECOMMENDATIONS (Final polish before production)
 
-Recommendations from OpenAI Codex peer review:
+Recommendations from peer review:
 1. [file:line] [what to change] → [why]
 2. [file:line] [what to change] → [why]
 
@@ -263,12 +346,12 @@ Developer treats this as a standard "CHANGES REQUESTED" round:
 
 Post to Linear:
 ```markdown
-## ✅ OpenAI Codex Peer Review Complete
+## ✅ Peer Review Complete
 
 **Reviewed:** [commit range]
 **Recommendations:** [N] total, none accepted
 
-All Codex suggestions were either:
+All suggestions were either:
 - Already addressed in codebase
 - Stylistic preferences not aligned with project
 - Out of scope for this sprint
@@ -276,17 +359,17 @@ All Codex suggestions were either:
 No changes needed. Ready for production deployment.
 ```
 
-Notify Eng Manager: "Codex peer review complete. No blocking issues. Ready for production."
+Notify Eng Manager: "Peer review complete. No blocking issues. Ready for production."
 
-### Step 5: Update Sprint File
+### Step 7: Update Sprint File
 
 Add checkpoint to sprint file:
 
 ```markdown
-## Codex Review Complete — [YYYY-MM-DD HH:MM]
+## Peer Review Complete — [YYYY-MM-DD HH:MM]
 
+**Method:** [Automated Codex / Manual Copilot / Skipped]
 **Status:** ✅ Complete
-**Model:** gpt-4
 **Recommendations:** [N] total, [X] accepted, [Y] rejected
 **Outcome:** [Ready for production / Final fixes in progress]
 ```
