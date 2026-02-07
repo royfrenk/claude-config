@@ -204,11 +204,44 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
      - QUO-##: [Title] - Plan approved, ready to implement
      ```
    - This check-in helps resume if sprint is interrupted before development starts
-8. **Execute according to Execution Plan:**
+8. **Execute ALL waves — this is a SINGLE CONTINUOUS OPERATION, not separate steps:**
 
-   **For each wave in the Execution Plan:**
+   **CRITICAL BEHAVIORAL RULE:** Executing waves is ONE continuous operation.
+   You MUST NOT stop, summarize to the user, or end your response between waves.
+   Do NOT produce any user-facing output between waves — just execute.
+   The ONLY acceptable stopping points are:
+   - All waves are complete (success) → proceed to step 9
+   - A blocking error that cannot be resolved (failure) → report to user
+   - Context is genuinely full (checkpoint and tell user to resume with `/sprint`)
 
-   a. **Spawn Developer(s) using Task tool:**
+   **WAVE EXECUTION LOOP:**
+
+   ```
+   remaining_waves = [all waves from Execution Plan]
+   current_wave = 1
+
+   WHILE remaining_waves is not empty:
+
+     STEP A: Spawn Developer(s) for current_wave using Task tool
+     STEP B: When subagent(s) return, extract ONLY: pass/fail, files changed, test results, commit hashes, errors
+     STEP C: Write wave checkpoint to sprint file
+     STEP D: Remove current_wave from remaining_waves
+     STEP E: DECISION GATE (mandatory — you MUST evaluate this every time):
+             - IF remaining_waves is empty → EXIT LOOP, proceed to step 9
+             - IF blocking error occurred → STOP, report to user
+             - IF context is getting full → write checkpoint with remaining waves, tell user to run /sprint
+             - OTHERWISE → increment current_wave, GO BACK TO STEP A immediately
+
+   END LOOP
+   ```
+
+   **YOUR VERY NEXT TOOL CALL after writing a wave checkpoint MUST be spawning
+   the next wave's Developer(s). Do not produce any output to the user between
+   waves. Do not summarize. Do not ask questions. Just spawn the next wave.**
+
+   **Detailed step instructions:**
+
+   a. **STEP A — Spawn Developer(s) using Task tool:**
       - **Single Developer (sequential):**
         ```
         Issue: {PREFIX}-##
@@ -239,25 +272,15 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
           Sequence: independent
         ```
 
-   b. **Each Developer (runs automatically):**
-      - Updates spec status (🟥→🟨→🟩) for their assigned tasks
-      - Implements code changes
-      - Runs verification
-      - **Automatically submits to Reviewer** (no user input)
-      - Waits for Reviewer decision
-      - If approved: Deploys to staging (automatic)
-      - If changes requested: Fixes and resubmits (automatic loop, max 3 rounds)
+   b. **STEP B — Process subagent results (minimize context consumption):**
+      - Extract ONLY: (1) pass/fail status, (2) files changed count, (3) test pass/fail counts, (4) commit hashes, (5) any blocking errors
+      - Do NOT absorb full subagent output, file contents, or verbose logs
+      - If tests are failing, spawn a new Developer subagent to fix — do NOT fix yourself
 
-   c. **Reviewer reviews all submissions from the wave:**
-      - If multiple Developers in wave → spawn parallel Reviewer sub-agents
-      - Each Reviewer posts approval/changes to Linear
-      - Parent Reviewer consolidates: "Wave 1: All approved" or "Dev A approved, Dev B needs changes"
-
-   d. **After wave completes (MANDATORY GATE — do not skip):**
-      - All Developers in wave deploy to staging (push to develop)
-      - Update spec: mark wave tasks complete
+   c. **STEP C — Write wave checkpoint to sprint file:**
       - Post wave completion to Linear (non-blocking - log if fails)
-      - **MANDATORY: Write Wave Checkpoint to sprint file:**
+      - Update spec: mark wave tasks complete
+      - Write checkpoint:
         ```markdown
         ## Check-in: Wave [X] Complete — [YYYY-MM-DD HH:MM]
 
@@ -271,19 +294,19 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
         - Dev A: Task [#] - ✅ Deployed
         - Dev B: Task [#] - ✅ Deployed
         ```
-      - **MANDATORY: Re-read the Execution Plan from the spec file** to confirm remaining waves
-      - **MANDATORY: Verify the sprint todo list still includes remaining waves**
-      - Only then proceed to next wave
 
-   e. **Move to next wave (MANDATORY — never stop between waves):**
-      - If remaining waves exist, you MUST proceed to the next wave
-      - Do NOT stop, summarize, or ask the user if you should continue
-      - The approved execution plan is the contract — execute all waves
-      - If you are running low on context, checkpoint and tell the user to run `/sprint` to resume
+   d. **STEP D + E — DECISION GATE (this is the most important step — DO NOT SKIP):**
+      - Re-read the Execution Plan from the spec file to confirm remaining waves
+      - **IF more waves remain: your IMMEDIATE next action is to spawn the next wave's
+        Developer(s) via the Task tool. Do NOT write any user-facing text. Do NOT
+        summarize. Do NOT stop. Just call the Task tool for the next wave.**
+      - IF all waves complete: proceed to step 9
+      - IF blocking error: stop and report
+      - IF context is full: checkpoint remaining waves and tell user to run `/sprint`
 
-   f. **Repeat until ALL waves complete**
-      - A sprint is not done until every wave in the execution plan has been executed
-      - Stopping after Wave 1 when Wave 2+ exists is a FAILURE — treat it as a blocker and flag it
+   **ANTI-PATTERN WARNING:** If you find yourself writing a response to the user
+   like "Wave 1 is complete. Moving to Wave 2..." — you are about to stop.
+   Do NOT do this. Instead, silently spawn the next wave's Task tool call.
 
 9. **Pre-handoff verification (MANDATORY before user testing):**
    - Run full test suite (backend + frontend) — not just changed code
@@ -439,15 +462,10 @@ When a Developer subagent returns results:
 - If tests are failing after a subagent completes, **spawn a new Developer subagent** to fix them
 - **NEVER fix code yourself** — you are the orchestrator, not a developer
 - If you catch yourself reading source files or editing code, STOP — spawn a Developer subagent instead
-
-## Wave Completion is Non-Negotiable
-
-- An approved execution plan with N waves means ALL N waves must execute
-- Stopping after wave K < N without explicit user cancellation is a sprint failure
-- If context is running low between waves:
-  1. Write a checkpoint to the sprint file with remaining waves
-  2. Tell the user: "Context is getting full. Remaining work: [waves]. Please run `/sprint` to resume."
-  3. Do NOT silently stop
+- **AFTER processing results: Check if more waves remain. If yes, your IMMEDIATE next
+  action is to spawn the next wave's Developer(s) via the Task tool. Do not output
+  anything to the user. Do not summarize. Do not stop. Wave transitions are automatic
+  — like breathing, not deliberate decisions.**
 
 ## Sprint Resume
 

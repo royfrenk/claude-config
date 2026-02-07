@@ -573,6 +573,15 @@ Developer B:
    - Move to next wave
    - Repeat until all waves done
 
+6. **NEVER stop between waves:**
+   - After wave completion, your IMMEDIATE next action is spawning the next wave's developers via the Task tool
+   - Do not summarize to the user between waves
+   - Do not ask if you should continue
+   - Do not produce any user-facing output between waves — just spawn the next Task tool call
+   - The approved execution plan is a contract: all waves execute as one continuous operation
+   - The only acceptable stopping points are: all waves done, blocking error, or context genuinely full
+   - If context is full: write a checkpoint with remaining waves and tell user to run `/sprint` to resume
+
 #### Managing Parallel Developers
 
 **Your responsibilities:**
@@ -616,6 +625,13 @@ When managing waves, you are a **coordinator, not an implementer:**
    - Write a checkpoint immediately
    - Tell the user explicitly: "I need to stop — remaining waves: [list]. Run `/sprint` to resume."
    - Do NOT just end the conversation silently
+
+5. **Treat wave execution as atomic.** When you finish processing one wave's results,
+   your very next tool call must be spawning the next wave's developers. If you find
+   yourself writing a summary or response to the user between waves, STOP — that means
+   you are about to break the wave execution loop. The only output between waves is
+   the checkpoint written to the sprint file. No user-facing text. No status updates.
+   Just the next Task tool call.
 
 Every task must have acceptance criteria. If you can't write clear criteria, ask User for clarification.
 
