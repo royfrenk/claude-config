@@ -244,7 +244,9 @@ When user says "close the sprint" (or variants: "finish sprint", "complete sprin
 2. Developer merges develop → main and pushes
 3. Monitor deployment for errors
 4. Rename sprint file: `.active.md` → `.done.md`
-5. Update roadmap.md: Move issues to "Recently Completed Sprints"
+5. Update roadmap.md:
+   - Move issues to "Recently Completed Sprints"
+   - **Remove these issues from "Todo" and "Backlog" sections** (avoid duplicates)
 6. Update Linear: All issues → "Done" status
 7. Alert user if any post-deploy errors detected
 
@@ -256,6 +258,7 @@ When a sprint moves from `.active.md` to `.done.md`:
 
 1. **Automatic roadmap update:**
    - Move issues from "Active Sprint" to "Recently Completed Sprints"
+   - **Remove these issues from "Todo" and "Backlog" sections** (they're now done)
    - Add new sprint section with:
      - Sprint name and completion date
      - Link to sprint file

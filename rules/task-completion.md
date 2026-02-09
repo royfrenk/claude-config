@@ -102,7 +102,26 @@ Linear: [status updated to In Review]
    - [Edge cases to check]
    - [Any workflows or UI changes]
 
-2. **Report findings:**
+2. **Peer review (optional):** Review the code changes
+
+   I've pushed to staging. You can review the diffs using:
+
+   **Option A - Codex Review (Automated):**
+   - Tell me "run codex review" or "peer review"
+   - I'll generate diff and run OpenAI analysis
+   - Reviews: security, bugs, code quality
+   - Cost: ~$0.01-0.50 (depends on size)
+
+   **Option B - Manual Review:**
+   - View changes in GitHub or Linear
+   - Use VS Code Copilot: Attach diff file and ask for review
+
+   **Option C - Skip:**
+   - Proceed to testing without code review
+
+   See `~/.claude/guides/codex-peer-review.md` for details.
+
+3. **Report findings:**
    - If you find issues: Tell me what's broken or unexpected
    - If you have questions: Ask me for clarification
    - If all looks good: Tell me "ready for production" or "close the sprint"

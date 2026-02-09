@@ -367,6 +367,7 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
     - Rename sprint file from `.active.md` to `.done.md`
     - Update `docs/roadmap.md`:
       - Move issues from "Active Sprint" to new section under "Recently Completed Sprints"
+      - **Remove these issues from "Todo" and "Backlog" sections** (they're now done)
       - Include sprint name, completion date, link to sprint file
       - Show table of completed issues with priority, issue, title, status, spec
       - Keep only 2-3 most recent completed sprints (remove older entries)
