@@ -30,22 +30,11 @@ Read src/services/auth.ts lines 45-80
 
 ### Agent Context Isolation
 
-Subagents (Explorer, Plan-Writer, Developer) have **separate context**. They can:
+Subagents (Explorer, Plan-Writer) have **separate context**. They can:
 - Read many files without bloating main context
 - Return only summaries to main context
 
-**Leverage this:** Let subagents do heavy work. Keep orchestrator context clean.
-
-### Subagent Result Compression
-
-When subagent results return to the orchestrator:
-- **Developers:** Accept only: status, files changed, test summary, commit hashes
-- **Explorers:** Accept only: files to modify, integration points, complexity assessment
-- **Plan-Writers:** Accept only: task count, dependency analysis, execution strategy
-
-**Critical for multi-wave sprints:** Each wave's subagent results consume context. After 2+ waves, context pressure can cause the orchestrator to lose track of remaining waves. Aggressive summarization prevents this.
-
-**Rule:** If you are the orchestrator and find yourself reading source code or fixing bugs, you have crossed the boundary. Spawn a subagent instead.
+**Leverage this:** Let Explorer do heavy exploration.
 
 ## Checkpointing
 

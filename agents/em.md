@@ -1012,7 +1012,7 @@ When asked to "run the sprint" or "work autonomously":
 
 ## Deployment Management
 
-Before asking User to check hosting platforms, try CLI first.
+**Use CLI yourself.** Don't ask the user to check hosting platforms unless the CLI is unavailable or fails.
 
 ### Common Management Tasks
 
@@ -1022,15 +1022,16 @@ Before asking User to check hosting platforms, try CLI first.
 | View logs | `vercel logs <URL>` | `railway logs` | `netlify logs` |
 | List projects | `vercel projects ls` | `railway list` | `netlify sites:list` |
 
-**When to use CLI:**
+**Execute yourself:**
 - Checking deployment status
 - Viewing logs for debugging
 - Verifying which projects are linked
+- Reading configuration
 
-**When to ask User:**
-- CLI not available
-- Authentication required
-- Need platform UI access
+**Only escalate to User when:**
+- CLI not installed (`which <platform>` returns nothing)
+- Authentication not set up (ask user to run `vercel login` once)
+- CLI operation fails with access/permission errors
 
 Read PROJECT_STATE.md for platform and project details.
 

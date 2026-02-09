@@ -824,15 +824,17 @@ Output results in structured format:
 
 ## Deployment Management
 
-Before asking User to perform hosting actions, try CLI first.
+**Execute CLI operations yourself.** Don't offer the user to do it first - just do it when needed.
 
 ### Check if CLI Available
+
+Always check first:
 
 ```bash
 which vercel || which railway || which netlify
 ```
 
-If installed, attempt CLI action first. Only escalate to User if CLI fails.
+If CLI is installed, execute the operation. Only escalate if you encounter authentication errors, missing permissions, or risky/destructive operations.
 
 ### Common Operations
 
@@ -856,28 +858,84 @@ If installed, attempt CLI action first. Only escalate to User if CLI fails.
    - Run `<platform> link` to connect CLI to project
    - Document in PROJECT_STATE.md: "CLI linked: yes"
 
-### Interactive Commands (Require User)
+### Authentication vs Operations
 
-If CLI requires interactive input:
+**One-time setup** (user must do once):
 - `vercel login` - User must authenticate
 - `railway login` - User must authenticate
-- Multi-project selection - User must choose
+- `vercel link` (first time) - User must select project
 
-**Handle this:**
-```
-⚠️ CLI requires authentication.
+**After authentication, execute operations yourself:**
+- `vercel env add KEY` - Add environment variable
+- `vercel env ls` - List environment variables
+- `vercel logs URL` - Check deployment logs
+- `railway variables set KEY=VALUE` - Set variable
+- `railway logs` - Check logs
 
-Please run: `vercel login`
+**When you encounter auth errors:**
+1. Check if CLI authenticated: `vercel whoami` or `railway whoami`
+2. If not authenticated, request one-time setup:
 
-Then reply "done" and I'll continue.
-```
+   ```
+   ⚠️ CLI requires authentication.
 
-### When to Ask User Instead
+   Please run: `vercel login`
 
-- CLI not installed (`which <platform>` returns nothing)
-- CLI authentication fails
-- Action requires permissions you don't have (billing, team settings)
-- Project has multiple environments and it's unclear which to target
+   Then reply "done" and I'll continue.
+   ```
+
+3. After user confirms, proceed with your operation
+
+### When to Ask Permission
+
+**Ask permission before:**
+- Deleting resources (`vercel env rm`, `railway service delete`)
+- Modifying production settings
+- Operations that affect billing or team settings
+
+**Execute without asking:**
+- Adding environment variables
+- Checking logs or status
+- Listing resources
+- Reading configuration
+
+### When to Escalate to User
+
+Only escalate in these scenarios:
+
+1. **CLI not installed**: `which <platform>` returns nothing
+2. **Authentication not set up**: `vercel whoami` fails (ask user to run `vercel login` once)
+3. **Permissions insufficient**: Operation fails with "Access denied" or "Requires team owner"
+4. **Destructive operation**: Needs user confirmation (see "When to Ask Permission" above)
+
+**For normal operations (env vars, logs, status checks), just execute.**
+
+### Environment Variable Operations
+
+When adding/updating environment variables:
+
+1. **Just do it** - Don't overthink which environment
+   - If implementing a feature, add the variable where needed
+   - Vercel: Use interactive prompts to select environments
+   - Railway: Variables apply to all deployments automatically
+
+2. **Execute the operation:**
+   ```bash
+   # Vercel - interactive selection
+   vercel env add KEY_NAME
+   # CLI will prompt: select environments with space, enter to confirm
+
+   # Railway - applies everywhere
+   railway variables set KEY_NAME=value
+   ```
+
+3. **Verify it worked:**
+   ```bash
+   vercel env ls  # Shows all environments
+   railway variables  # Shows current values
+   ```
+
+4. **Document in CLAUDE.md** if it's a new required variable
 
 ### Storing CLI Context
 
