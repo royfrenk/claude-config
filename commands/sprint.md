@@ -204,44 +204,11 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
      - QUO-##: [Title] - Plan approved, ready to implement
      ```
    - This check-in helps resume if sprint is interrupted before development starts
-8. **Execute ALL waves — this is a SINGLE CONTINUOUS OPERATION, not separate steps:**
+8. **Execute according to Execution Plan:**
 
-   **CRITICAL BEHAVIORAL RULE:** Executing waves is ONE continuous operation.
-   You MUST NOT stop, summarize to the user, or end your response between waves.
-   Do NOT produce any user-facing output between waves — just execute.
-   The ONLY acceptable stopping points are:
-   - All waves are complete (success) → proceed to step 9
-   - A blocking error that cannot be resolved (failure) → report to user
-   - Context is genuinely full (checkpoint and tell user to resume with `/sprint`)
+   **For each wave in the Execution Plan:**
 
-   **WAVE EXECUTION LOOP:**
-
-   ```
-   remaining_waves = [all waves from Execution Plan]
-   current_wave = 1
-
-   WHILE remaining_waves is not empty:
-
-     STEP A: Spawn Developer(s) for current_wave using Task tool
-     STEP B: When subagent(s) return, extract ONLY: pass/fail, files changed, test results, commit hashes, errors
-     STEP C: Write wave checkpoint to sprint file
-     STEP D: Remove current_wave from remaining_waves
-     STEP E: DECISION GATE (mandatory — you MUST evaluate this every time):
-             - IF remaining_waves is empty → EXIT LOOP, proceed to step 9
-             - IF blocking error occurred → STOP, report to user
-             - IF context is getting full → write checkpoint with remaining waves, tell user to run /sprint
-             - OTHERWISE → increment current_wave, GO BACK TO STEP A immediately
-
-   END LOOP
-   ```
-
-   **YOUR VERY NEXT TOOL CALL after writing a wave checkpoint MUST be spawning
-   the next wave's Developer(s). Do not produce any output to the user between
-   waves. Do not summarize. Do not ask questions. Just spawn the next wave.**
-
-   **Detailed step instructions:**
-
-   a. **STEP A — Spawn Developer(s) using Task tool:**
+   a. **Spawn Developer(s) using Task tool:**
       - **Single Developer (sequential):**
         ```
         Issue: {PREFIX}-##
@@ -272,7 +239,7 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
           Sequence: independent
         ```
 
-   b. **STEP B — Each Developer (runs automatically with MANDATORY review gate):**
+   b. **Each Developer (runs automatically with MANDATORY review gate):**
 
       **Implementation phase:**
       - Updates spec status (🟥→🟨→🟩) for their assigned tasks
@@ -318,41 +285,32 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
       - Resubmits to Reviewer (Round 2, then Round 3 if needed)
       - Max 3 rounds - after that, escalate to EM
 
-      **Process subagent results (minimize context consumption):**
-      - Extract ONLY: (1) pass/fail status, (2) files changed count, (3) test pass/fail counts, (4) commit hashes, (5) any blocking errors
-      - Do NOT absorb full subagent output, file contents, or verbose logs
-      - If tests are failing, spawn a new Developer subagent to fix — do NOT fix yourself
+   c. **Reviewer reviews all submissions from the wave:**
+      - If multiple Developers in wave → spawn parallel Reviewer sub-agents
+      - Each Reviewer posts approval/changes to Linear
+      - Parent Reviewer consolidates: "Wave 1: All approved" or "Dev A approved, Dev B needs changes"
 
-   c. **STEP C — Write wave checkpoint to sprint file:**
+   d. **After wave approval:**
+      - All Developers in wave deploy to staging (push to develop)
+      - Update spec: mark wave complete
       - Post wave completion to Linear (non-blocking - log if fails)
-      - Update spec: mark wave tasks complete
-      - Write checkpoint:
+      - **Check-in: Wave Complete**
         ```markdown
         ## Check-in: Wave [X] Complete — [YYYY-MM-DD HH:MM]
 
         **Status:** 🟨 In Progress
-        **Wave:** [X] of [Y] total waves
+        **Wave:** [X] of [Y]
         **Completed Tasks:** [list]
-        **Remaining Waves:** [list wave numbers and their tasks]
-        **Next:** Wave [X+1]: [task names] [or "Final verification" if last wave]
+        **Next:** Wave [X+1] [or "Final verification" if last wave]
 
         **Wave [X] Details:**
         - Dev A: Task [#] - ✅ Deployed
         - Dev B: Task [#] - ✅ Deployed
         ```
 
-   d. **STEP D + E — DECISION GATE (this is the most important step — DO NOT SKIP):**
-      - Re-read the Execution Plan from the spec file to confirm remaining waves
-      - **IF more waves remain: your IMMEDIATE next action is to spawn the next wave's
-        Developer(s) via the Task tool. Do NOT write any user-facing text. Do NOT
-        summarize. Do NOT stop. Just call the Task tool for the next wave.**
-      - IF all waves complete: proceed to step 9
-      - IF blocking error: stop and report
-      - IF context is full: checkpoint remaining waves and tell user to run `/sprint`
+   e. **Move to next wave** (if any)
 
-   **ANTI-PATTERN WARNING:** If you find yourself writing a response to the user
-   like "Wave 1 is complete. Moving to Wave 2..." — you are about to stop.
-   Do NOT do this. Instead, silently spawn the next wave's Task tool call.
+   f. **Repeat until all waves complete**
 
 9. **Pre-handoff verification (MANDATORY before user testing):**
    - Run full test suite (backend + frontend) — not just changed code
@@ -510,28 +468,6 @@ Reported by User:
   - External dependency is missing (secrets, credentials, etc.)
   - Spec is ambiguous and blocks work
 
-## Subagent Result Handling
-
-When a Developer subagent returns results:
-- **Do NOT absorb the full subagent output into your context**
-- Extract only: (1) pass/fail status, (2) files changed, (3) test results summary, (4) any errors needing attention
-- If tests are failing after a subagent completes, **spawn a new Developer subagent** to fix them
-- **NEVER fix code yourself** — you are the orchestrator, not a developer
-- If you catch yourself reading source files or editing code, STOP — spawn a Developer subagent instead
-- **AFTER processing results: Check if more waves remain. If yes, your IMMEDIATE next
-  action is to spawn the next wave's Developer(s) via the Task tool. Do not output
-  anything to the user. Do not summarize. Do not stop. Wave transitions are automatic
-  — like breathing, not deliberate decisions.**
-
-## Sprint Resume
-
-When `/sprint` detects an active sprint with incomplete waves:
-- Read the sprint file for the latest "Check-in: Wave X Complete" entry
-- Read the execution plan from the spec file
-- Identify which waves have NOT been completed
-- Resume from the next incomplete wave
-- Do NOT re-run completed waves
-
 ## Technical Spec Template
 
 When creating a new spec file, use this structure:
@@ -562,6 +498,14 @@ When creating a new spec file, use this structure:
 ## Acceptance Criteria
 - [ ] [Criterion 1]
 - [ ] [Criterion 2]
+
+## Review Tracking
+
+**Total Review Rounds:** 0
+
+| Round | Date | Status | Commits Reviewed | Reviewer Comment |
+|-------|------|--------|------------------|------------------|
+| — | — | — | — | — |
 
 ## Notes
 [Any risks, decisions, or context]
@@ -621,7 +565,33 @@ After completing sprint (or when stopping):
 - PROJECT_STATE.md: [updated YYYY-MM-DD / NOT UPDATED — reason]
 
 ### Completed This Sprint
-- [Issue]: [one-line outcome]
+
+**Read review tracking from each spec file before outputting this section:**
+
+For each issue in sprint:
+1. Read `docs/technical-specs/QUO-##.md`
+2. Find "Review Tracking" section
+3. Extract "Total Review Rounds" count
+4. Extract final status (Approved / Pending / Not Reviewed)
+
+| Issue | Title | Review Rounds | Status |
+|-------|-------|---------------|--------|
+| QUO-## | [Title] | [N] rounds | ✅ Approved |
+| QUO-## | [Title] | [N] rounds | ✅ Approved |
+
+**Review Summary:**
+- Total issues: [X]
+- Issues reviewed: [X] (100%)
+- Total review rounds: [sum of all rounds]
+- Average: [avg] rounds per issue
+
+**If any issues NOT reviewed (0 rounds or missing Review Tracking section):**
+```
+⚠️ Issues deployed without review:
+- QUO-##: [Title] - NOT REVIEWED
+
+This violates the mandatory review gate. Recommend retroactive review before production.
+```
 
 ### Acceptance Criteria Report
 
@@ -644,7 +614,54 @@ For each completed issue, verify all acceptance criteria:
 - [Next sprint focus / priority]
 
 ### What You Should Do Next
-- [Action] — Owner: Roy
+
+1. **Test on staging:** [staging URL]
+
+   Test each completed issue:
+   - QUO-##: [Specific test instructions]
+   - QUO-##: [Specific test instructions]
+
+2. **Optional: Run Codex Peer Review**
+
+   All issues have been reviewed by the Reviewer agent ([X] review rounds total).
+
+   **Before production deployment, you can request an AI peer review:**
+
+   **Option A - Automated Codex Review (~$0.01-0.50):**
+   - Tell me: "Run Codex peer review" or "Option A"
+   - I'll generate diff: `~/Desktop/sprint-{NUMBER}-diff.txt`
+   - Run OpenAI analysis via `~/.claude/scripts/codex-review.sh`
+   - Reviews: security vulnerabilities, bugs, code quality
+   - Cost: ~$0.01-0.50 with gpt-4o-mini (depends on diff size)
+   - Time: ~30 seconds
+
+   **Option B - Manual Review (Free):**
+   - I'll generate diff file on your Desktop
+   - Open in VS Code
+   - Use Copilot Chat: "Review this code for security and quality issues"
+   - Apply your own judgment and expertise
+   - Time: 10-20 minutes
+
+   **Option C - Skip:**
+   - Proceed directly to production
+   - Reviewer agent approval is sufficient for most changes
+
+   **When to use Codex peer review:**
+   - ✓ Complex feature launches (multi-file, architectural changes)
+   - ✓ Infrastructure changes (database, auth, payments, email)
+   - ✓ High-risk changes (data mutations, user-facing critical paths)
+   - ✓ First time implementing a pattern (new to codebase)
+   - ✓ Security-sensitive code (authentication, authorization, data access)
+
+   **When to skip:**
+   - Simple bug fixes (1-2 file changes)
+   - UI-only changes (styling, text updates)
+   - Low-risk iterations (minor tweaks)
+   - Changes already manually reviewed by human
+
+3. **After testing (and optional peer review):**
+   - If issues found: Report them and I'll iterate
+   - If all good: Tell me "Deploy to production" or "Close the sprint"
 
 ### Next Issues In Line
 - [Issue IDs / titles]

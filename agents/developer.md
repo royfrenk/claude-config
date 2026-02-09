@@ -311,6 +311,22 @@ Ready for staging: yes
 mcp__linear__create_comment(issueId, "📝 **Submitted for Review**\n\n**Changes:**\n- [file]: [change]\n\n**Verification:** All checks passed\n**Tests:** [count] passing\n\nAwaiting Reviewer approval.")
 ```
 
+**Update spec file with review round:**
+
+Read the spec file to find current "Total Review Rounds" count, then update:
+
+```markdown
+## Review Tracking
+
+**Total Review Rounds:** [increment by 1]
+
+| Round | Date | Status | Commits Reviewed | Reviewer Comment |
+|-------|------|--------|------------------|------------------|
+| [N] | [YYYY-MM-DD] | Pending | [commit hash] | Awaiting reviewer feedback |
+```
+
+This tracks that you submitted for review Round N.
+
 **DO NOT PROCEED TO PHASE 5 WITHOUT APPROVAL. THIS IS NON-NEGOTIABLE.**
 
 **If you find yourself skipping this step or pushing without approval:**
@@ -944,35 +960,6 @@ Before submitting:
 - Change auth logic
 - Delete user data
 - Modify environment variables in Railway
-
-## Returning Results to Orchestrator
-
-When running as a subagent (spawned by EM or sprint command), return concise results:
-
-**Return format:**
-```
-## Developer Complete: [Issue/Task]
-
-**Status:** [PASS/FAIL]
-**Files Changed:** [count] ([list file paths])
-**Tests:** [X passed, Y failed] out of [Z total]
-**Verification:** [PASS/FAIL]
-**Commits:** [hash list]
-**Deployed:** [yes/no — branch]
-
-**Issues (if any):**
-- [Brief description of any problems]
-
-**Next:** [What should happen next]
-```
-
-**Do NOT include in your return:**
-- Full file contents you read
-- Intermediate edit steps
-- Full test output (just summary counts)
-- Verbose bash command output
-
-**Why:** The orchestrator has limited context. Verbose results cause it to lose track of the sprint plan and remaining waves.
 
 ## Escalation
 

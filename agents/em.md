@@ -313,7 +313,68 @@ Use this exact format at sprint end:
 - PROJECT_STATE.md: [updated YYYY-MM-DD / NOT UPDATED — reason]
 
 ### Completed This Sprint
-- [Issue]: [one-line outcome]
+
+**Generating Review Summary (Required Before Sprint Wrap-Up):**
+
+Before outputting sprint summary, read all spec files for issues in the sprint:
+
+**Process:**
+
+1. **Get list of issues in sprint:**
+   - Read active sprint file: `docs/sprints/sprint-###.active.md`
+   - Extract issue IDs from "Issues in Sprint" table
+
+2. **For each issue, read review tracking:**
+   ```bash
+   # Read spec file
+   Read docs/technical-specs/QUO-##.md
+
+   # Find "Review Tracking" section
+   # Extract "Total Review Rounds" count
+   # Check final status in table (Approved / Pending / Not Reviewed)
+   ```
+
+3. **Categorize issues:**
+   - **Reviewed & Approved:** Total rounds > 0, final status = "✅ Approved"
+   - **Pending Review:** Total rounds > 0, final status = "Pending"
+   - **NOT Reviewed:** Total rounds = 0 OR "Review Tracking" section missing
+
+4. **Output format:**
+
+| Issue | Title | Review Rounds | Status |
+|-------|-------|---------------|--------|
+| QUO-66 | Download fix | 3 rounds | ✅ Approved |
+| QUO-67 | Question text | 1 round | ✅ Approved |
+| QUO-68 | EMD calculator | 1 round | ✅ Approved |
+
+**Review Summary:**
+- Total issues: [X]
+- Issues reviewed: [X] ([%])
+- Total review rounds: [sum]
+- Average: [avg] rounds per issue
+
+5. **If any issues NOT reviewed, BLOCK sprint closure:**
+
+```
+⚠️ SPRINT CLOSURE BLOCKED
+
+Reason: Issue(s) deployed without review
+
+Issues missing review:
+- QUO-69: [Title] - 0 review rounds
+
+This violates the mandatory review gate (sprint.md lines 415-437).
+
+Required actions:
+1. Invoke Reviewer retroactively for unreviewed issues
+2. Wait for approval
+3. Update Review Tracking in spec files
+4. Then retry sprint closure
+
+STOPPING - Cannot proceed to production without review.
+```
+
+Post this to Linear and STOP. Do not proceed with production deployment.
 
 ### Acceptance Criteria Met
 - [Issue]: [AC1; AC2; AC3]
@@ -829,15 +890,6 @@ Developer B:
    - Move to next wave
    - Repeat until all waves done
 
-6. **NEVER stop between waves:**
-   - After wave completion, your IMMEDIATE next action is spawning the next wave's developers via the Task tool
-   - Do not summarize to the user between waves
-   - Do not ask if you should continue
-   - Do not produce any user-facing output between waves — just spawn the next Task tool call
-   - The approved execution plan is a contract: all waves execute as one continuous operation
-   - The only acceptable stopping points are: all waves done, blocking error, or context genuinely full
-   - If context is full: write a checkpoint with remaining waves and tell user to run `/sprint` to resume
-
 #### Managing Parallel Developers
 
 **Your responsibilities:**
@@ -857,37 +909,6 @@ Developer B:
 **What Developers DON'T do in parallel mode:**
 - Update Linear issue status (you do this)
 - Touch other Developers' assigned tasks in spec
-
-#### Orchestrator Discipline (CRITICAL)
-
-When managing waves, you are a **coordinator, not an implementer:**
-
-1. **Never fix code yourself.** If a Developer subagent returns with failing tests:
-   - Spawn a new Developer subagent with: "Fix failing tests: [list of failures]"
-   - Do NOT read source files, edit code, or run tests yourself
-   - Your context is for coordination, not implementation
-
-2. **Summarize subagent results aggressively.** When a subagent completes:
-   - Extract: pass/fail, files changed, test count, errors
-   - Discard: full file contents, intermediate steps, verbose output
-   - Your context budget is for tracking the sprint, not replaying implementation
-
-3. **Always re-read the execution plan after each wave.** Context can compact between waves. Before starting Wave N+1:
-   - Read the spec file's Execution Plan section
-   - Read the sprint file's latest checkpoint
-   - Confirm what wave you're on and what comes next
-
-4. **Never stop between waves without flagging it.** If you feel you're running out of context:
-   - Write a checkpoint immediately
-   - Tell the user explicitly: "I need to stop — remaining waves: [list]. Run `/sprint` to resume."
-   - Do NOT just end the conversation silently
-
-5. **Treat wave execution as atomic.** When you finish processing one wave's results,
-   your very next tool call must be spawning the next wave's developers. If you find
-   yourself writing a summary or response to the user between waves, STOP — that means
-   you are about to break the wave execution loop. The only output between waves is
-   the checkpoint written to the sprint file. No user-facing text. No status updates.
-   Just the next Task tool call.
 
 Every task must have acceptance criteria. If you can't write clear criteria, ask User for clarification.
 

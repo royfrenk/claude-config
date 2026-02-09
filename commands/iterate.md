@@ -236,14 +236,69 @@ After each batch:
 ## Iteration Update — [date]
 
 ### Fixed This Batch
-- [x] [description] → [commit]
-- [x] [description] → [commit]
+
+**Read review tracking from spec file before outputting:**
+
+For each fixed issue in batch:
+1. Read `docs/technical-specs/QUO-##.md`
+2. Find "Review Tracking" section
+3. Count total rounds for this issue
+
+| Issue | Description | Commit | Review Rounds |
+|-------|-------------|--------|---------------|
+| QUO-## | [description] | [hash] | [N] rounds, approved |
+| QUO-## | [description] | [hash] | [N] rounds, approved |
+
+**Review Summary:**
+- Issues fixed this batch: [X]
+- Review rounds this batch: [sum]
+- All issues reviewed: ✅ / ⚠️ [if any skipped review]
 
 ### Still Open
 - [ ] [description]
 
 ### Deployment
-- Staging: [status] — [URL]
+- Staging: [URL]
+
+### What You Should Do Next
+
+1. **Test the fixes on staging:**
+
+   Test each fixed issue:
+   - QUO-##: [Specific test instructions for this fix]
+   - QUO-##: [Specific test instructions for this fix]
+
+2. **Optional: Run Codex Peer Review**
+
+   This batch has been reviewed by the Reviewer agent ([X] review rounds this batch).
+
+   **Optional AI peer review before continuing:**
+
+   **Options:**
+   - **A - Automated Codex:** Tell me "Run Codex review" (~$0.01-0.50, 30 seconds)
+   - **B - Manual Review:** I'll generate diff, you review with VS Code Copilot (free, 10-20 min)
+   - **C - Skip:** Continue without peer review (fine for low-risk changes)
+
+   **Recommended for:**
+   - Infrastructure changes (database, auth, payments)
+   - Complex fixes touching multiple systems
+   - First-time patterns or approaches
+   - Security-sensitive code
+
+   **Skip for:**
+   - Simple bug fixes
+   - UI-only changes
+   - Low-risk iterations
+
+3. **Report findings:**
+   - If you find bugs: Tell me "Found issue with [X]"
+   - If you have questions: Ask me
+   - If fixes need adjustment: Describe what to change
+
+4. **Continue iterating:**
+   - Tell me: "More issues to report" (I'll add to next batch)
+   - Or: "All good, continue" (I'll mark batch complete)
+   - Or: "Ready for production" (I'll prepare for sprint closure)
 
 ### Next
 [What's left / waiting for more feedback]

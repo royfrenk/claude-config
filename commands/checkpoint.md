@@ -54,32 +54,6 @@ Save the current work state to the active spec file. Use this:
    Context can now be safely compacted.
    ```
 
-## Sprint-Level Checkpoint
-
-When working on a multi-wave sprint, also checkpoint the sprint file:
-
-1. **Identify the active sprint file**
-   - Check `docs/sprints/` for `*.active.md`
-
-2. **Add wave progress to sprint file**
-   ```markdown
-   ## Check-in: Wave [X] Complete — [YYYY-MM-DD HH:MM]
-
-   **Completed Waves:** [list]
-   **Remaining Waves:** [list with task descriptions]
-   **Execution Plan:** docs/technical-specs/{ISSUE_ID}.md — Execution Plan section
-
-   **Resume Instructions:**
-   1. Read this sprint file for latest checkpoint
-   2. Read spec file execution plan for remaining waves
-   3. Start next incomplete wave
-   ```
-
-3. **When to use sprint-level checkpoint:**
-   - After each wave completes (MANDATORY)
-   - Before stopping mid-sprint for any reason
-   - When context feels full during a multi-wave sprint
-
 ## When NOT to Checkpoint
 
 - In the middle of an incomplete thought/implementation

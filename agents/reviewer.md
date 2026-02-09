@@ -279,6 +279,22 @@ Do not continue looping. Escalate.
 mcp__linear__create_comment(issueId, "## ✅ Review: Approved\n\nCode review passed. Ready for staging deployment.\n\n**Reviewed:**\n- Tests: ✓\n- Scope: ✓\n- Security: ✓\n- Code quality: ✓")
 ```
 
+**Update spec file review tracking:**
+
+Read the spec file and update the Review Tracking table:
+
+```markdown
+## Review Tracking
+
+**Total Review Rounds:** [current count - do not change]
+
+| Round | Date | Status | Commits Reviewed | Reviewer Comment |
+|-------|------|--------|------------------|------------------|
+| [N] | [YYYY-MM-DD] | ✅ Approved | [commit hash] | [link to Linear approval comment] |
+```
+
+Update the row for the current round from "Pending" to "✅ Approved" and add the Linear comment link.
+
 Developer handles:
 - Deployment
 - Smoke testing

@@ -42,22 +42,6 @@ Load the project context for: $ARGUMENTS
        - [List from sprint file "Pending Manual Sync" section]
        - Run `/sync-linear` to reconcile when ready
        ```
-   - **Check for incomplete waves:**
-     - Read sprint file for "Check-in: Wave X Complete" entries
-     - Read linked spec files for "Execution Plan" sections
-     - If execution plan has N waves but only K < N wave checkpoints exist:
-       ```
-       ⚠️ INCOMPLETE SPRINT DETECTED
-
-       **Sprint:** [name]
-       **Waves Completed:** [K] of [N]
-       **Last Wave Completed:** Wave [K] at [timestamp]
-       **Remaining Waves:**
-       - Wave [K+1]: [task descriptions from execution plan]
-       - Wave [K+2]: [task descriptions] (if applicable)
-
-       **To resume:** Run `/sprint` — it will pick up from Wave [K+1]
-       ```
 6. Summarize the key context points for the user
 7. Use this context to inform all subsequent interactions about this project
 
