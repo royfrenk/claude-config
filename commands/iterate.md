@@ -46,11 +46,97 @@ Continue working on the current sprint after user testing reveals bugs or issues
 
 4. **Fix each issue:**
    - Follow full developer protocol (verification loop, commit format)
-   - After fix: mark [x] in sprint file
-   - After push: verify deployment succeeded
+   - After fix verification passes: proceed to 4a
+
+4a. **N-iteration circuit breaker:**
+   - Track number of attempts for each bug in sprint file
+   - If this is the 3rd failed attempt on same bug:
+     - STOP before making 4th attempt
+     - Invoke Reviewer to review approach
+     - Post to Linear: "⚠️ 3 failed attempts - requesting reviewer guidance"
+     - Wait for Reviewer's recommendations before continuing
+
+4b. **Submit to Reviewer (BLOCKING GATE - MANDATORY):**
+
+**This is a HARD GATE. Cannot proceed to 4c without explicit approval.**
+
+**ENFORCEMENT PROTOCOL:**
+
+1. **Before submitting, create checkpoint:**
+   - Update spec file: Add note "## Status: AWAITING_REVIEW ([timestamp])"
+   - Post to Linear: "⏸️ Submitted for review - deployment blocked until approved"
+   - Output to user: "Submitted to Reviewer. Waiting for approval before deployment..."
+
+2. **Submit to Reviewer:**
+   - Invoke Reviewer agent with:
+     - Issue ID
+     - Bug description
+     - Fix applied (files changed, approach)
+     - Commit hash
+     - Verification report (build, lint, tests all PASS)
+   - Reviewer posts response to Linear (approval or changes requested)
+
+3. **BLOCKING STATE - Cannot exit until approved:**
+
+   **You are now in a blocking loop. Check Linear for Reviewer response:**
+
+   **Required to proceed:**
+   - ✅ Linear issue has comment: "✅ Review: Approved" from reviewer agent
+   - ✅ Comment references current commit hash (or iteration batch)
+   - ✅ No "🔄 Changes Requested" or "🚫 Blocked" comments AFTER the approval
+
+   **While waiting:**
+   - Do NOT push to develop
+   - Do NOT skip this step even if user says "urgent" or "deploy now"
+   - If user asks status: Report "Waiting for Reviewer approval"
+   - You can continue to other bugs in the batch while waiting
+
+   **If review takes >30 minutes:**
+   - Check if Reviewer agent is still active
+   - If Reviewer not responding: Alert user and suggest invoking Reviewer again
+
+4. **Handle review outcomes:**
+
+   **Outcome A - Approved:**
+   - Reviewer posts "✅ Review: Approved" to Linear
+   - Update spec file: "## Status: APPROVED ([timestamp])"
+   - **Proceed to step 4c (Deploy)**
+
+   **Outcome B - Changes Requested:**
+   - Reviewer posts "🔄 Review: Changes Requested (Round [X])" with issues list
+   - Update spec file: "## Status: CHANGES_REQUESTED (Round [X])"
+   - **Return to step 3 (Fix bugs)** to address feedback
+   - After fixing: Return to step 4a (verification)
+   - Then resubmit to Reviewer (this becomes Round X+1)
+
+   **Outcome C - Blocked:**
+   - Reviewer posts "🚫 Review: Blocked" (security issue, architectural problem)
+   - Update spec file: "## Status: BLOCKED"
+   - **Escalate to user** - may require architecture change or security fix
+   - Do NOT proceed with deployment
+
+5. **Circuit breaker (3 rounds max):**
+   - Track review round count in spec file
+   - If this is 3rd round of changes requested without approval:
+     - Post to Linear: "⚠️ 3 review rounds without approval - escalating"
+     - Alert user: "Reviewer has requested changes 3 times. Need guidance."
+     - Wait for user decision before continuing
+
+**Fast-track protocol (Production incidents):**
+- If Linear issue has label "CRITICAL - Production Incident":
+  - Reviewer response time target: 15 minutes (vs 30 min normal)
+  - Reviewer prioritizes: security, data integrity, breaking changes
+  - Reviewer may defer: style issues, minor optimizations
+  - **Fast-track does NOT mean skip review** - approval still required
+  - All blocking gates still apply - just faster response
+
+4c. **Deploy after approval:**
+   - Push to develop
+   - Mark [x] in sprint file with commit hash
+   - Verify deployment succeeded
    - Continue until batch complete
 
-4a. **Check-in: Batch Complete (Automatic):**
+4d. **Check-in: Batch Complete (Automatic):**
    - Update sprint file with checkpoint:
      ```markdown
      ## Check-in: Iteration Batch [#] Complete — [YYYY-MM-DD HH:MM]
@@ -88,9 +174,15 @@ Follow this for EVERY bug fix — don't skip steps:
 
 ### Fixing
 - [ ] Run verification loop (build, lint, types, tests)
+- [ ] Check iteration count - if 3rd attempt, invoke Reviewer before proceeding
 - [ ] Commit with proper format (see `~/.claude/rules/task-completion.md`)
 
 ### After Fixing
+- [ ] **MANDATORY: Submit to Reviewer**
+  - [ ] Invoke Reviewer with fix details
+  - [ ] Wait for approval before deploying
+  - [ ] If changes requested: fix and resubmit
+  - [ ] Track iteration count - if 3rd attempt, Reviewer reviews approach
 - [ ] Push to `develop`
 - [ ] **Run automated staging verification** (see `~/.claude/agents/developer.md` Phase 6)
   - API health checks

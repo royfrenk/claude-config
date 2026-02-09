@@ -259,24 +259,32 @@ Overall:   [READY/NOT READY] for review
 
 **Only proceed to Phase 4 when Overall = READY.**
 
-### Phase 4: Submit to Reviewer (AUTOMATIC - NO USER INPUT)
+### Phase 4: Submit to Reviewer (BLOCKING - CANNOT BYPASS)
 
-**This step is automatic.** After verification passes, immediately invoke Reviewer. Do not ask user for permission.
+**This step is AUTOMATIC, MANDATORY, and BLOCKING.**
 
-**CRITICAL: You CANNOT proceed past this step without Reviewer approval.**
+**After Phase 3 verification passes:**
 
-Before updating Linear status to "In Review":
-Before deploying to staging:
-Before marking task complete:
+1. **Immediately invoke Reviewer** - no user input required
+2. **Post submission to Linear** with verification report
+3. **ENTER BLOCKING STATE** - you CANNOT proceed until approval received
 
-→ You MUST invoke Reviewer and receive approval.
+**Blocking mechanism:**
+```
+APPROVAL_RECEIVED = false
 
-"In Review" means "Under review by Reviewer agent", not "ready for User to review".
+while APPROVAL_RECEIVED == false:
+  - Check Linear for Reviewer's response
+  - If "✅ Review: Approved" found → APPROVAL_RECEIVED = true
+  - If "🔄 Changes Requested" found → Enter Phase 4.5 (Re-Review Loop)
+  - If "🚫 Blocked" found → Escalate to Eng Manager, EXIT
+  - If no response after 10 minutes → Notify Eng Manager, continue waiting
 
-Invoke Reviewer immediately after Phase 3 verification passes.
+# Only reach here if APPROVAL_RECEIVED == true
+Proceed to Phase 5 (Deploy)
+```
 
-Submit to Reviewer AND post to Linear. **Include verification report.**
-
+**Submit format:**
 ```
 Issue: {PREFIX}-##
 Task: [title]
@@ -298,12 +306,17 @@ Tests added: [list]
 Ready for staging: yes
 ```
 
-Post to Linear:
+**Post to Linear:**
 ```
 mcp__linear__create_comment(issueId, "📝 **Submitted for Review**\n\n**Changes:**\n- [file]: [change]\n\n**Verification:** All checks passed\n**Tests:** [count] passing\n\nAwaiting Reviewer approval.")
 ```
 
-Wait for Reviewer approval before deploying.
+**DO NOT PROCEED TO PHASE 5 WITHOUT APPROVAL. THIS IS NON-NEGOTIABLE.**
+
+**If you find yourself skipping this step or pushing without approval:**
+- STOP immediately
+- Output: "❌ ERROR: Attempted to bypass reviewer. This is prohibited."
+- Return to Phase 4 and properly submit for review
 
 ### Phase 4.5: Re-Review Loop (MANDATORY)
 
@@ -350,6 +363,18 @@ mcp__linear__create_comment(issueId, "📝 **Resubmitted for Review (Round [X])*
 
 **DO NOT DEPLOY TO STAGING UNTIL REVIEWER APPROVES.**
 
+### Fast-Track Review for Critical Issues
+
+**When Linear issue has label "CRITICAL - Production Incident":**
+
+Reviewer operates under expedited protocol:
+- Response time: 15 minutes (vs 30 minutes normal)
+- Focus areas: security, data integrity, breaking changes
+- May defer: style nitpicks, minor optimizations
+- Deeper review can happen retroactively after deployment
+
+**You still MUST wait for approval** - fast-track doesn't mean skip review.
+
 ### OpenAI Codex Recommendations (Sprint End)
 
 At sprint end, Reviewer may request OpenAI Codex peer review. If Codex identifies improvements, Reviewer will pass them to you as:
@@ -371,24 +396,107 @@ Status: CODEX RECOMMENDATIONS (Final polish before production)
 - This is the final polish step before production deployment
 - After approval, code goes to production (no more review loops)
 
-### Phase 5: Deploy
+### Phase 5: Deploy (PREREQUISITE CHECK REQUIRED)
 
-**PREREQUISITE: Reviewer approval required.**
+**CRITICAL: This is a HARD GATE. You CANNOT proceed without explicit approval verification.**
 
-Before running these commands, verify:
-- [ ] Reviewer posted "✅ Approved" comment to Linear
-- [ ] No outstanding "CHANGES REQUESTED" issues
-- [ ] You have re-submitted if fixes were required
+**Before executing ANY deployment commands:**
 
-If any checkbox is unchecked, STOP. You cannot deploy.
+1. **Query Linear for approval (MANDATORY CHECK):**
 
-After Reviewer approves:
+   **Method 1 - Using Linear MCP:**
+   ```
+   Use mcp__linear__list_comments(issueId) to get all comments
+   Search for: "✅ Review: Approved" from reviewer agent
+   Extract: commit hash from approval metadata (if present)
+   ```
 
-```bash
-git checkout develop
-git merge <your-feature-branch>
-git push origin develop
-```
+   **Method 2 - Using gh CLI (fallback):**
+   ```bash
+   # Get issue ID from current branch or spec file
+   ISSUE_ID=$(git branch --show-current | grep -oE '[A-Z]+-[0-9]+')
+
+   # Check Linear for approval
+   linear issue comments "$ISSUE_ID" | grep "✅ Review: Approved"
+   ```
+
+2. **Interpret approval status:**
+
+   **Scenario A - Approval found AND current:**
+   - Comment contains "✅ Review: Approved"
+   - Commit hash in comment matches current HEAD (or no hash specified for iteration fixes)
+   - No "🔄 Changes Requested" comments AFTER the approval
+   - **Result:** ✅ PROCEED to deployment
+
+   **Scenario B - No approval found:**
+   - No "✅ Review: Approved" comment exists
+   - **Result:** ❌ STOP
+   - **Action:** Return to Phase 4 (Submit to Reviewer)
+
+   **Scenario C - Approval found BUT stale:**
+   - Approval exists but commit hash doesn't match current HEAD
+   - OR: You made additional commits after approval was given
+   - **Result:** ❌ STOP
+   - **Action:** Resubmit to Reviewer for re-review of new commits
+
+   **Scenario D - Changes requested:**
+   - Most recent reviewer comment is "🔄 Changes Requested"
+   - **Result:** ❌ STOP
+   - **Action:** Fix requested changes, resubmit to Reviewer
+
+3. **If blocked, output this EXACT error:**
+   ```
+   ❌ DEPLOYMENT BLOCKED
+
+   Reason: No valid reviewer approval for current commit
+
+   Status: [No approval found | Stale approval | Changes requested]
+   Current commit: [git rev-parse --short HEAD]
+   Last approval: [commit hash from approval comment, or "none"]
+
+   Required action:
+   1. Return to Phase 4 (Submit to Reviewer)
+   2. Wait for "✅ Review: Approved" comment in Linear
+   3. Verify approval matches current commit
+   4. Then retry deployment
+
+   DO NOT PROCEED. EXITING PHASE 5.
+   ```
+
+   **Then STOP. Do not execute deployment commands.**
+
+4. **Check for infrastructure changes:**
+   - If changes involve: email provider, database, auth system, payment processing
+   - Verify BOTH Reviewer approval AND User approval exist
+   - User approval = explicit "approved" message from User in conversation or Linear
+   - **If only Reviewer approval:** STOP and request User approval
+   - Post to Linear: "⚠️ Infrastructure change detected - requires User approval before deployment"
+
+5. **Only after ALL checks pass:**
+
+   **Log the verification:**
+   ```
+   ✅ DEPLOYMENT APPROVED
+
+   Reviewer approval: ✓ Verified in Linear
+   Commit match: ✓ Current
+   Infrastructure changes: [None | User approved]
+
+   Proceeding with deployment to staging...
+   ```
+
+   **Then execute deployment:**
+   ```bash
+   git checkout develop
+   git merge <your-feature-branch>
+   git push origin develop
+   ```
+
+**Enforcement notes:**
+- This check runs EVERY time before push to develop
+- No exceptions for "urgent" or "fast-track" (those affect Reviewer speed, not gate existence)
+- If Linear MCP is unavailable, use gh CLI fallback
+- If both fail, STOP and alert User: "Cannot verify approval - Linear unavailable"
 
 ### Phase 5.5: Verify Deployment Succeeded
 

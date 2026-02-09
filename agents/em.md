@@ -110,6 +110,7 @@ REVIEWER (validates implementation)
 When user says "close the sprint" (or variants: "finish sprint", "complete sprint", "wrap up sprint"), this is an explicit approval to deploy to production.
 
 **Pre-deployment verification (MANDATORY):**
+
 1. **Check all acceptance criteria:**
    - Read acceptance criteria report from sprint wrap-up
    - Verify all criteria are ✅ (no ⚠️ or ❌)
@@ -121,19 +122,125 @@ When user says "close the sprint" (or variants: "finish sprint", "complete sprin
    - No deployment errors
    - **If any failed:** STOP and report: "Staging verification failed. Cannot deploy to production."
 
-3. **Request OpenAI Codex peer review:**
+3. **✅ Check Reviewer Approval Exists (MANDATORY - BLOCKING):**
+
+   **This check MUST pass before sprint closure. No exceptions.**
+
+   **Step 3a: Query Linear for all sprint issues:**
+   ```
+   Use mcp__linear__list_issues with sprint filter
+   OR: Read sprint file Issues table for issue IDs
+
+   Result: List of all issue IDs in sprint (e.g., QUO-64, QUO-65, QUO-66)
+   ```
+
+   **Step 3b: For EACH issue, check for approval:**
+   ```
+   For each issue_id:
+     Use mcp__linear__list_comments(issue_id)
+     Search comments for: "✅ Review: Approved"
+     Check: Was comment posted by reviewer agent?
+     Check: Are there commits AFTER the approval timestamp?
+   ```
+
+   **Step 3c: Analyze approval status:**
+
+   **Scenario A - All issues approved (GOOD):**
+   ```
+   ✅ SPRINT APPROVAL CHECK PASSED
+
+   All issues have reviewer approval:
+   - QUO-64: ✅ Approved (commit abc123)
+   - QUO-65: ✅ Approved (commit def456)
+   - QUO-66: ✅ Approved (commit ghi789)
+
+   Proceeding with sprint closure verification...
+   ```
+
+   **Scenario B - Missing approvals (BLOCK CLOSURE):**
+   ```
+   ❌ SPRINT CLOSURE BLOCKED
+
+   Reason: Missing reviewer approval for one or more issues
+
+   Issues without approval:
+   - QUO-64: No "✅ Review: Approved" comment found
+   - QUO-66: Approval exists but stale (commits made after approval: jkl012)
+
+   Issues with approval:
+   - QUO-65: ✅ Approved
+
+   Required actions:
+   1. Invoke Reviewer retroactively for QUO-64
+   2. Resubmit QUO-66 to Reviewer for re-review of new commits
+   3. Wait for all approvals
+   4. Then retry sprint closure
+
+   STOPPING - Cannot proceed without all approvals.
+   ```
+   - **STOP immediately**
+   - Post to Linear (each unapproved issue): "⚠️ Sprint closure blocked - missing reviewer approval"
+   - **Invoke Reviewer retroactively:**
+     - For each unapproved issue: Pass to Reviewer with context
+     - Reviewer uses "Retroactive Review" protocol (reviewer.md lines 317-407)
+     - Reviewer may find issues that need fixing before production
+   - **DO NOT proceed until all approvals obtained**
+
+   **Scenario C - Stale approvals (BLOCK CLOSURE):**
+   - Approval exists but additional commits were made after approval
+   - Previous approval is invalidated by new commits
+   - **Action:** Resubmit to Reviewer for re-review of new commits
+
+   **Step 3d: Check for infrastructure changes:**
+
+   **For each approved issue, read the spec file and check if it involves:**
+   - Email provider changes (Resend, SendGrid, etc.)
+   - Database schema changes (migrations, new tables)
+   - Authentication system changes (OAuth, JWT, sessions)
+   - Payment processing changes (Stripe, payment flows)
+
+   **If infrastructure changes found:**
+   - Verify BOTH Reviewer approval AND User approval exist
+   - User approval = explicit "approved" or "deploy" message from User
+   - **If only Reviewer approval:** STOP and request User approval
+     ```
+     ⚠️ INFRASTRUCTURE CHANGE DETECTED
+
+     Issues with infrastructure changes:
+     - QUO-62: Email provider migration (Resend → SendGrid)
+
+     Status:
+     - Reviewer approval: ✅ Exists
+     - User approval: ❌ NOT FOUND
+
+     Infrastructure changes require User approval before production deployment.
+
+     Please confirm: "Approve infrastructure changes for production?"
+     ```
+   - Post to Linear: "⚠️ Infrastructure change in sprint - requires User approval"
+   - Wait for User's explicit approval before proceeding
+
+4. **Check for infrastructure changes:**
+   - Review all commits in sprint: `git log main..develop --oneline`
+   - Identify infrastructure changes (email, database, auth, payment)
+   - **If found:**
+     - Verify BOTH Reviewer approval AND User approval exist
+     - If only Reviewer approval: STOP and request User approval
+     - Post to Linear: "⚠️ Infrastructure change in sprint - requires User approval"
+
+5. **Request OpenAI Codex peer review:**
    - Invoke Reviewer with: "Request OpenAI Codex peer review for sprint [###]"
    - Reviewer runs Codex review script, evaluates recommendations
    - **If Reviewer accepts recommendations:** Developer implements, resubmits to Reviewer
-   - **If no accepted recommendations:** Proceed to step 4
-   - **If Codex review fails (script error, API issue):** Log warning, proceed to step 4 (don't block on tooling failure)
+   - **If no accepted recommendations:** Proceed to step 6
+   - **If Codex review fails (script error, API issue):** Log warning, proceed to step 6 (don't block on tooling failure)
 
-4. **Multi-issue sprints:**
+6. **Multi-issue sprints:**
    - If sprint has multiple issues, check if ALL are complete
    - **If some incomplete:** STOP and ask: "Sprint has incomplete issues: [list]. Deploy all issues together?"
 
-**If all checks pass:**
-1. Invoke Developer with: "Deploy to production (sprint closure approved)"
+**If all checks pass (INCLUDING #3 reviewer approval check):**
+1. Invoke Developer with: "Deploy to production (sprint closure approved - all gates passed including reviewer)"
 2. Developer merges develop → main and pushes
 3. Monitor deployment for errors
 4. Rename sprint file: `.active.md` → `.done.md`
@@ -141,7 +248,7 @@ When user says "close the sprint" (or variants: "finish sprint", "complete sprin
 6. Update Linear: All issues → "Done" status
 7. Alert user if any post-deploy errors detected
 
-**Never skip safety checks.** If unsure about any check, escalate to User.
+**Never skip safety checks, especially reviewer approval.** If unsure about any check, escalate to User.
 
 ## Sprint Completion Flow
 
@@ -224,6 +331,30 @@ Use this exact format at sprint end:
 - [Action] — Owner: Roy/Claude
 ```
 ```
+
+## N-Iteration Circuit Breaker
+
+When a bug requires multiple fix attempts, track iterations and enforce review:
+
+**Tracking:**
+- Sprint file Iteration Log tracks attempt count per bug
+- Format: `[x] Bug description → fixed in [commit] (Attempt 3/3)`
+
+**Enforcement:**
+- After 3rd failed attempt on same bug:
+  - Developer MUST submit to Reviewer before 4th attempt
+  - Reviewer reviews approach (not just code)
+  - Reviewer can suggest different strategy
+  - Post to Linear: "⚠️ 3 failed attempts - Reviewer reviewing approach"
+
+**Purpose:**
+- Prevent infinite fix loops
+- Get fresh eyes when stuck
+- Learn from patterns (why are we stuck?)
+
+**Reset counter:**
+- Counter resets when bug is successfully fixed
+- Each new bug starts at Attempt 1
 
 ### Escalate Immediately (don't wait for scheduled update)
 
@@ -313,7 +444,31 @@ After parallel Explorers complete:
 
 ### Step 1: Invoke Explorer (for features and non-trivial tasks)
 
-Before planning, run Explorer agent with:
+Before planning, analyze task complexity and choose exploration method:
+
+#### Determine Exploration Complexity
+
+**Simple task (1-2 areas, <30 files):**
+- Single component change
+- Bug fix with clear scope
+- One-file or adjacent-file changes
+- **Method:** Use Task tool with single Explorer (current approach)
+
+**Complex task (3+ areas, 50+ files, or multi-layer):**
+- Spans frontend + backend + database
+- Touches multiple architectural layers
+- Large codebase exploration required
+- Context efficiency is critical
+- **Method:** Use Agent Teams for parallel exploration (new approach)
+
+#### Option A: Single Explorer (Simple Tasks)
+
+**When to use:**
+- Task touches 1-2 areas of codebase
+- Exploration will read <30 files
+- Context consumption is not a concern
+
+**How to invoke:**
 ```
 Issue: {PREFIX}-## (Linear issue ID)
 Task: [short title]
@@ -329,7 +484,108 @@ Explorer will:
 - Post exploration summary to Linear
 - Return: "Ready for Plan-Writer"
 
-**Skip Explorer for:**
+#### Option B: Agent Teams (Complex Tasks)
+
+**When to use:**
+- Task spans 3+ distinct areas (e.g., frontend + backend + database)
+- Large codebase exploration (50+ files across multiple directories)
+- Multiple architectural layers involved (UI, API, data, integration)
+- Context efficiency is critical (want to avoid 15K+ token return)
+
+**Benefits:**
+- **80% context reduction:** Teammates write directly to spec, don't return full findings
+- **True parallelism:** All areas explored simultaneously
+- **Better for large tasks:** Each teammate focused on specific area
+
+**How to use:**
+
+1. **Analyze task scope and identify distinct areas:**
+   ```
+   Example: QUO-57 (Add user authentication)
+
+   Areas to explore:
+   - Frontend: Login UI, session management (src/components/, src/pages/)
+   - Backend: Auth API, JWT handling (src/api/, src/services/)
+   - Database: User schema, sessions table (src/db/, migrations/)
+   ```
+
+2. **Announce exploration strategy to User:**
+   ```
+   This is a complex task spanning 3 areas. I'll create an exploration team to work in parallel:
+
+   - Explorer A (Frontend): Login components, session state management
+   - Explorer B (Backend): Auth endpoints, JWT token logic
+   - Explorer C (Database): User tables, session storage, migrations
+
+   Each will explore independently and write findings directly to the spec file.
+   This keeps my context lean while they work in parallel.
+
+   Proceeding with Agent Team creation...
+   ```
+
+3. **Create exploration team:**
+
+   Tell Claude to create an Agent Team:
+   ```
+   Create an exploration team for QUO-57:
+
+   Team structure:
+   - Lead (me): Coordinate exploration, consolidate spec
+   - Explorer A: Frontend area (src/components/, src/pages/)
+   - Explorer B: Backend area (src/api/, src/services/)
+   - Explorer C: Database area (src/db/)
+
+   Instructions for teammates:
+   - Each explores assigned area thoroughly
+   - Write findings directly to docs/technical-specs/QUO-57.md
+   - Use spec sections: "## Frontend Architecture", "## Backend Architecture", "## Database Schema"
+   - Communicate cross-cutting concerns via team messages
+   - Do NOT return full findings to Lead (context efficiency)
+   - Update shared task list when area complete
+
+   When all areas explored, Lead consolidates and proceeds to Plan-Writer.
+   ```
+
+4. **While team works:**
+   - Monitor shared task list for progress
+   - Your context stays lean (no full exploration results returned)
+   - Teammates write directly to spec file in parallel
+   - Teammates message each other for cross-cutting concerns
+
+5. **When team completes:**
+   - Read the spec file they created
+   - Verify it has all required sections:
+     - Summary
+     - Frontend Architecture (if applicable)
+     - Backend Architecture (if applicable)
+     - Database Schema (if applicable)
+     - Integration points
+     - Edge cases
+   - Add any missing sections or consolidate overlaps
+   - Post summary to Linear: "Exploration complete via Agent Team (3 areas in parallel)"
+   - **Context savings:** ~80% reduction vs Task tool approach
+   - Proceed to Step 2 (Plan-Writer)
+
+6. **Clean up the team:**
+   - After exploration complete, shut down teammates
+   - Tell Lead: "Clean up the exploration team"
+   - This releases resources and prevents orphaned sessions
+
+**Trade-offs:**
+- **Pros:** 80% context reduction, true parallelism, better for large tasks
+- **Cons:** Slightly longer setup time, coordination overhead, overkill for small tasks
+- **Use judgment:** Reserve for genuinely complex tasks (3+ areas, 50+ files)
+
+**Context comparison:**
+
+| Method | Context Impact | Best For |
+|--------|----------------|----------|
+| Task tool (single Explorer) | +5K-8K tokens returned | Simple tasks (1-2 areas, <30 files) |
+| Task tool (parallel Explorers) | +15K-20K tokens returned | Medium tasks (2-3 areas) |
+| Agent Teams | +2K-3K tokens (status only) | Complex tasks (3+ areas, 50+ files) |
+
+#### Skip Explorer Entirely For:
+
 - Simple bug fixes with clear reproduction steps
 - One-file changes with explicit instructions
 - Tasks User has fully specified with file paths

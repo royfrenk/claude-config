@@ -239,14 +239,51 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
           Sequence: independent
         ```
 
-   b. **Each Developer (runs automatically):**
+   b. **Each Developer (runs automatically with MANDATORY review gate):**
+
+      **Implementation phase:**
       - Updates spec status (🟥→🟨→🟩) for their assigned tasks
       - Implements code changes
-      - Runs verification
-      - **Automatically submits to Reviewer** (no user input)
-      - Waits for Reviewer decision
-      - If approved: Deploys to staging (automatic)
-      - If changes requested: Fixes and resubmits (automatic loop, max 3 rounds)
+      - Runs verification loop (build, lint, types, tests, security)
+
+      **Review gate (MANDATORY - BLOCKING):**
+      - **Automatically invokes Reviewer** (no user input required)
+      - **ENTERS BLOCKING STATE** - cannot deploy until approved
+      - Developer submits:
+        - Issue ID and task number
+        - Files changed
+        - Verification report (all checks PASS)
+        - Commit hash
+      - Reviewer reviews and posts to Linear:
+        - "✅ Review: Approved" → Developer proceeds to deployment
+        - "🔄 Changes Requested" → Developer fixes and resubmits (max 3 rounds)
+        - "🚫 Blocked" → Escalate to EM (architectural issue)
+
+      **Enforcement mechanism:**
+      - Developer CANNOT push to develop without "✅ Review: Approved" in Linear
+      - Developer checks Linear for approval comment before EVERY deployment
+      - If approval missing: Developer outputs error and STOPS
+      - If approval stale (new commits after approval): Developer resubmits for re-review
+
+      **Fast-track (Production incidents):**
+      - If issue labeled "CRITICAL - Production Incident":
+        - Reviewer response time: 15 minutes (vs 30 min normal)
+        - Reviewer prioritizes: security, data integrity, breaking changes
+        - **Fast-track does NOT bypass review** - approval still required
+        - All blocking gates still apply
+
+      **Deployment (only after approval verified):**
+      - Developer verifies approval exists and matches current commit
+      - Developer pushes to develop branch
+      - Verifies deployment succeeded (Phase 5.5 of Developer agent)
+      - Updates spec: marks task 🟩 complete
+      - Posts to Linear: "✅ Deployed to staging"
+
+      **If changes requested:**
+      - Developer fixes issues per Reviewer feedback
+      - Re-runs verification loop
+      - Resubmits to Reviewer (Round 2, then Round 3 if needed)
+      - Max 3 rounds - after that, escalate to EM
 
    c. **Reviewer reviews all submissions from the wave:**
       - If multiple Developers in wave → spawn parallel Reviewer sub-agents
@@ -378,7 +415,10 @@ Reported by User:
 
 - **MANDATORY REVIEW GATE:** Cannot mark "In Review" or deploy to staging without Reviewer approval
 - **Reviewer must approve before ANY deployment to develop branch**
+- **Auto-invoke:** If Developer attempts deployment without approval, automatically invoke Reviewer and block
 - **If Reviewer requests changes, must re-submit for re-review before deploying**
+- **N-iteration trigger:** After 3 failed fix attempts on same bug, Reviewer MUST review before 4th attempt
+- **Infrastructure changes:** Email provider, database, auth, payment changes require BOTH Reviewer + User approval
 - **"In Review" status means "Under review by Reviewer", not "ready for User"**
 - Invoke Reviewer immediately after verification passes, before any deployment
 - **Test before handoff:** Never ask user to test without first running all tests and verifying the flow yourself
@@ -393,8 +433,15 @@ Reported by User:
     - [ ] All automated staging verification checks passed
     - [ ] No failing tests
     - [ ] No deployment errors on staging
+    - [ ] **✅ REVIEWER APPROVAL exists for ALL commits in sprint** (check Linear for approval comments)
     - [ ] **OpenAI Codex peer review complete** (either no recommendations accepted, or accepted recommendations implemented and approved)
-  - **If any check fails:** STOP and ask user what to do before proceeding
+  - **If reviewer approval check fails:**
+    - STOP immediately
+    - Search Linear for "✅ Review: Approved" comments from reviewer agent
+    - If missing: Post "⚠️ Cannot deploy - missing reviewer approval"
+    - Invoke Reviewer retroactively for all commits: `git diff main..develop`
+    - Wait for approval before proceeding
+  - **If any other check fails:** STOP and ask user what to do before proceeding
   - **If ACs are incomplete:** STOP and confirm user wants to proceed anyway
   - **If Codex review blocked:** Notify user which recommendations are pending implementation
 - Run tests before each commit
