@@ -560,6 +560,7 @@ After completing sprint (or when stopping):
 ### Deployments
 - Staging: [label](URL) — [what's live]
 - Production: [label](URL) — [what's live / not deployed]
+- **Diff File:** `docs/diffs/sprint-[NUMBER]-diff.txt` — Complete sprint changes (main...develop)
 
 ### Project State
 - PROJECT_STATE.md: [updated YYYY-MM-DD / NOT UPDATED — reason]

@@ -259,6 +259,7 @@ For each fixed issue in batch:
 
 ### Deployment
 - Staging: [URL]
+- **Diff File:** `docs/diffs/sprint-[NUMBER]-diff.txt` — Updated with latest changes (main...develop)
 
 ### What You Should Do Next
 

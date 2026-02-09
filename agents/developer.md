@@ -508,6 +508,40 @@ Status: CODEX RECOMMENDATIONS (Final polish before production)
    git push origin develop
    ```
 
+   **Generate sprint diff file:**
+   ```bash
+   # Find active sprint file to determine sprint number
+   ACTIVE_SPRINT=$(find docs/sprints/ -name "*.active.md" 2>/dev/null | head -1)
+   if [ -n "$ACTIVE_SPRINT" ]; then
+     SPRINT_NUM=$(basename "$ACTIVE_SPRINT" | grep -oE 'sprint-[0-9]+' | grep -oE '[0-9]+')
+     DIFF_FILE="docs/diffs/sprint-${SPRINT_NUM}-diff.txt"
+
+     # Create diffs directory if it doesn't exist
+     mkdir -p docs/diffs
+
+     # Generate diff with stat summary + full diff
+     {
+       echo "Sprint ${SPRINT_NUM} Diff - Generated: $(date)"
+       echo "========================================"
+       echo ""
+       echo "Summary:"
+       git diff --stat main...develop
+       echo ""
+       echo "Full Diff:"
+       git diff main...develop
+     } > "$DIFF_FILE"
+
+     # Commit the diff file
+     git add "$DIFF_FILE"
+     git commit -m "chore: Update sprint ${SPRINT_NUM} diff file" --no-verify
+     git push origin develop
+
+     echo "✓ Diff file generated: $DIFF_FILE"
+   else
+     echo "⚠️ No active sprint file found - skipping diff generation"
+   fi
+   ```
+
 **Enforcement notes:**
 - This check runs EVERY time before push to develop
 - No exceptions for "urgent" or "fast-track" (those affect Reviewer speed, not gate existence)
