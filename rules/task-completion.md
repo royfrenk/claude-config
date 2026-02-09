@@ -90,6 +90,28 @@ Linear: [status updated to In Review]
 **Gaps:** (if any ⚠️ or ❌)
 - [What's not fully met]
 - [Recommendation: fix now / track separately / needs manual testing]
+
+## What You Should Do Next
+
+**Always include this section after the acceptance criteria report.**
+
+1. **Test on staging:** [staging URL from CLAUDE.md]
+
+   Please test the following:
+   - [List specific acceptance criteria that need manual verification]
+   - [Edge cases to check]
+   - [Any workflows or UI changes]
+
+2. **Report findings:**
+   - If you find issues: Tell me what's broken or unexpected
+   - If you have questions: Ask me for clarification
+   - If all looks good: Tell me "ready for production" or "close the sprint"
+
+**I'll use `/iterate` to fix any issues you find.**
+
+---
+
+This explicit request for testing ensures issues are caught before production deployment.
 ```
 
 ## When to Use Each Format

@@ -788,16 +788,39 @@ Output results in structured format:
    - Tracks Linear sync failures for manual reconciliation
    - Documents what's ready for user testing
 
-5. **Notify User with full report:**
+5. **Notify User and Request Testing:**
+
+   **MANDATORY: Always request user testing after deployment to staging.**
+
    Use the output formats defined in `~/.claude/rules/task-completion.md`:
    - After each commit → commit format
    - After completing full issue → task complete format with acceptance criteria + automated verification results
 
-**Always include:**
-- Staging URL
-- Automated verification report
-- List of what still needs manual testing
-- Known limitations of automated checks
+   **Always include:**
+   - Staging URL
+   - Automated verification report
+   - List of what still needs manual testing
+   - Known limitations of automated checks
+   - **Explicit request for user to test on staging and report any issues**
+
+   **Example closing:**
+   ```
+   ## What You Should Do Next
+
+   1. **Test on staging:** [staging URL]
+
+      Please test:
+      - [Specific acceptance criteria to verify]
+      - [Edge cases to check]
+      - [Any areas where manual verification is needed]
+
+   2. **Report findings:**
+      - If you find issues: Tell me what's broken or unexpected
+      - If you have questions: Ask me
+      - If all looks good: Tell me "ready for production" or "close the sprint"
+
+   I'll use `/iterate` to fix any issues you find.
+   ```
 
 ## Deployment Management
 
