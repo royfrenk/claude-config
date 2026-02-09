@@ -185,6 +185,7 @@ After completing each subtask (before moving to next), add a checkpoint to the s
 **When to checkpoint:**
 - After completing each subtask
 - When hook reminds you (after 15+ edits)
+- When pre-compaction hook reminds you (context >83%)
 - Before taking a break
 - Before switching to different work
 

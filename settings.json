@@ -70,11 +70,11 @@
         ]
       },
       {
-        "matcher": "tool == 'Edit'",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "COUNT_FILE=\"/tmp/claude-edit-count-$$\"; COUNT=$(cat \"$COUNT_FILE\" 2>/dev/null || echo 0); COUNT=$((COUNT + 1)); echo $COUNT > \"$COUNT_FILE\"; if [ $COUNT -eq 15 ]; then echo '[Info] 15 edits this session. Consider /checkpoint if working on a long task.' >&2; fi; if [ $((COUNT % 25)) -eq 0 ] && [ $COUNT -gt 15 ]; then echo \"[Info] $COUNT edits. Context may be getting full. Consider /checkpoint.\" >&2; fi"
+            "command": "/Users/royfrenkiel/.claude/hooks/checkpoint-reminder-edits.sh"
           }
         ]
       },
@@ -97,6 +97,16 @@
           {
             "type": "command",
             "command": "afplay /System/Library/Sounds/Ping.aiff &"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/royfrenkiel/.claude/hooks/checkpoint-reminder-compact.sh"
           }
         ]
       }

@@ -6,6 +6,7 @@ description: Save current work state to spec file before context compaction or b
 
 Save the current work state to the active spec file. Use this:
 - When the hook reminds you (after 15+ edits)
+- When pre-compaction hook reminds you (context >83%)
 - Before taking a break from a task
 - Before switching to a different type of work
 - When context feels "full" (responses getting slower)

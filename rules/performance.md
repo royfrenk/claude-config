@@ -53,6 +53,7 @@ This survives context compaction.
 - After completing each subtask
 - Before taking a break
 - When hook reminds you (after 15+ edits)
+- When pre-compaction hook reminds you (context >83%)
 - Before starting a different type of work
 
 ## MCP Hygiene
