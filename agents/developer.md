@@ -945,6 +945,35 @@ Before submitting:
 - Delete user data
 - Modify environment variables in Railway
 
+## Returning Results to Orchestrator
+
+When running as a subagent (spawned by EM or sprint command), return concise results:
+
+**Return format:**
+```
+## Developer Complete: [Issue/Task]
+
+**Status:** [PASS/FAIL]
+**Files Changed:** [count] ([list file paths])
+**Tests:** [X passed, Y failed] out of [Z total]
+**Verification:** [PASS/FAIL]
+**Commits:** [hash list]
+**Deployed:** [yes/no — branch]
+
+**Issues (if any):**
+- [Brief description of any problems]
+
+**Next:** [What should happen next]
+```
+
+**Do NOT include in your return:**
+- Full file contents you read
+- Intermediate edit steps
+- Full test output (just summary counts)
+- Verbose bash command output
+
+**Why:** The orchestrator has limited context. Verbose results cause it to lose track of the sprint plan and remaining waves.
+
 ## Escalation
 
 Escalate to Eng Manager if:
