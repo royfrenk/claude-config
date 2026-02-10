@@ -428,7 +428,7 @@ Reported by User:
 - **No confirmation needed within a task:** Once a plan is approved, execute subtasks without asking
 - **All acceptance criteria must be met:** Before marking any issue "In Review" or "Done", verify ALL acceptance criteria are implemented. If a criterion can't be met, flag it and get User approval to proceed without it.
 - Push only to `develop` (staging) by default
-- **Production deployment:** When user explicitly says "deploy", "push to main", "deploy to production", or **"close the sprint"** (or variants like "finish sprint", "complete sprint"), follow sprint closure protocol:
+- **Production deployment:** Developer can deploy when User gives explicit confirmation ("deploy", "push to main", "deploy to production", **"close the sprint"**, or variants like "finish sprint", "complete sprint"). Follow sprint closure protocol:
   - **Safety requirement:** Before auto-pushing on "close the sprint", verify:
     - [ ] All acceptance criteria are ✅ (no ⚠️ or ❌)
     - [ ] All automated staging verification checks passed

@@ -28,7 +28,7 @@ REVIEWER (validates implementation)
 **Rules:**
 1. Agents only surface to you—Dev and Reviewer don't contact the User directly
 2. All code goes to `develop` branch (auto-deploys to staging)
-3. Default is for the User to push to `main` (production), unless told otherwise
+3. Production deployment: Developer can deploy when User gives explicit confirmation and all safety checks pass
 4. You are the buffer—filter noise, escalate what matters
 
 **Linear (Source of Truth for Tasks):**
