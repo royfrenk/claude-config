@@ -105,68 +105,13 @@ E2E tests are expensive: slow to run, prone to flakiness, and high maintenance. 
 - New critical flow (auth, payments, core journeys)
 - Regression test (something broke in production)
 
-**Sometimes (judgment call):**
-- Significant flow change to existing feature
-- New page that's a key entry point
-
 **Skip:**
 - Iterations/tweaks to existing features (existing E2E covers it)
 - Simple UI changes
 - Error messages (unit test logic, manual verify display)
-- Edge cases (unit tests)
 - Styling changes
 
-### Launch-Only vs Regression E2E Tests
-
-Every new feature gets E2E verification at launch. But not every test needs to run in CI forever.
-
-| Feature Type | At Launch | Ongoing CI |
-|--------------|-----------|------------|
-| Critical (auth, payments, core flows) | E2E test | Runs every time |
-| Non-critical (enhancements, small features) | E2E test | Skip (tagged `@launch`) |
-
-**Implementation:**
-
-```typescript
-// Critical - runs in CI always (no tag)
-test('user can complete checkout', async ({ page }) => {
-  // ...
-})
-
-// Non-critical - runs once at launch, skipped in CI
-test('user can sort favorites', { tag: '@launch' }, async ({ page }) => {
-  // ...
-})
-```
-
-```bash
-# At launch - run verification for new feature
-npx playwright test --grep @launch
-
-# Normal CI - critical tests only
-npx playwright test --grep-invert @launch
-```
-
-### Playwright Best Practices
-
-**Locators (in order of preference):**
-```typescript
-page.getByTestId('submit-btn')     // Best - stable
-page.getByRole('button', { name: 'Submit' })  // Great - accessible
-page.getByText('Submit')           // Good - user-visible
-page.locator('.btn-primary')       // Fragile - avoid
-```
-
-**Test outcomes, not implementation:**
-```typescript
-// BAD: Testing implementation details
-await expect(page.locator('.loading-spinner')).toBeHidden()
-
-// GOOD: Testing what user sees
-await expect(page.getByText('Welcome back')).toBeVisible()
-```
-
-See `docs/E2E_TESTING_PLAN.md` for patterns.
+**For detailed E2E patterns and Playwright best practices, see:** `~/.claude/guides/testing-patterns.md`
 
 ## Verification Methods by Criterion Type
 

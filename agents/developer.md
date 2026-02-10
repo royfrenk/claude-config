@@ -199,6 +199,34 @@ You can also run `/checkpoint` for a guided checkpoint process.
 
 ### Phase 2: Implement
 
+#### Step 1: Consult Relevant Guides (MANDATORY)
+
+**Before writing any code, identify your task type and read the relevant guide(s):**
+
+**Database work** (migrations, queries, caching, indexing):
+- [ ] Read `~/.claude/guides/database-patterns.md` using the Read tool
+- [ ] Note: Indexing strategy, caching approach, SQL.js anti-patterns
+
+**Frontend work** (responsive design, UI components, styling):
+- [ ] Read `~/.claude/guides/frontend-patterns.md` using the Read tool
+- [ ] Note: Test at exact breakpoints (1270px, 1000px, 900px, 630px), Figma side-by-side
+
+**API integration** (external APIs, env vars, error handling):
+- [ ] Read `~/.claude/guides/api-integration-patterns.md` using the Read tool
+- [ ] Note: Always .trim() env vars, request-time reading, primary + simple fallback
+
+**Testing** (E2E, unit tests, mocking):
+- [ ] Read `~/.claude/guides/testing-patterns.md` using the Read tool
+- [ ] Note: >70% coverage from day 1, E2E only for critical paths
+
+**Code performance** (optimization, caching, rendering):
+- [ ] Read `~/.claude/guides/code-performance.md` using the Read tool
+- [ ] Note: N+1 queries, memoization patterns
+
+**This is NOT optional.** Use the Read tool to read the guide before implementing. Failure to consult guides will result in common mistakes (env var bugs, responsive design issues, API matching failures).
+
+#### Step 2: Implement with Critical Patterns
+
 Work in small commits. Each commit should:
 - Do one thing
 - Have passing tests
@@ -210,6 +238,33 @@ Order:
 3. Backend tests
 4. Frontend components — data fetching, then UI
 5. Frontend tests
+
+**Critical Patterns to Follow:**
+
+**Environment Variables (if applicable):**
+- Always `.trim()` string values: `process.env.API_KEY?.trim()`
+- Read at request time (interceptors), not module load
+- Validate early with clear error messages
+
+**Responsive Design (if applicable):**
+- Test at EXACT breakpoint boundaries (1270px, 1000px, 900px, 630px)
+- Don't assume "works on mobile/desktop" — test intermediate sizes
+- Budget 5-7 iteration batches for complex responsive work
+
+**API Integration (if applicable):**
+- Use single primary + simple fallback (avoid cross-API matching)
+- Request-time interceptors > module-load headers
+- Trim env vars, validate at request time
+
+**Email Services (if applicable):**
+- Test with actual intended recipients before production
+- Have fallback service or console logging for local dev
+- Verify sender email in service provider console
+
+**Testing Strategy:**
+- >70% unit test coverage from day 1 (not retroactive)
+- E2E tests ONLY for critical paths (auth, payments, core journeys)
+- Manual verification for UI-heavy features (cost/maintenance trade-off)
 
 ### Phase 3: Verification Loop
 
@@ -651,6 +706,12 @@ npx playwright test tests/property-search.spec.ts tests/search-filters.spec.ts -
 ```
 
 **Known limitation:** E2E tests can't verify visual design (colors, spacing, alignment). Mark these as "Manual verification needed" in report.
+
+**2.5 Critical Checks** (from project learnings):
+- [ ] Environment variables set in ALL Vercel environments (Production + Preview)
+- [ ] Email service test mode matches production behavior (if email changes)
+- [ ] Responsive design tested at exact breakpoints (if UI changes)
+- [ ] API fallbacks working correctly (if API integration changes)
 
 #### Step 3: Generate Automated Verification Report
 

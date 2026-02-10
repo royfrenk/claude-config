@@ -102,27 +102,54 @@ Do not proceed until tests are added.
 
 ### Step 3: Review Each File
 
-**A. Clarity**
+**A. Guide Compliance Check (MANDATORY)**
+
+Before reviewing code, identify the task type and verify compliance with relevant guide:
+
+**If database work:**
+- [ ] Read `~/.claude/guides/database-patterns.md` using the Read tool
+- [ ] Verify: Proper indexing? Caching strategy? Not using SQL.js?
+
+**If frontend work:**
+- [ ] Read `~/.claude/guides/frontend-patterns.md` using the Read tool
+- [ ] Verify: Tested at exact breakpoints? Matches Figma? Responsive documented?
+
+**If API integration:**
+- [ ] Read `~/.claude/guides/api-integration-patterns.md` using the Read tool
+- [ ] Verify: All env vars have `.trim()`? Request-time reading? Primary + fallback only?
+
+**If testing code:**
+- [ ] Read `~/.claude/guides/testing-patterns.md` using the Read tool
+- [ ] Verify: >70% coverage? E2E only for critical paths? Manual verification plan?
+
+**This is NOT optional.** Read the relevant guide and verify the developer followed the patterns. Common issues to catch:
+- Environment variables without `.trim()`
+- Module-load time env var reading (should be request-time)
+- Cross-API data matching (should be primary + simple fallback)
+- Responsive design without breakpoint testing
+- E2E tests for non-critical features (should be manual)
+
+**B. Clarity**
 - Would this make sense to someone seeing it for the first time?
 - Can you explain the *why* in 3 sentences?
 - Are names descriptive?
 
-**B. Simplicity**
+**C. Simplicity**
 - Can a junior engineer safely modify this later?
 - Did we add new concepts when existing ones would do?
 
-**C. Dependencies**
+**D. Dependencies**
 - What calls into this code?
 - What does this code call out to?
 - How do changes ripple outward?
 
-**D. Security**
+**E. Security**
 - Inputs validated?
 - Auth checks in place?
 - New data exposure?
 - Secrets handled correctly?
 
-**E. Revertibility**
+**F. Revertibility**
 - Can this be safely reverted without data migration?
 
 ### Step 4: Decide

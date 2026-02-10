@@ -76,35 +76,9 @@ MCPs consume context even when not used.
 
 ## Code Performance
 
-### Database Queries
+**Core principles:**
+- Avoid N+1 queries (use joins)
+- Avoid unnecessary re-renders (use memoization)
+- Cache expensive computations
 
-```python
-# WRONG - N+1 query
-for user in users:
-    orders = get_orders(user.id)  # Query per user
-
-# CORRECT - Single query with join
-users_with_orders = get_users_with_orders()
-```
-
-### Frontend Re-renders
-
-```typescript
-// WRONG - New object every render
-<Component style={{ margin: 10 }} />
-
-// CORRECT - Stable reference
-const style = useMemo(() => ({ margin: 10 }), [])
-<Component style={style} />
-```
-
-### Caching
-
-Consider caching for:
-- Expensive computations
-- Repeated API calls
-- Unchanged database queries
-
-```typescript
-const cached = useMemo(() => expensiveCalculation(data), [data])
-```
+**For detailed patterns (database optimization, frontend rendering, caching strategies), see:** `~/.claude/guides/code-performance.md`
