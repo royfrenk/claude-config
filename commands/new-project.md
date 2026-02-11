@@ -148,6 +148,10 @@ REVIEWER — validates
 
 ## Linear Integration
 
+**Note:** Set `linear_enabled: false` if this project doesn't use Linear. All task tracking will use roadmap.md only.
+
+linear_enabled: true
+
 | Setting | Value |
 |---------|-------|
 | Issue Prefix | `XXX` |
@@ -456,12 +460,15 @@ When setting up a new project:
 4. [ ] Create `docs/roadmap.md` using template above
 5. [ ] Create `docs/technical-specs/` directory
 6. [ ] Create `docs/sprints/` directory (for sprint iteration tracking)
-7. [ ] Set up Linear team and issue prefix
-8. [ ] Add project to Linear with correct team assignment
-9. [ ] Update CLAUDE.md with actual Linear team and prefix
-10. [ ] **Get Linear status UUIDs** and add to CLAUDE.md (see below)
-11. [ ] **Set up Git branches:** Create `develop` branch, configure auto-deploy to staging
-12. [ ] **Add deployment URLs** to CLAUDE.md (staging + production)
+7. [ ] **Decide if project uses Linear:**
+   - Set `linear_enabled: true` in CLAUDE.md (requires steps 8-11)
+   - OR set `linear_enabled: false` (skip steps 8-11, use roadmap.md only)
+8. [ ] Set up Linear team and issue prefix (if enabled)
+9. [ ] Add project to Linear with correct team assignment (if enabled)
+10. [ ] Update CLAUDE.md with actual Linear team and prefix (if enabled)
+11. [ ] **Get Linear status UUIDs** and add to CLAUDE.md (if enabled - see below)
+12. [ ] **Set up Git branches:** Create `develop` branch, configure auto-deploy to staging
+13. [ ] **Add deployment URLs** to CLAUDE.md (staging + production)
 13. [ ] **(Production apps)** Add GitHub Actions CI/CD (see template above)
 
 ### Getting Linear Status UUIDs

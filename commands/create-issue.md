@@ -24,6 +24,25 @@ Create a complete Linear issue with:
 
 Keep questions brief. One message with 2-3 targeted questions beats multiple back-and-forths.
 
+## Linear Configuration Check
+
+Before creating the Linear issue, check project configuration:
+
+1. **Read CLAUDE.md** to extract Linear settings:
+   - Look for "Linear Integration" section
+   - Extract `linear_enabled: true/false` (default: false if missing)
+   - Extract `Team ID: <uuid>` (required if enabled)
+   - Extract `Issue Prefix: <PREFIX>`
+
+2. **Determine behavior:**
+   - If `linear_enabled: false` → Skip Linear, only update roadmap.md
+   - If `linear_enabled: true` and Team ID missing → Error: "Linear enabled but Team ID not found in CLAUDE.md"
+   - If `linear_enabled: true` and Team ID present → Create Linear issue with team parameter
+
+3. **Validate prefix match:**
+   - Check current directory against issue prefix in CLAUDE.md
+   - If mismatch detected: Warn user "Creating issue for wrong project? Current: [dir], Prefix: [PREFIX]"
+
 **Search for context** only when helpful:
 - Web search for best practices if it's a complex feature
 - Grep codebase to find relevant files
@@ -44,21 +63,41 @@ Keep questions brief. One message with 2-3 targeted questions beats multiple bac
 
 **IMPORTANT:** After asking clarifying questions, execute ALL of the following steps in a SINGLE response with parallel tool calls. Do NOT pause between steps.
 
-1. **Create issue** using `mcp_linear_create_issue` with all details (title, description, priority, labels: ["agent", "technical"])
+### Check Linear Configuration First
 
-2. **IMMEDIATELY (same response)** update status using `mcp_linear_update_issue`:
-   - Set status to "Todo" (UUID: `f1d033f3-9c10-447f-a3d8-714b16058041`)
-   - Ensure labels are set correctly (agent, technical)
+1. **Read `CLAUDE.md`** to check `linear_enabled` field
+2. **Determine workflow:**
+   - If `linear_enabled: false` → Execute workflow A (roadmap.md only)
+   - If `linear_enabled: true` → Execute workflow B (Linear + roadmap.md)
 
-3. **IMMEDIATELY (same response)** update roadmap.md using `Edit`:
-   - Update sync status line with new issue number
-   - Add issue to appropriate section (Active Sprint or Backlog)
+### Workflow A: Roadmap.md Only (linear_enabled: false)
 
-**Example of correct execution:**
+Execute in ONE response:
 ```
 <function_calls>
-<invoke name="mcp_linear_create_issue">...</invoke>
-<invoke name="mcp_linear_update_issue">...</invoke>
+<invoke name="Edit">...</invoke> <!-- Update sync status in roadmap.md -->
+<invoke name="Edit">...</invoke> <!-- Add to backlog/sprint in roadmap.md -->
+</function_calls>
+```
+
+### Workflow B: Linear + Roadmap.md (linear_enabled: true)
+
+Execute in ONE response:
+```
+<function_calls>
+<invoke name="mcp__linear__create_issue">
+  <!-- Include team parameter from CLAUDE.md -->
+  <parameter name="team">[Team ID from CLAUDE.md]</parameter>
+  <parameter name="title">...</parameter>
+  <parameter name="description">...</parameter>
+  <parameter name="labels">["agent", "technical"]</parameter>
+  ...
+</invoke>
+<invoke name="mcp__linear__update_issue">
+  <!-- Set status to Todo -->
+  <parameter name="id">[issue ID from create response]</parameter>
+  <parameter name="state">[Todo UUID from CLAUDE.md]</parameter>
+</invoke>
 <invoke name="Edit">...</invoke> <!-- Update sync status -->
 <invoke name="Edit">...</invoke> <!-- Add to backlog/sprint -->
 </function_calls>

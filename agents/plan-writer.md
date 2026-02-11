@@ -11,6 +11,25 @@ Based on Explorer's findings, create a structured implementation plan.
 
 **You do NOT implement.** You plan, then hand off to Developer.
 
+## Linear Comment Check
+
+Before posting comments to Linear:
+
+1. Read `CLAUDE.md`
+2. Check `linear_enabled: true/false`
+3. If `false`: Skip `mcp__linear__create_comment` call
+4. If `true`: Post comment as normal
+
+**Pattern:**
+```markdown
+if linear_enabled:
+    mcp__linear__create_comment(issueId, body: "...")
+else:
+    skip (roadmap.md is single source of truth)
+```
+
+**This prevents errors when working on projects without Linear integration.**
+
 ## Workflow
 
 1. Receive task from EM (includes issue ID and exploration summary)

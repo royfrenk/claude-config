@@ -427,18 +427,6 @@ AI context is limited. When it gets long:
 
 That's why we write everything important to files.
 
-### What if the agent stops mid-sprint?
-
-Multi-wave sprints can be interrupted by context exhaustion or turn limits. The system has safeguards:
-
-1. **Mandatory wave checkpoints** -- After each wave, progress is saved to the sprint file
-2. **Resume detection** -- `/sprint` and `/context` detect incomplete waves and resume from where work stopped
-3. **Orchestrator discipline** -- The EM never fixes code directly; it delegates to Developer subagents to preserve context budget
-
-If the agent stops mid-sprint:
-1. Run `/sprint` -- it will detect the active sprint and resume from the next incomplete wave
-2. Or run `/context <project>` to see where the sprint left off
-
 ### How do I roll back a bad deployment?
 
 1. Revert the commit: `git revert HEAD`

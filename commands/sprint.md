@@ -10,18 +10,40 @@ Run the engineering sprint autonomously. Reads Linear for Priority 1 task and ex
 >
 > **Shorthand:** If user writes "CC" (not referencing something else), it means "clear context".
 
+## Linear Configuration
+
+This command checks `CLAUDE.md` for Linear integration settings:
+
+- `linear_enabled: true` → Use Linear for issue tracking, sync bidirectionally with roadmap.md
+- `linear_enabled: false` → Use roadmap.md only, skip all Linear MCP calls
+- Missing field → Default to `false` (roadmap.md only)
+
+**If Linear is disabled:**
+- Skip all Linear sync attempts (steps 2, 7, 10a, 12)
+- Use roadmap.md as single source of truth
+- No Linear MCP calls, no retry logic
+- Sprint operates entirely on roadmap.md
+
+**If Linear is enabled:**
+- Use `/sync-roadmap` for bidirectional sync
+- Follow existing workflow with soft retry logic
+- Use Team ID from CLAUDE.md for all MCP calls
+
 ## Workflow
 
-1. Read `CLAUDE.md` to get Linear team and issue prefix
-2. **Run `/sync-roadmap`** to reconcile any Linear changes before starting work
+1. Read `CLAUDE.md` to get:
+   - `linear_enabled: true/false` (default: false)
+   - Linear team ID and issue prefix (if enabled)
+   - If `linear_enabled: false`: Skip to step 2b (issue selection from roadmap.md)
+2. **Run `/sync-roadmap`** (if Linear enabled) to reconcile any Linear changes before starting work
 2b. **Handle issue selection (if no explicit issues provided):**
    - **If user provided issue IDs in command (e.g., `/sprint QUO-57 QUO-58`):**
      - Parse issue IDs from arguments
      - Skip to step 2a with these specific issues
 
    - **If no issue IDs provided (user typed just `/sprint`):**
-     - Query Linear for all issues with "Todo" status: `mcp__linear__list_issues` with `state: "Todo"`, ordered by priority
-     - **If Linear unavailable:** Read `docs/roadmap.md` Backlog section for Todo items
+     - **If `linear_enabled: true`:** Query Linear for all issues with "Todo" status: `mcp__linear__list_issues` with `state: "Todo"`, ordered by priority
+     - **If `linear_enabled: false` or Linear unavailable:** Read `docs/roadmap.md` Backlog section for Todo items
      - **If Todo issues found:**
        ```
        Found [N] issues in Todo status (ordered by priority):
@@ -456,14 +478,15 @@ Reported by User:
   1. Rename `*.active.md` → `*.done.md`
   2. Update roadmap.md to move issues to "Recently Completed Sprints" section (with sprint file link)
   3. Keep 2-3 most recent completed sprints in roadmap (older ones remain accessible via sprint files)
-- **Linear sync strategy (3 touchpoints):**
-  1. **Sprint start (Pull):** Fetch issue details from Linear - non-blocking if fails
-  2. **Staging deploy (Push):** Update status to "In Review" - soft retry (2 attempts), non-blocking
-  3. **Production deploy (Push):** Update status to "Done" - soft retry (2 attempts), non-blocking
+- **Linear sync strategy (if enabled):**
+  - Use `/sync-roadmap` for bidirectional sync at 3 touchpoints:
+    1. **Sprint start:** Pull latest from Linear, push any pending updates
+    2. **Staging deploy:** Push "In Review" status (soft retry)
+    3. **Production deploy:** Push "Done" status (soft retry)
   - **Soft retry logic:** Try once, wait 2s, try again. If fails, log and continue.
   - **Fallback:** If Linear unavailable, use `docs/roadmap.md` as source of truth
   - **Pending syncs:** Track failed syncs in sprint file "Pending Manual Sync" section
-  - **Manual reconciliation:** Run `/sync-linear` at sprint end if syncs failed
+  - **Manual reconciliation:** Run `/sync-roadmap` at sprint end if syncs failed
 - Stop and report if:
   - Tests fail and can't be fixed
   - External dependency is missing (secrets, credentials, etc.)

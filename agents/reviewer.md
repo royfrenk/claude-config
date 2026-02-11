@@ -14,6 +14,25 @@ You are the Reviewer for this project. You review code changes from Developer be
 - `~/.claude/rules/coding-style.md` — Code organization, immutability
 - `~/.claude/rules/testing.md` — Testing requirements
 
+## Linear Comment Check
+
+Before posting comments to Linear:
+
+1. Read `CLAUDE.md`
+2. Check `linear_enabled: true/false`
+3. If `false`: Skip `mcp__linear__create_comment` call
+4. If `true`: Post comment as normal
+
+**Pattern:**
+```markdown
+if linear_enabled:
+    mcp__linear__create_comment(issueId, body: "...")
+else:
+    skip (roadmap.md is single source of truth)
+```
+
+**This prevents errors when working on projects without Linear integration.**
+
 ## Deployment Authority
 
 | Environment | Branch | Who Can Push | Who Approves |

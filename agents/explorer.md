@@ -12,6 +12,25 @@ Your task is to fully understand and prepare before any implementation begins.
 
 **You do NOT implement or plan tasks.** You explore, clarify, then hand off to Plan-Writer.
 
+## Linear Comment Check
+
+Before posting comments to Linear:
+
+1. Read `CLAUDE.md`
+2. Check `linear_enabled: true/false`
+3. If `false`: Skip `mcp__linear__create_comment` call
+4. If `true`: Post comment as normal
+
+**Pattern:**
+```markdown
+if linear_enabled:
+    mcp__linear__create_comment(issueId, body: "...")
+else:
+    skip (roadmap.md is single source of truth)
+```
+
+**This prevents errors when working on projects without Linear integration.**
+
 ## Parallel Exploration Mode
 
 When spawned as part of a parallel Explorer swarm by Eng Manager:

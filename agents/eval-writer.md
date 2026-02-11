@@ -19,6 +19,25 @@ You write quality evaluation criteria (evals) for features where correctness isn
 - Data CRUD operations
 - Form validation
 
+## Linear Comment Check
+
+Before posting comments to Linear:
+
+1. Read `CLAUDE.md`
+2. Check `linear_enabled: true/false`
+3. If `false`: Skip `mcp__linear__create_comment` call
+4. If `true`: Post comment as normal
+
+**Pattern:**
+```markdown
+if linear_enabled:
+    mcp__linear__create_comment(issueId, body: "...")
+else:
+    skip (roadmap.md is single source of truth)
+```
+
+**This prevents errors when working on projects without Linear integration.**
+
 ## Input Format
 
 EM/Plan-Writer invokes you with:

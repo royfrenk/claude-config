@@ -31,15 +31,38 @@ REVIEWER (validates implementation)
 3. Production deployment: Developer can deploy when User gives explicit confirmation and all safety checks pass
 4. You are the buffer—filter noise, escalate what matters
 
-**Linear (Source of Truth for Tasks):**
+**Linear (Source of Truth for Tasks - if enabled):**
 - **Use MCP tools only:** `mcp__linear__*` (not CLI commands like `linear-cli`)
 - Use `mcp__linear__list_issues` to see current work
 - Use `mcp__linear__create_issue` to add tasks
 - Use `mcp__linear__update_issue` to change status/priority
 - All agents post updates as comments on issues
-- **If MCP tools fail:** Use `docs/roadmap.md` as fallback, track pending syncs in Sync Status section
+- **If `linear_enabled: false`:** Use `docs/roadmap.md` only, skip Linear MCP calls entirely
+- **If `linear_enabled: true` but MCP tools fail:** Use `docs/roadmap.md` as fallback, track pending syncs in Sync Status section, reconcile later with `/sync-roadmap`
 
-**Issue Prefix:** Defined in project's `CLAUDE.md` under "Linear Integration" section
+**Issue Prefix:** Defined in project's `CLAUDE.md` under "Linear Integration" section (or "Task Tracking" section if Linear not enabled)
+
+**Linear Integration Check:**
+
+Before any Linear operation, read `CLAUDE.md` to check:
+- `linear_enabled: true/false` (default: false if missing)
+- If `false`: Use roadmap.md only, skip all Linear MCP calls
+- If `true`: Extract Team ID and use for all Linear operations
+
+**Pattern for all Linear operations:**
+```markdown
+1. Read CLAUDE.md → extract `linear_enabled` and `Team ID`
+2. If `linear_enabled: false` → skip Linear, use roadmap.md only
+3. If `linear_enabled: true`:
+   - Pass `team: "<Team ID>"` to all Linear MCP calls
+   - Handle failures with soft retry logic
+   - Fall back to roadmap.md if Linear unavailable
+```
+
+**Why this matters:**
+- Prevents cross-project Linear pollution (Joshua issues ending up in Quo workspace)
+- Supports projects that don't use Linear (roadmap.md-only workflow)
+- Explicit configuration over assumptions
 
 **Key Files:**
 - `docs/roadmap.md` — Task index, mirrors Linear (you update this)
@@ -65,10 +88,14 @@ REVIEWER (validates implementation)
 - **"agent"** — Add to ALL issues created by agents (not humans)
 - **"technical"** — Add IN ADDITION for backend/infrastructure/tech-debt issues that agent inferred or initiated
 
-**Linear Sync Strategy (3 touchpoints):**
-- **Sprint start:** Pull latest issue details (non-blocking)
-- **Staging deploy:** Push "In Review" status (soft retry)
-- **Production deploy:** Push "Done" status (soft retry)
+**Linear Sync Strategy (if enabled):**
+
+Use `/sync-roadmap` for bidirectional sync at 3 touchpoints:
+1. **Sprint start:** Pull latest from Linear, push any pending updates
+2. **Staging deploy:** Push "In Review" status (soft retry)
+3. **Production deploy:** Push "Done" status (soft retry)
+
+All syncs are non-blocking. Failed syncs tracked in sprint file "Pending Manual Sync".
 
 **Soft retry logic:**
 - Attempt 1: Try Linear MCP call
@@ -80,7 +107,7 @@ REVIEWER (validates implementation)
 - roadmap.md becomes source of truth
 - Continue updating roadmap.md as work progresses
 - Track failed syncs in sprint file
-- Run `/sync-linear` at sprint end for manual reconciliation
+- Run `/sync-roadmap` at sprint end for manual reconciliation
 
 **Reconciliation (at sprint start or when Linear restored):**
 1. Compare roadmap.md against Linear
