@@ -104,8 +104,54 @@ This command checks `CLAUDE.md` for Linear integration settings:
      **CONTINUE** - Use this sprint file for all subsequent work
 
    - **If no active sprint found:**
+     - **Determine next sprint number:**
+       - Scan ALL sprint files: `find docs/sprints/ -name "sprint-*.md" 2>/dev/null`
+       - Extract all sprint numbers from both `*.active.md` and `*.done.md` files
+       - Parse numbers handling suffixes (e.g., sprint-004a → 004)
+       - Use highest number + 1 (or 001 if no sprints exist)
+       - Example: If sprint-003.done.md, sprint-004a.done.md, sprint-004b.done.md exist, use 005
+     - **Parallel sprint validation:**
+       - Get list of issues for new sprint (from step 2b)
+       - For each existing `*.active.md` sprint file:
+         - Read the "Issues in Sprint" table
+         - Extract issue IDs
+         - **If overlap detected (same issue ID in both sprints):**
+           ```
+           ❌ BLOCKING ERROR
+
+           Issue [ISSUE-ID] is already in an active sprint:
+           - Active sprint: [filename]
+
+           Cannot run parallel sprints on the same issue.
+
+           Options:
+           1. Resume existing sprint with /sprint [ISSUE-ID]
+           2. Wait for existing sprint to complete
+           3. Remove [ISSUE-ID] from the active sprint first
+
+           CANNOT PROCEED.
+           ```
+           **EXIT - Do not proceed**
+         - **If different issues but both have spec files:**
+           - Read spec files for both sprints' issues
+           - Extract file paths from Implementation Plan sections
+           - Calculate overlap: common files / total files
+           - **If >50% overlap detected:**
+             ```
+             ⚠️ WARNING: Potential file conflicts detected
+
+             New sprint ([ISSUE-ID]) and active sprint ([OTHER-ISSUE]) may modify overlapping files:
+             - [list up to 5 common files]
+             ... and [N] more
+
+             This could cause merge conflicts.
+
+             Proceed anyway? (yes/no)
+             ```
+             - Wait for user response
+             - If "no": EXIT with "Sprint creation cancelled"
+             - If "yes": Continue with sprint creation
      - Create new sprint file at `docs/sprints/sprint-###-[name].active.md`
-     - Sprint number: increment from highest existing sprint number (or 001 if none)
      - Name: short descriptor from Priority 1 issue (will update after step 3)
      - **Blocking enforcement:**
        - Directory creation must succeed or EXIT with error
@@ -139,6 +185,28 @@ This command checks `CLAUDE.md` for Linear integration settings:
        [Context, decisions, blockers will be added as work progresses]
        ```
      - After creating, update sprint file title and first issue after step 3
+     - **Example sprint number calculation:**
+       ```bash
+       # Existing files in docs/sprints/:
+       sprint-001-auth.done.md
+       sprint-002-payments.done.md
+       sprint-003-search.done.md
+       sprint-004a-rag-memory.done.md    # Parallel sprint (finished)
+       sprint-004b-email-fix.done.md     # Parallel sprint (finished)
+       sprint-005-calendar.active.md     # Currently running
+
+       # New sprint starting:
+       # Scan finds: 001, 002, 003, 004a, 004b, 005
+       # Parse numbers: 1, 2, 3, 4, 4, 5
+       # Highest = 005
+       # New sprint gets: 006
+
+       # Result:
+       docs/sprints/sprint-006-notifications.active.md
+       ```
+
+       This ensures unique sprint numbers even when multiple sprints run in parallel.
+       If duplicates exist with suffixes (004a, 004b), the next sprint uses the next base number (005).
 3. **Work with selected issues:**
    - Issues are now selected (from step 2b or command args)
    - For each issue in the sprint, continue with spec check (step 5)
