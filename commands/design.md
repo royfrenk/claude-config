@@ -74,10 +74,36 @@ Follow the loaded skill's instructions. The skill will guide you through:
 - Responsive considerations
 - Completion checklist
 
-### Step 4: Reference Design-Reviewer
+### Step 4: Content & Copy Review
+
+Before completing the design, review all text content for:
+
+**Tone & Voice:**
+- Marketing: Confident, benefit-focused, specific (not vague)
+- Applications: Clear, task-oriented, helpful
+- Auth pages: Welcoming, reassuring, professional
+
+**Clarity:**
+- No jargon unless user would use it
+- Action verbs clear ("Save changes" not "Submit")
+- Button text matches consequence ("Delete project" not "Confirm")
+
+**Consistency:**
+- Terminology consistent across pages
+- Capitalization consistent (Title Case vs Sentence case per context)
+- Button text follows same verb pattern
+
+**Formatting:**
+- No ALL CAPS headings (except small labels/badges)
+- No excessive punctuation ("Success!" not "Success!!!")
+- No scary/gimmicky tone ("Delete" not "TERMINATE")
+
+**See:** Content & Copy Review section in design-reviewer.md for full standards.
+
+### Step 5: Reference Design-Reviewer
 
 Remind the user:
-> "When you're ready for review, the Design-Reviewer agent will verify this against the design standards."
+> "When you're ready for review, the Design-Reviewer agent will verify this against the design standards (code, screenshots, and content)."
 
 ---
 

@@ -195,9 +195,24 @@ These define the baseline behavior for the most commonly misimplemented componen
 |----------|------|
 | Variants | Primary (solid fill, ONE per view), Secondary (outlined/muted), Tertiary (ghost/text), Danger (red, destructive only) |
 | Sizes | sm: 32px height, 12px 16px padding. md: 40px height, 12px 24px padding. lg: 48px height, 16px 32px padding. |
-| Radius | `--radius-md` (8px) default. Match across all buttons. |
-| States | default, hover (darken or lift), focus (2px ring in accent), active (slight darken), disabled (opacity 0.5, not-allowed cursor), loading (spinner inside, width stable) |
+| Radius | `--radius-md` (8px) default. Match across all buttons in the app. |
+| States | **All states must be implemented:** default, hover (darken or lift, `--duration-fast`), focus (2px ring in accent color), active (slight darken or scale down), disabled (opacity 0.5, cursor not-allowed, no hover), loading (spinner inside, width stable) |
 | Touch target | Minimum 44x44px on mobile, 36x36px on desktop |
+| Icon spacing | Use `gap` property on button container, NOT `margin` on icon. If icon has `margin-left/right`, text will appear off-center. |
+| Text alignment | Text must be visually centered. Check for padding imbalance or icon margin causing asymmetry. |
+
+**Interactive states verification checklist:**
+- [ ] Hover: Background/color changes, cursor: pointer, transition 150ms
+- [ ] Active: Visual feedback (darken, scale, shadow change)
+- [ ] Focus: 2px ring, accent color, visible on keyboard navigation
+- [ ] Disabled: Opacity 0.5, cursor: not-allowed, hover/active disabled
+- [ ] Loading: Spinner inside button, button width doesn't jump, button disabled during load
+
+**Common button mistakes:**
+- Icon has `margin-left: 8px` → text appears off-center. Fix: Use `gap: 8px` on button, remove icon margin.
+- Hover too slow (>200ms) or instant (0ms) → Use `--duration-fast` (150ms).
+- No focus ring → Keyboard users can't see focus.
+- Loading state changes button width → Set min-width or use absolute positioning for spinner.
 
 ### Form Field
 

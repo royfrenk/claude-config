@@ -152,11 +152,21 @@ For each component type (Button, Form Field, Card, Table), verify:
 - [ ] Section spacing uses `--space-24` (desktop), `--space-12` (mobile)
 
 **If applications:**
-- [ ] Follows CRUD canonical pattern (list, detail, or create/edit)
+- [ ] Follows CRUD canonical pattern (list, detail, or create/edit) OR auth pattern (see below)
 - [ ] Empty state designed
 - [ ] Loading state present
 - [ ] Error state handles failures gracefully
 - [ ] Navigation clear (breadcrumbs, back links, active states)
+
+**If applications - Auth pages specifically:**
+- [ ] Full-page layout (no sidebar - exception to app shell)
+- [ ] Logo/branding matches main app
+- [ ] Theme matches main app (light if app is light, dark if app is dark)
+- [ ] Button styles consistent with main app (same radius, same variant)
+- [ ] Form follows standard form contract (labels above inputs, validation on blur/submit)
+- [ ] Copy is welcoming and professional (no scary/gimmicky branding, no ALL CAPS)
+- [ ] OAuth buttons clearly labeled ("Continue with Google" not just Google logo)
+- [ ] Error messages specific and actionable ("Email not found" not "Invalid credentials")
 
 **If dashboards:**
 - [ ] KPIs show value + trend + comparison context
@@ -164,6 +174,56 @@ For each component type (Button, Form Field, Card, Table), verify:
 - [ ] Y-axis starts at zero for bar charts
 - [ ] Date range picker functional
 - [ ] Tooltips on chart data points
+
+#### Phase A4: Interactive Element Behaviors
+
+**Two-Tier Approach:**
+
+| Review Type | When to Use | What to Check |
+|-------------|-------------|---------------|
+| **Default Review** | Standard design review | Only check elements the Developer flagged as "modified" or "new". Developer MUST provide a list. |
+| **Comprehensive Review** | Explicitly requested by user or high-stakes UI (auth, checkout, critical flows) | Check ALL interactive elements for ALL behaviors. |
+
+**If Developer didn't flag modified elements:**
+```
+⚠️ INCOMPLETE SUBMISSION
+
+Interactive element review requires a list of modified/new elements.
+
+Please specify which interactive elements were added or changed:
+- Buttons (which ones, what changed)
+- Form fields (which ones, what changed)
+- Links/navigation items
+- Cards (if clickable)
+- Any custom interactive components
+
+OR request a comprehensive review to check everything.
+
+Waiting for element list before proceeding.
+```
+
+**For each flagged interactive element, verify:**
+
+| Behavior | Check |
+|----------|-------|
+| **Hover state** | Color/background change, cursor pointer, smooth transition (`--duration-fast`) |
+| **Active state** | Visual feedback (slight darken, scale down, or shadow change) |
+| **Focus state** | 2px accent ring visible, meets WCAG contrast requirements |
+| **Disabled state** | Opacity 0.5, cursor not-allowed, no hover effects |
+| **Loading state** | Spinner/indicator inside button, width remains stable |
+| **Visual centering** | Text/icon visually centered (not offset by padding/margin imbalance) |
+| **Icon positioning** | Icons use gap property (not margin) for spacing from text |
+| **Spacing consistency** | Gap between icon and text matches token scale (`--space-1` or `--space-2`) |
+| **Alignment** | Element aligns with surrounding layout (no misalignment by 1-2px) |
+
+**Common issues to flag:**
+- Icon has `margin-left: 8px` causing text to appear off-center → should use `gap: 8px` on parent
+- Button text not vertically centered due to padding imbalance
+- Hover state too slow (> 150ms) or too fast (< 100ms)
+- Focus ring invisible or same color as background
+- Disabled state still shows hover effects
+
+---
 
 #### Phase B: Screenshot Review (Visual Verification)
 
@@ -243,6 +303,76 @@ Specifically check for the 5 core problems:
 | **Badly designed landing page** | Missing structure (hero, social proof, CTA), cluttered, no hierarchy |
 | **Bad responsive design** | Layout breaks, overlaps, or awkward gaps at 640px or 1024px |
 | **Redundant components** | Multiple visually similar patterns that should be unified |
+
+#### Phase C: Content & Copy Review
+
+**Check ALL text content for:**
+
+**C1. Tone & Voice**
+
+| Context | Tone Standard | Bad Example | Good Example |
+|---------|---------------|-------------|--------------|
+| **Marketing** | Confident, benefit-focused, specific | "Revolutionary AI-powered solution" | "Generate reports 10x faster" |
+| **Applications** | Clear, task-oriented, helpful | "Operation completed successfully" | "Project created. Add your first task." |
+| **Auth Pages** | Welcoming, reassuring, professional | "LOGIN TO SYSTEM" | "Welcome back" |
+| **Error Messages** | Specific, actionable, blame-free | "Error occurred" | "Email address not found. Check spelling or sign up." |
+
+**C2. Clarity Standards**
+
+- [ ] No jargon unless the user would use it ("workspace" OK for dev tools, "namespace" may not be)
+- [ ] Action verbs are clear: "Save changes" > "Submit", "Delete project" > "Delete"
+- [ ] Button text matches action consequence: "Delete" shows "Delete [item name]", not "Confirm"
+- [ ] Error messages explain WHAT went wrong and HOW to fix it
+
+**C3. Consistency**
+
+- [ ] Terminology consistent across pages (don't switch between "workspace" and "organization")
+- [ ] Capitalization consistent (Title Case vs Sentence case - pick one per context)
+- [ ] Button text follows same verb pattern ("Create project", "Edit settings" - not "Create project", "Settings edit")
+
+**C4. Formatting Rules**
+
+| Issue | Bad | Good |
+|-------|-----|------|
+| **ALL CAPS abuse** | "WELCOME TO OUR APP" | "Welcome to our app" |
+| **Excessive punctuation** | "Success!!! Your account is ready!!!" | "Success! Your account is ready." |
+| **Scary/gimmicky tone** | "TERMINATE your account" | "Delete your account" |
+| **Placeholder laziness** | "[Company Name] helps you work faster" | Actual company name filled in |
+
+**C5. Auth Page Specific Copy**
+
+| Element | Standard |
+|---------|----------|
+| **Login heading** | "Welcome back" or "Sign in" (not "LOGIN" or "AUTHENTICATE") |
+| **Registration heading** | "Create your account" or "Get started" (not "REGISTER" or "SIGN UP NOW") |
+| **Submit button** | "Sign in" / "Create account" (not "Submit" or "LOGIN") |
+| **Error messages** | Specific and helpful: "Email not found. Try again or create an account." |
+| **Success messages** | Welcoming: "Welcome! Redirecting to your dashboard..." (not "Login successful.") |
+
+**Report format:**
+
+```
+### Content & Copy Review: [✅ / ⚠️ / ❌]
+
+**Tone & Voice:** [✅ Pass / ⚠️ Marketing page uses vague claims / ❌ Auth page has ALL CAPS text]
+
+**Clarity:** [✅ Pass / ⚠️ Button text "Submit" should be "Create project"]
+
+**Consistency:** [✅ Pass / ❌ Switches between "workspace" (nav) and "organization" (settings)]
+
+**Formatting:** [✅ Pass / ❌ Found ALL CAPS headings on login page]
+
+**Auth Page Copy (if applicable):** [✅ Pass / ❌ Login button says "SUBMIT" should say "Sign in"]
+
+**Critical Issues:**
+- [File:line] - "WELCOME TO SYSTEM" should be "Welcome back"
+- [File:line] - Button text "Submit" should be "Create project"
+
+**Recommendations:**
+- Consider changing "workspace" to "organization" for consistency
+```
+
+---
 
 ### Step 4: Generate Review Report
 
@@ -400,10 +530,14 @@ These are common issues the user reported. Flag them explicitly using screenshot
 | Anti-Pattern | Code Check | Screenshot Check |
 |--------------|------------|------------------|
 | **Buttons in wrong place** | Button element exists | Verify placement matches context (top-right for apps, centered for marketing) |
-| **Text not centered** | CSS has text-align: center | Verify text is VISUALLY centered (not offset by padding) |
+| **Text not centered** | CSS has text-align: center | Verify text is VISUALLY centered (not offset by padding/icon margin) |
+| **Icon causing asymmetry** | Check for `margin` on icons (should use `gap` on parent) | Verify button text/icon appear balanced |
 | **Badly designed landing page** | Hero structure exists in code | Verify visual hierarchy, CTA prominence, section spacing |
 | **Bad responsive design** | Media queries exist | Verify layout doesn't break at 375px, 640px, 1024px, 1280px |
 | **Redundant components** | Check for duplicate component definitions | Verify no visual duplication (two similar card styles) |
+| **Auth page inconsistency** | Check theme, button styles match main app | Verify branding, colors, button styles match app (not standalone design) |
+| **ALL CAPS abuse** | Search for `text-transform: uppercase` on large text | Verify no ALL CAPS headings (except small labels/badges) |
+| **Scary/gimmicky branding** | Check copy on auth pages | Verify tone is professional (no "TERMINATE", "ANNIHILATE", etc.) |
 
 ---
 

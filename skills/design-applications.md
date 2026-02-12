@@ -277,7 +277,256 @@ Not all empty states are equal. Distinguish:
 
 ---
 
-## 7. Colors for App UI
+## 7. Authentication Pages
+
+### Context
+
+Login, registration, and OAuth pages are **exceptions** to the standard app shell. They are:
+- Full-page layouts (no sidebar, minimal navigation)
+- First impression of the app (design quality matters)
+- Trust-critical (users enter credentials - must feel secure)
+
+**Platforms covered:** Login, Registration, OAuth (Google), Password Reset
+
+---
+
+### Layout Rules
+
+**Standard auth page structure:**
+
+```
+┌─────────────────────────────────────────┐
+│          [Logo/Brand]                   │
+│                                         │
+│         [Heading]                       │
+│         [Subheading/Description]        │
+│                                         │
+│    ┌──────────────────────────┐        │
+│    │ [Form Fields]            │        │
+│    │ [Submit Button]          │        │
+│    └──────────────────────────┘        │
+│                                         │
+│    [Secondary action link]              │
+│    (e.g., "Don't have account? Sign up")│
+│                                         │
+│         [Footer links - Terms, Privacy] │
+└─────────────────────────────────────────┘
+```
+
+**Specs:**
+- **Centered layout:** Form card/container centered vertically and horizontally
+- **Max width:** Form container 400-480px max
+- **Padding:** `--space-6` to `--space-8` inside form container
+- **Background:** Can be `--bg-secondary` (page) with `--bg-primary` (form card), OR just `--bg-primary` full-page
+- **Logo:** Top of page, centered or left-aligned
+- **No sidebar:** Full-page layout only
+- **No app navigation:** Login page is not part of the app shell
+
+---
+
+### Branding Consistency
+
+**Critical rule: Auth pages must match the main app.**
+
+| Element | Standard | Bad Example | Good Example |
+|---------|----------|-------------|--------------|
+| **Logo** | Same logo as main app | Completely different logo or wordmark | Main app logo, same size/style |
+| **Theme** | Match main app theme (light/dark) | Dark login page, light main app | Both light OR both dark |
+| **Colors** | Use main app's `--accent-primary` | Random blue on login, green in app | Same accent color everywhere |
+| **Button styles** | Same radius, variants as main app | Pill buttons (radius-full) on login, square (radius-md) in app | All buttons use `--radius-md` |
+| **Typography** | Same font family as main app | Serif on login, sans-serif in app | Inter everywhere |
+
+**Why this matters:** Inconsistent auth pages feel like phishing. Users should recognize the brand immediately.
+
+---
+
+### Page-Specific Patterns
+
+#### Login Page
+
+**Required elements:**
+- Heading: "Welcome back" or "Sign in to [App Name]"
+- Email/username field
+- Password field with show/hide toggle
+- "Forgot password?" link below password field
+- Primary submit button: "Sign in" (not "Submit" or "LOGIN")
+- Secondary action: "Don't have an account? Sign up"
+- OAuth buttons (if applicable): "Continue with Google" (not just Google icon)
+
+**Layout:**
+```
+Welcome back
+───────────────────────
+Email address
+[input field]
+
+Password                [Show]
+[input field]
+Forgot password?
+
+[Sign in button]
+
+or
+
+[Continue with Google]
+
+───────────────────────
+Don't have an account? Sign up
+```
+
+**States to design:**
+- Empty (default)
+- Error: "Email or password incorrect. Try again."
+- Loading: Button shows spinner, disabled during submit
+- Success: Brief "Signing in..." then redirect (no success page)
+
+#### Registration Page
+
+**Required elements:**
+- Heading: "Create your account" or "Get started with [App Name]"
+- Name field (optional - don't ask if not needed)
+- Email field
+- Password field with strength indicator
+- Terms/Privacy checkbox (if legally required)
+- Primary submit button: "Create account" (not "Submit" or "REGISTER")
+- Secondary action: "Already have an account? Sign in"
+
+**Password requirements:**
+- Show requirements upfront: "At least 8 characters, one number"
+- Live validation as user types (green checkmarks for met requirements)
+- Don't hide password by default - let user see what they're typing (with hide option)
+
+#### OAuth Page
+
+**Required elements:**
+- Heading: "Choose how to sign in"
+- OAuth buttons with clear labels: "Continue with Google" (not just logo)
+- Icon + text in button, left-aligned
+- OR divider if also offering email/password
+- Error state: "Google sign-in failed. Try again or use email."
+
+**OAuth button spec:**
+- Icon: 20px, left side with `gap: --space-2` from text
+- Height: 44px minimum
+- Style: Outlined (secondary button variant) OR branded colors (Google blue)
+- Text: "Continue with [Provider]" or "Sign in with [Provider]"
+
+#### Password Reset
+
+**Flow:**
+1. Request reset: Email input → "Send reset link" button
+2. Email sent: "Check your email for reset link" message
+3. Reset form: New password input → "Reset password" button
+4. Success: "Password reset. Sign in with new password."
+
+---
+
+### Copy & Tone Standards
+
+**Auth pages set the tone for your app. Use welcoming, professional language.**
+
+| Element | Bad Copy | Good Copy |
+|---------|----------|-----------|
+| **Login heading** | "LOGIN TO SYSTEM" | "Welcome back" |
+| **Registration heading** | "SIGN UP NOW!!!" | "Create your account" |
+| **Submit button** | "SUBMIT" | "Sign in" / "Create account" |
+| **Error message** | "Authentication failed" | "Email or password incorrect. Try again." |
+| **Success message** | "Login successful." | "Welcome! Redirecting to your dashboard..." |
+| **Password reset** | "Request reset" | "Send reset link" |
+
+**Avoid:**
+- ALL CAPS text (looks like shouting)
+- Scary/gimmicky branding ("TERMINATE your session", "Annihilate bugs")
+- Vague errors ("Something went wrong")
+- Generic "Submit" buttons
+
+**Use:**
+- Sentence case headings
+- Specific error messages with actions
+- Action-oriented button text
+- Welcoming, reassuring tone
+
+---
+
+### Form Validation
+
+**Follow standard form contract from design-core.md, plus auth-specific rules:**
+
+| Field | Validation Timing | Error Message Example |
+|-------|-------------------|----------------------|
+| **Email** | On blur | "Please enter a valid email address" |
+| **Password (login)** | On submit only | "Email or password incorrect" (don't specify which) |
+| **Password (registration)** | On keystroke (for strength indicator) | "Password must be at least 8 characters" |
+| **Confirm password** | On blur | "Passwords don't match" |
+
+**Security consideration:** Don't reveal whether email exists ("Email not found") vs wrong password. Use generic "Email or password incorrect" on login.
+
+**Registration consideration:** DO show specific password requirements and live validation (not a security risk, improves UX).
+
+---
+
+### Responsive Behavior
+
+| Breakpoint | Layout |
+|------------|--------|
+| **Mobile (< 640px)** | Form full-width with `--space-4` side padding. Stack OAuth buttons vertically. |
+| **Tablet (640-1024px)** | Form container 480px max-width, centered. OAuth buttons can be side-by-side if 2 only. |
+| **Desktop (> 1024px)** | Form container 480px max-width, centered. Optional: Split layout (form left, illustration/messaging right). |
+
+---
+
+### Common Auth Page Mistakes
+
+1. **Inconsistent branding** — Login page looks like different app than main app
+2. **Dark theme by default** — Unless main app is dark, use light theme for auth (standard convention)
+3. **ALL CAPS headings** — "LOGIN" looks aggressive, "Welcome back" is friendlier
+4. **Pill buttons on auth, square in app** — Button styles must match everywhere
+5. **Generic "Submit" button** — Use "Sign in", "Create account", "Send reset link"
+6. **Vague error messages** — "Invalid credentials" → "Email or password incorrect. Try again or reset password."
+7. **No loading state** — User clicks "Sign in", nothing happens for 2 seconds
+8. **OAuth button with just logo** — Must have text: "Continue with Google"
+9. **Scary/gimmicky branding** — "TERMINATE your account", "Annihilate bugs" → unprofessional
+10. **Form doesn't follow standard contract** — Labels beside inputs, validation on keystroke for all fields
+11. **No password visibility toggle** — Users should be able to see what they type
+12. **Missing "Forgot password" link** — Users will need this, place below password field
+
+---
+
+### References
+
+| Site | What They Do Well | Link |
+|------|-------------------|------|
+| Linear | Clean, dark auth pages matching app, minimal | https://linear.app/login |
+| Clerk | Modern auth UI, excellent error states | https://clerk.com |
+| Stripe | Light, professional, clear CTAs | https://dashboard.stripe.com/login |
+| Notion | Welcoming, smooth OAuth flow | https://notion.so/login |
+| GitHub | Simple, focused, accessible | https://github.com/login |
+
+---
+
+### Completion Checklist for Auth Pages
+
+Before considering auth pages done:
+
+- [ ] Layout is full-page, centered form (no app shell sidebar)
+- [ ] Logo/branding matches main app
+- [ ] Theme matches main app (light/dark consistency)
+- [ ] Button styles match main app (same radius, same variants)
+- [ ] Typography matches main app (same font family)
+- [ ] Colors use main app's `--accent-primary`
+- [ ] Copy is welcoming and professional (no ALL CAPS, no scary branding)
+- [ ] Form fields follow standard form contract (labels above, validation on blur/submit)
+- [ ] Error messages are specific and actionable
+- [ ] Loading state present (button spinner during submit)
+- [ ] Password field has show/hide toggle
+- [ ] "Forgot password" link present on login
+- [ ] OAuth buttons clearly labeled ("Continue with Google", not just logo)
+- [ ] Responsive behavior defined (mobile stacks, desktop centers)
+- [ ] Secondary actions clear ("Don't have account? Sign up")
+
+---
+
+## 8. Colors for App UI
 
 App UIs should be **quieter** than marketing:
 
@@ -289,7 +538,7 @@ App UIs should be **quieter** than marketing:
 
 ---
 
-## 8. Responsive Behavior
+## 9. Responsive Behavior
 
 - **> 1024px**: Full sidebar + content. Primary design target.
 - **768-1024px**: Sidebar collapses to icon-only. Content full-width.
@@ -300,7 +549,7 @@ If the app is desktop-only, say so and redirect mobile users.
 
 ---
 
-## 9. Common App UI Mistakes
+## 10. Common App UI Mistakes
 
 1. **Marketing aesthetics in app UI** — No hero sections, no gradient backgrounds, no decorative sidebar illustrations.
 2. **Inconsistent component styles** — Buttons must use the same radius, size, and color rules everywhere.
