@@ -61,7 +61,11 @@ src/utils/
 
 ## Error Handling
 
-Always handle errors explicitly:
+Always handle errors explicitly. Never use empty catch blocks.
+
+### Silent Failures (Critical Anti-Pattern)
+
+Empty catch blocks hide failures and cause unpredictable behavior:
 
 ```typescript
 // WRONG - Silent failure
@@ -71,6 +75,13 @@ try {
   // ignore
 }
 
+// WRONG - Assuming operation succeeded
+try {
+  db.run('ALTER TABLE users ADD COLUMN new_field TEXT')
+} catch (e) {
+  // Assume column already exists
+}
+
 // CORRECT - Explicit handling
 try {
   await riskyOperation()
@@ -78,7 +89,44 @@ try {
   console.error('Operation failed:', error)
   throw new Error('User-friendly message')
 }
+
+// CORRECT - Check before assuming
+const hasColumn = checkColumnExists(db, 'users', 'new_field')
+if (!hasColumn) {
+  db.run('ALTER TABLE users ADD COLUMN new_field TEXT')
+}
 ```
+
+### When Errors Must Be Ignored
+
+If you genuinely need to ignore an error (rare), document why:
+
+```typescript
+try {
+  await nonCriticalOperation()
+} catch (error) {
+  // Intentionally ignored: Non-critical cache warming
+  // System continues functioning without cache
+  console.debug('Cache warming failed:', error.message)
+}
+```
+
+### Validation After Risky Operations
+
+After operations that might silently fail, validate success:
+
+```typescript
+// Database migrations
+await runMigration('add_column')
+validateSchema(db, ['expected', 'columns', 'new_column'])  // Verify it worked
+
+// File operations
+await writeFile(path, data)
+const exists = await fileExists(path)  // Verify it worked
+if (!exists) throw new Error('File write failed')
+```
+
+**See also:** `~/.claude/rules/stability.md` for API misuse patterns
 
 ## Code Quality Checklist
 
@@ -88,11 +136,13 @@ Before marking work complete:
 - [ ] Functions are small and focused (< 50 lines)
 - [ ] Files are focused (< 800 lines)
 - [ ] No deep nesting (< 4 levels)
-- [ ] Proper error handling throughout
+- [ ] Proper error handling throughout (no empty catch blocks)
 - [ ] No console.log statements
 - [ ] No hardcoded magic numbers (use constants)
 - [ ] No mutation (immutable patterns used)
 - [ ] Names are descriptive (no `x`, `tmp`, `data`)
+- [ ] No silent failures (validate after risky operations)
+- [ ] API usage verified against documentation
 
 ## Automated Checks
 

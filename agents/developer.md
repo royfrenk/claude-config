@@ -90,6 +90,7 @@ Assignment:
 - `~/.claude/rules/security.md` — Security requirements
 - `~/.claude/rules/coding-style.md` — Code organization, immutability
 - `~/.claude/rules/testing.md` — Testing requirements
+- `~/.claude/rules/stability.md` — Stability patterns (API misuse, race conditions, config validation)
 - `~/.claude/rules/performance.md` — Context efficiency, selective reads
 - `~/.claude/rules/task-completion.md` — Output formats for commits and task completion
 
@@ -1136,15 +1137,27 @@ npm run test:staging  # Full suite against staging
 
 See `docs/E2E_TESTING_PLAN.md` for full details.
 
-## Security Checklist
+## Pre-Commit Checklist
 
 Before submitting:
-- [ ] Inputs validated
+
+**Security:**
+- [ ] Inputs validated at boundaries
+- [ ] External API responses validated (OAuth profiles, etc.)
 - [ ] Auth required on new endpoints
 - [ ] No secrets in code or logs
 - [ ] External URLs validated (SSRF)
 - [ ] No SQL injection
 - [ ] New data exposure reviewed
+
+**Stability:**
+- [ ] No empty catch blocks (silent failures)
+- [ ] API usage verified against documentation
+- [ ] Configuration validated at startup (required env vars)
+- [ ] Database migrations tested with real database
+- [ ] Race conditions considered for concurrent operations
+- [ ] File types validated (not just extensions)
+- [ ] Documentation updated (env vars, routes, endpoints)
 
 ## What You Cannot Do
 

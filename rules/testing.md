@@ -47,6 +47,9 @@ For features where correctness isn't binary (search, recommendations, performanc
 - Complex business logic
 - Edge cases and error handling
 - Bug fixes (regression test)
+- Database migrations (integration test)
+- External API integrations (real API, not mocks)
+- Concurrent operations (race condition prevention)
 
 **Judgment call:**
 - Simple CRUD operations
@@ -76,6 +79,134 @@ describe('EpisodeService', () => {
   })
 })
 ```
+
+## Integration Tests for Stability
+
+### Database Migrations
+
+**Always test migrations with real database instances, not mocks.**
+
+```typescript
+describe('Database Migrations', () => {
+  it('should add receipt_number column', () => {
+    // Start with fresh database
+    const db = new Database(':memory:')
+
+    // Run migrations
+    runMigrations(db)
+
+    // Verify schema
+    const columns = db.exec('PRAGMA table_info(receipts)')
+      .map(row => row[1])  // Column names
+
+    expect(columns).toContain('receipt_number')
+  })
+
+  it('should handle idempotent migrations', () => {
+    const db = new Database(':memory:')
+
+    // Run migrations twice
+    runMigrations(db)
+    runMigrations(db)  // Should not throw
+
+    // Verify schema still correct
+    const columns = db.exec('PRAGMA table_info(receipts)')
+    expect(columns.length).toBeGreaterThan(0)
+  })
+})
+```
+
+### External API Integration
+
+**Test with real APIs, not mocks, to catch API misuse:**
+
+```typescript
+describe('OAuth Integration', () => {
+  it('should handle missing email in profile', async () => {
+    // Use real passport strategy, not mock
+    const strategy = new GoogleStrategy(config, (token, refresh, profile, done) => {
+      // This will catch if we assume profile.emails exists
+      handleProfile(profile, done)
+    })
+
+    // Simulate Google returning profile without email
+    const profileWithoutEmail = { id: '123', displayName: 'Test' }
+
+    await expect(
+      strategy.userProfile(accessToken)
+    ).rejects.toThrow('OAuth profile missing email')
+  })
+})
+```
+
+### Race Conditions
+
+**Test concurrent operations explicitly:**
+
+```typescript
+describe('User Registration', () => {
+  it('should handle concurrent registrations', async () => {
+    const emails = ['alice@test.com', 'bob@test.com', 'charlie@test.com']
+
+    // Create users concurrently
+    const userIds = await Promise.all(
+      emails.map(email => createUser(email))
+    )
+
+    // All should get unique IDs
+    const uniqueIds = new Set(userIds)
+    expect(uniqueIds.size).toBe(3)
+
+    // All users should exist in database
+    const users = await db.all(
+      'SELECT * FROM users WHERE id IN (?, ?, ?)',
+      userIds
+    )
+    expect(users).toHaveLength(3)
+  })
+
+  it('should not have duplicate admin on concurrent first registrations', async () => {
+    // Start with empty users table
+    await db.run('DELETE FROM users')
+
+    // Two users register simultaneously (both think they're first)
+    const [user1, user2] = await Promise.all([
+      registerUser('alice@test.com'),
+      registerUser('bob@test.com')
+    ])
+
+    // Only one should be admin
+    const admins = await db.all('SELECT * FROM users WHERE is_admin = 1')
+    expect(admins).toHaveLength(1)
+  })
+})
+```
+
+### Configuration Validation
+
+**Test that server refuses to start with invalid config:**
+
+```typescript
+describe('Configuration Validation', () => {
+  it('should fail fast on missing required env vars', () => {
+    delete process.env.GOOGLE_CLIENT_ID
+
+    expect(() => {
+      validateConfig()
+    }).toThrow('Missing required environment variables: GOOGLE_CLIENT_ID')
+  })
+
+  it('should validate callback URL format', () => {
+    process.env.GOOGLE_CALLBACK_URL = 'not-a-url'
+
+    expect(() => {
+      validateConfig()
+    }).toThrow('GOOGLE_CALLBACK_URL must be a valid HTTP(S) URL')
+  })
+})
+```
+
+**See also:** `~/.claude/rules/stability.md` for more integration test patterns
 
 ## E2E Test Strategy
 

@@ -13,6 +13,7 @@ You are the Reviewer for this project. You review code changes from Developer be
 - `~/.claude/rules/security.md` — Security requirements
 - `~/.claude/rules/coding-style.md` — Code organization, immutability
 - `~/.claude/rules/testing.md` — Testing requirements
+- `~/.claude/rules/stability.md` — Stability patterns (API misuse, race conditions, config validation)
 
 ## Linear Comment Check
 
