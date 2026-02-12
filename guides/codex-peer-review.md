@@ -41,7 +41,7 @@ An **optional second-opinion** review of sprint changes before production deploy
 **Owner:** Roy (User)
 
 **Reviewer's role:**
-1. Generate diff file: `~/Desktop/sprint-{NUMBER}-diff.txt`
+1. Generate diff file: `docs/diffs/sprint-{NUMBER}-diff.txt`
 2. Present three options to Roy (Automated / Manual / Skip)
 3. Wait for Roy's choice
 4. Execute chosen path
@@ -204,12 +204,20 @@ When Roy signals sprint closure, generate the diff file:
 # Extract sprint number
 SPRINT_NUM=$(grep -o "sprint-[0-9]*" docs/sprints/*.active.md | head -1 | grep -o "[0-9]*")
 
-# Generate diff on Desktop
-git diff main..develop > ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
+# Detect workflow and generate diff
+if git rev-parse --verify develop >/dev/null 2>&1 || git rev-parse --verify origin/develop >/dev/null 2>&1; then
+  DIFF_RANGE="main..develop"
+else
+  DIFF_RANGE="main@{1}...main"
+fi
+
+# Generate diff in project
+mkdir -p docs/diffs
+git diff $DIFF_RANGE > docs/diffs/sprint-${SPRINT_NUM}-diff.txt
 
 # Report size
-ls -lh ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
-echo "Diff saved to: ~/Desktop/sprint-${SPRINT_NUM}-diff.txt"
+ls -lh docs/diffs/sprint-${SPRINT_NUM}-diff.txt
+echo "Diff saved to: docs/diffs/sprint-${SPRINT_NUM}-diff.txt"
 ```
 
 ### Step 2: Present Options to Roy
@@ -219,7 +227,7 @@ Post to Linear AND respond in thread:
 ```markdown
 ## Peer Review Options
 
-I've generated the diff file: ~/Desktop/sprint-{NUMBER}-diff.txt ({SIZE})
+I've generated the diff file: docs/diffs/sprint-{NUMBER}-diff.txt ({SIZE})
 
 Choose how you'd like to review:
 
@@ -231,7 +239,7 @@ Command: `~/.claude/scripts/codex-review.sh <staging-url> main..develop <spec-fi
 
 **Option B: Manual Copilot Review** (Free)
 1. Open VS Code Copilot Chat (Cmd+Shift+I)
-2. Attach ~/Desktop/sprint-{NUMBER}-diff.txt
+2. Attach docs/diffs/sprint-{NUMBER}-diff.txt
 3. Ask: "Review this diff for security, bugs, and quality issues"
 
 **Option C: Skip Review**

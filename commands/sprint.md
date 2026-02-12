@@ -736,7 +736,7 @@ For each completed issue, verify all acceptance criteria:
 
    **Option A - Automated Codex Review (~$0.01-0.50):**
    - Tell me: "Run Codex peer review" or "Option A"
-   - I'll generate diff: `~/Desktop/sprint-{NUMBER}-diff.txt`
+   - I'll generate diff: `docs/diffs/sprint-{NUMBER}-diff.txt`
    - Run OpenAI analysis via `~/.claude/scripts/codex-review.sh`
    - Reviews: security vulnerabilities, bugs, code quality
    - Cost: ~$0.01-0.50 with gpt-4o-mini (depends on diff size)

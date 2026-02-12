@@ -551,11 +551,21 @@ When sprint is ready for production, generate the diff file:
 # Extract sprint number from active sprint file
 SPRINT_NUM=$(grep -o "sprint-[0-9]*" docs/sprints/*.active.md | head -1 | grep -o "[0-9]*")
 
-# Generate diff file on Desktop
-git diff main..develop > ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
+# Detect workflow and generate diff file
+if git rev-parse --verify develop >/dev/null 2>&1 || git rev-parse --verify origin/develop >/dev/null 2>&1; then
+  # Workflow: develop branch exists (main...develop)
+  DIFF_RANGE="main..develop"
+else
+  # Workflow: direct-to-main (main@{1}...main)
+  DIFF_RANGE="main@{1}...main"
+fi
+
+# Generate diff file in project
+mkdir -p docs/diffs
+git diff $DIFF_RANGE > docs/diffs/sprint-${SPRINT_NUM}-diff.txt
 
 # Report file size
-ls -lh ~/Desktop/sprint-${SPRINT_NUM}-diff.txt
+ls -lh docs/diffs/sprint-${SPRINT_NUM}-diff.txt
 ```
 
 ### Step 2: Present Options to Roy
@@ -565,7 +575,7 @@ Post to Linear:
 ```markdown
 ## Peer Review Options
 
-I've generated the diff file: ~/Desktop/sprint-{NUMBER}-diff.txt ({SIZE})
+I've generated the diff file: docs/diffs/sprint-{NUMBER}-diff.txt ({SIZE})
 
 Choose how you'd like to review:
 
@@ -577,7 +587,7 @@ Command: `~/.claude/scripts/codex-review.sh <staging-url> main..develop <spec-fi
 
 **Option B: Manual Copilot Review** (Free)
 1. Open VS Code Copilot Chat (Cmd+Shift+I)
-2. Attach ~/Desktop/sprint-{NUMBER}-diff.txt
+2. Attach docs/diffs/sprint-{NUMBER}-diff.txt
 3. Ask: "Review this diff for security, bugs, and quality issues"
 
 **Option C: Skip Review**
@@ -588,7 +598,7 @@ Which option do you prefer?
 
 **Also notify Roy in response:**
 ```
-Sprint review complete. I've generated ~/Desktop/sprint-{NUMBER}-diff.txt for peer review.
+Sprint review complete. I've generated docs/diffs/sprint-{NUMBER}-diff.txt for peer review.
 
 See Linear for options (automated Codex, manual Copilot, or skip).
 ```
