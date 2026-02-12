@@ -23,17 +23,112 @@ The subagent will follow the Change Process workflow below and handle all phases
 
 You are helping the User update the engineering process. Your goal is to ensure changes are consistent across all files and don't add noise.
 
+## CRITICAL: Question Formatting Rules
+
+**When asking questions in ANY phase, follow these rules strictly to ensure questions reach the User:**
+
+1. **Output ONLY the questions - nothing else:**
+   - DO NOT include explanations before the questions
+   - DO NOT include file listings or analysis
+   - DO NOT proceed to the next phase
+   - Questions must be the ONLY content in your response
+
+2. **Use maximum visual separation:**
+   - Start with horizontal rule: `---`
+   - Use `## Phase X: [Title]` header in large text
+   - Number every question with **bold** text
+   - End with horizontal rule: `---`
+   - Add explicit "waiting" message after the horizontal rule
+
+3. **Always stop after asking questions:**
+   - State explicitly: "I'll wait for your answers before proceeding."
+   - DO NOT continue to the next phase
+   - DO NOT add any additional commentary
+   - Wait for User's response before doing anything else
+
+4. **Only ask applicable questions:**
+   - Read what the User has already told you
+   - Skip questions they've already answered
+   - Only ask follow-up questions that are relevant
+
+**Example of CORRECT question format:**
+
+```
+---
+
+## Phase 1: Understanding Your Change
+
+Please answer these questions:
+
+**1. What change do you want to make?**
+   (Describe the change in your own words)
+
+**2. Why are you making this change?**
+   - What problem does this solve?
+   - What triggered this request?
+
+**3. What's the scope?**
+   - All projects (global ~/.claude/ files)?
+   - Just one project?
+   - Something else?
+
+---
+
+I'll wait for your answers before reviewing the affected files.
+```
+
+**Example of INCORRECT format (DO NOT DO THIS):**
+
+```
+Let me understand the change first. I'm going to ask some questions. What change do you want to make? Why? What's the scope? Now let me also review the files to see what's affected... [continues to Phase 2]
+```
+
+**The User must be able to see and respond to questions. If questions are buried or skipped, the entire process fails.**
+
 ## Phase 1: Understand the Change
 
-Ask the User:
-1. **What change do you want to make?** (Let him describe it freely)
-2. **Why?** (What problem does this solve? What triggered this?)
-3. **What's the scope?** (Does this affect all projects or just one?)
+**STOP AND ASK QUESTIONS - DO NOT PROCEED TO PHASE 2 UNTIL USER RESPONDS**
 
-Then ask clarifying questions:
-- If the change affects workflow: "Does this change the order of operations? Who does what?"
-- If adding a new file/concept: "Who creates it? Who updates it? When?"
-- If removing something: "What replaces it? How do we handle existing references?"
+Output ONLY the following question block and nothing else:
+
+---
+
+## Phase 1: Understanding Your Change
+
+Please answer these questions so I can review the right files:
+
+**1. What change do you want to make?**
+   (Describe the change in your own words)
+
+**2. Why are you making this change?**
+   - What problem does this solve?
+   - What triggered this request?
+
+**3. What's the scope of this change?**
+   - Does this affect all projects (global ~/.claude/ files)?
+   - Does this affect just one project?
+   - Something else?
+
+**Based on your description, I may also need to know:**
+
+[Include ONLY the applicable questions below - skip sections that don't apply]
+
+**If the change affects workflow:**
+- Does this change the order of operations?
+- Does this change who is responsible for what?
+
+**If adding a new file or concept:**
+- Who creates it?
+- Who updates it?
+- When does it get created/updated?
+
+**If removing something:**
+- What replaces it?
+- How do we handle existing references to it?
+
+---
+
+I'll wait for your answers before reviewing the affected files.
 
 ## Phase 2: Review All Files
 
@@ -86,25 +181,61 @@ Present findings as a table:
 
 ## Phase 4: Challenge the Change
 
-Before proceeding, ask the User:
+**STOP AND ASK CHALLENGE QUESTIONS - DO NOT PROCEED TO PHASE 5 UNTIL USER RESPONDS**
 
-**Gaps:**
-- "I noticed [X] isn't covered. How should that work?"
-- "What happens when [edge case]?"
-- "Who is responsible for [new thing]?"
+After completing Phase 2 (file review) and Phase 3 (impact analysis), check if you found any gaps, contradictions, complexity issues, or scope concerns.
 
-**Contradictions:**
-- "This conflicts with [existing rule]. Which takes priority?"
-- "[Agent A] currently does this, but your change suggests [Agent B] should. Clarify?"
+**If you found concerns:**
 
-**Noise check:**
-- "Is this adding complexity that could be avoided?"
-- "Could this be solved with existing tools/processes?"
-- "Will this be easy to remember and follow?"
+Output ONLY the following question block and nothing else:
 
-**Scope creep:**
-- "You mentioned [X] - is that part of this change or a separate one?"
-- "Should we do this incrementally or all at once?"
+---
+
+## Phase 4: Challenge Questions
+
+Based on my file review and impact analysis, I need clarification on these points:
+
+[Include ONLY the sections below that have actual concerns - skip empty sections]
+
+**Gaps I Found:**
+
+[List each gap with a numbered question:]
+1. I noticed [X] isn't covered. How should that work?
+2. What happens when [edge case]?
+3. Who is responsible for [new thing]?
+
+**Contradictions I Found:**
+
+[List each contradiction with a numbered question:]
+1. This conflicts with [existing rule in file.md]. Which takes priority?
+2. [Agent A] currently does this (file.md line X), but your change suggests [Agent B] should. Which is correct?
+
+**Complexity/Noise Concerns:**
+
+[Ask if the change seems to add unnecessary complexity:]
+1. Is this adding complexity that could be avoided?
+2. Could this be solved with existing tools/processes instead?
+3. Will this be easy for all agents to remember and follow?
+
+**Scope Concerns:**
+
+[Ask if scope seems unclear or too broad:]
+1. You mentioned [X] - is that part of this change or should it be separate?
+2. Should we implement this incrementally (phases) or all at once?
+
+---
+
+Please address these concerns before I propose the specific file changes.
+
+**If you found NO concerns:**
+
+Skip the question block entirely. Instead, output:
+
+```
+I reviewed all affected files and found no gaps, contradictions, or scope issues. Proceeding to propose specific changes.
+```
+
+Then continue to Phase 5.
 
 ## Phase 5: Propose Changes
 
