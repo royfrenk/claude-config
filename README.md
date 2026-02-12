@@ -52,7 +52,9 @@ Developer(s) — implements in waves (parallel when possible)
     ↓  ↓  ↓
 Wave 1: Dev A, Dev B, Dev C (parallel)
     ↓
-Reviewer(s) — reviews (spawns parallel reviewers if needed)
+Design-Reviewer(s) — reviews UI/UX against design standards (if UI work)
+    ↓
+Reviewer(s) — reviews code quality, security, testing
     ↓
 Wave 1 deploys to staging
     ↓
@@ -258,6 +260,7 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 | `/context <project>` | Load project context (project name required) |
 | `/sprint` | Autonomous execution. Suggests Todo issues if no args provided |
 | `/iterate` | Continue iteration after bug reports |
+| `/design` | Invoke design skills with auto context detection |
 | `/review-prd` | PRD review and story extraction |
 | `/create-issue` | Quick issue capture |
 | `/new-project` | Setup guide and templates |
@@ -494,19 +497,28 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── explorer.md        # Codebase analysis
 │   ├── plan-writer.md     # Implementation planning
 │   ├── developer.md       # Code implementation
-│   └── reviewer.md        # Code review
+│   ├── reviewer.md        # Code review
+│   └── design-reviewer.md # Design/UX review
 ├── commands/
 │   ├── context.md         # /context
 │   ├── sprint.md          # /sprint
 │   ├── iterate.md         # /iterate
+│   ├── design.md          # /design
 │   ├── review-prd.md      # /review-prd
 │   ├── create-issue.md    # /create-issue
 │   ├── new-project.md     # /new-project
 │   ├── checkpoint.md      # /checkpoint
 │   └── change-process.md  # /change-process
 ├── guides/
-│   ├── design.md          # UX, accessibility
-│   └── legal.md           # Privacy, compliance
+│   ├── design.md          # Design quick reference (points to skills)
+│   ├── legal.md           # Privacy, compliance
+│   └── design-advanced.md # Advanced design topics (archived)
+├── skills/
+│   ├── deploy-pi.md              # Pi deployment
+│   ├── design-core.md            # Core design tokens and contracts
+│   ├── design-marketing.md       # Marketing/landing page design
+│   ├── design-applications.md    # SaaS/app UI design
+│   └── design-dashboards.md      # Dashboard/data viz design
 └── rules/
     ├── security.md
     ├── coding-style.md
@@ -647,11 +659,12 @@ project/
 
 | Agent | What It Does | Can Write Code? | Can Spawn Sub-Agents? |
 |-------|--------------|-----------------|------------------------|
-| **EM** | Coordinates work, manages roadmap, orchestrates parallelization | No | Yes (Explorer, Plan-Writer, Eval-Writer, Developer, Reviewer) |
+| **EM** | Coordinates work, manages roadmap, orchestrates parallelization | No | Yes (Explorer, Plan-Writer, Eval-Writer, Developer, Design-Reviewer, Reviewer) |
 | **Explorer** | Analyzes codebase, creates spec file | No | No (but can run in parallel with other Explorers) |
 | **Plan-Writer** | Adds implementation plan + dependency analysis | No | No |
 | **Eval-Writer** | Writes quality benchmarks for subjective features | No | No |
 | **Developer** | Implements code, deploys to staging | Yes | No (but can run in parallel with other Developers) |
+| **Design-Reviewer** | Reviews UI implementations against design standards | No | No |
 | **Reviewer** | Reviews code, approves/blocks deploys | No | Yes (sub-Reviewers for parallel review) |
 
 ---

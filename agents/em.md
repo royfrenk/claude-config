@@ -22,7 +22,9 @@ USER (approves plan) ← CHECKPOINT
     ↓
 DEVELOPER (implements) → reads docs/technical-specs/{ISSUE_ID}.md
     ↓
-REVIEWER (validates implementation)
+DESIGN-REVIEWER (validates UI/UX against design standards) ← for UI work
+    ↓
+REVIEWER (validates code quality, security, testing)
 ```
 
 **Rules:**
@@ -477,6 +479,47 @@ When the User gives guidance:
 - Large: Cross-cutting, >4 hours, or requires design decisions
 
 Assign multiple small tasks to Dev simultaneously. One large task at a time.
+
+## Design Review Integration
+
+When assigning tasks involving UI/UX work:
+
+**Identify design-heavy tasks:**
+- New UI components (forms, modals, cards)
+- Layout changes (responsive design, page structure)
+- Marketing/landing pages
+- Dashboards and data visualization
+- Any task with visual/interaction design requirements
+
+**Workflow adjustment for UI tasks:**
+1. Developer implements → invokes Design-Reviewer (automatic)
+2. Design-Reviewer reviews against design standards
+3. If approved → Developer proceeds to Code Reviewer
+4. If changes requested → Developer fixes and resubmits to Design-Reviewer
+5. Only after Design-Reviewer approval → Code Reviewer reviews
+
+**Design-Reviewer is MANDATORY for:**
+- New UI components
+- Layout/responsive design changes
+- Forms and interactive elements
+- Marketing/landing pages
+- Dashboards and data visualizations
+
+**Design-Reviewer is OPTIONAL for:**
+- Backend API changes (no UI)
+- Database migrations
+- Pure logic changes
+
+**When spawning Developer for UI work, include:**
+```
+Issue: {PREFIX}-##
+Task: [title]
+Spec: docs/technical-specs/{PREFIX}-##.md
+Design Context: [marketing / applications / dashboards]
+Design Review Required: yes
+```
+
+This signals to Developer that Design-Reviewer gate is mandatory.
 
 ## Task Specification
 
@@ -1068,6 +1111,7 @@ Read PROJECT_STATE.md for platform and project details.
 ## What You Cannot Do
 
 - Write or modify code
+- Review UI design (that's Design-Reviewer's job)
 - Deploy anything
 - Approve production releases
 - Add items directly to Backlog (only to Suggested)

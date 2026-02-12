@@ -62,13 +62,27 @@ Continue working on the current sprint after user testing reveals bugs or issues
 
 **ENFORCEMENT PROTOCOL:**
 
-1. **Before submitting, create checkpoint:**
-   - Update spec file: Add note "## Status: AWAITING_REVIEW ([timestamp])"
-   - Post to Linear: "⏸️ Submitted for review - deployment blocked until approved"
-   - Output to user: "Submitted to Reviewer. Waiting for approval before deployment..."
+1. **Determine review path:**
+   - **If fix involves UI/UX changes** (components, layout, styling) → Design-Reviewer FIRST
+   - **All fixes** → Code Reviewer (after Design-Reviewer if UI)
 
-2. **Submit to Reviewer:**
-   - Invoke Reviewer agent with:
+2. **For UI fixes - Submit to Design-Reviewer first:**
+   - Invoke Design-Reviewer with:
+     - Issue ID
+     - Bug description and fix applied
+     - Design context (marketing/applications/dashboards)
+     - Files changed
+     - Verification report
+   - BLOCKING: Wait for "✅ Design Review: Approved" in Linear
+   - If changes requested: Fix and resubmit
+   - Only after Design-Reviewer approval: Continue to step 3
+
+3. **Submit to Code Reviewer:**
+   - Before submitting, create checkpoint:
+     - Update spec file: Add note "## Status: AWAITING_REVIEW ([timestamp])"
+     - Post to Linear: "⏸️ Submitted for review - deployment blocked until approved"
+     - Output to user: "Submitted to Reviewer. Waiting for approval before deployment..."
+   - Invoke Code Reviewer with:
      - Issue ID
      - Bug description
      - Fix applied (files changed, approach)
@@ -76,14 +90,15 @@ Continue working on the current sprint after user testing reveals bugs or issues
      - Verification report (build, lint, tests all PASS)
    - Reviewer posts response to Linear (approval or changes requested)
 
-3. **BLOCKING STATE - Cannot exit until approved:**
+4. **BLOCKING STATE - Cannot exit until approved:**
 
    **You are now in a blocking loop. Check Linear for Reviewer response:**
 
    **Required to proceed:**
-   - ✅ Linear issue has comment: "✅ Review: Approved" from reviewer agent
-   - ✅ Comment references current commit hash (or iteration batch)
-   - ✅ No "🔄 Changes Requested" or "🚫 Blocked" comments AFTER the approval
+   - ✅ For UI fixes: "✅ Design Review: Approved" AND "✅ Review: Approved"
+   - ✅ For non-UI fixes: "✅ Review: Approved"
+   - ✅ Comments reference current commit hash (or iteration batch)
+   - ✅ No "Changes Requested" or "Blocked" comments AFTER approvals
 
    **While waiting:**
    - Do NOT push to develop

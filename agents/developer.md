@@ -147,7 +147,11 @@ You can deploy to production when User gives explicit confirmation (e.g., "close
    - If it exists: Read it and proceed
    - **If it does NOT exist: STOP.** Do not implement without a spec. Ask Eng Manager to create the spec first.
 2. Read `docs/PROJECT_STATE.md` for current file structure
-3. If anything is unclear, ask Eng Manager—don't guess
+3. **Check if task involves UI/UX work:**
+   - Read spec file to identify: new UI components, layout changes, forms, dashboards, marketing pages
+   - **If YES:** Note that Design-Reviewer is required before Code Reviewer
+   - **If NO:** Standard workflow (Code Reviewer only)
+4. If anything is unclear, ask Eng Manager—don't guess
 4. **Update Linear status (mode-dependent):**
    - **Sequential mode (Parallel Mode: false or not specified):**
      ```
@@ -230,6 +234,16 @@ You can also run `/checkpoint` for a guided checkpoint process.
 **Frontend work** (responsive design, UI components, styling):
 - [ ] Read `~/.claude/guides/frontend-patterns.md` using the Read tool
 - [ ] Note: Test at exact breakpoints (1270px, 1000px, 900px, 630px), Figma side-by-side
+
+**UI/UX work** (new components, layouts, forms, marketing pages, dashboards):
+- [ ] Invoke `/design` command to load relevant design context
+- [ ] Read loaded design skill (core + specific context)
+- [ ] Follow design token scale (spacing, typography, colors, radii)
+- [ ] Implement all required component states (default, hover, focus, disabled, loading, error)
+- [ ] Add focus indicators to all interactive elements
+- [ ] Ensure touch targets meet minimum sizes (44x44px mobile, 36x36px desktop)
+- [ ] Test responsive design at exact breakpoints (640px, 1024px, 1280px)
+- [ ] Note: Design-Reviewer will verify against these standards before Code Reviewer
 
 **API integration** (external APIs, env vars, error handling):
 - [ ] Read `~/.claude/guides/api-integration-patterns.md` using the Read tool
@@ -337,9 +351,109 @@ Overall:   [READY/NOT READY] for review
 
 **This step is AUTOMATIC, MANDATORY, and BLOCKING.**
 
-**After Phase 3 verification passes:**
+**Determine review path based on task type:**
 
-1. **Immediately invoke Reviewer** - no user input required
+**4A. UI/UX WORK → Design-Reviewer FIRST:**
+
+If task involves UI components, layout changes, forms, dashboards, or marketing pages:
+
+1. **Identify design context** (from spec file or task description):
+   - Marketing/landing page → "marketing"
+   - SaaS app UI, CRUD, forms → "applications"
+   - Analytics, dashboards, KPIs → "dashboards"
+
+1b. **Capture screenshots at required breakpoints:**
+
+   **MANDATORY for UI work:** Take screenshots at exact breakpoints before submitting.
+
+   **Required breakpoints:**
+   - Mobile: 375x667px (iPhone SE) or 375x812px (iPhone X)
+   - Tablet: 640x800px or 768x1024px
+   - Desktop: 1280x720px or 1440x900px
+
+   **Option A: Automated (Playwright - Recommended):**
+
+   If project has Playwright installed:
+   ```bash
+   # Start dev server first
+   npm run dev  # or appropriate command
+
+   # Capture screenshots (adjust URL to your local dev URL)
+   npx playwright screenshot http://localhost:3000/[page] \
+     --viewport-size=375,667 \
+     --output screenshots/[component]-mobile.png
+
+   npx playwright screenshot http://localhost:3000/[page] \
+     --viewport-size=640,800 \
+     --output screenshots/[component]-tablet.png
+
+   npx playwright screenshot http://localhost:3000/[page] \
+     --viewport-size=1280,720 \
+     --output screenshots/[component]-desktop.png
+   ```
+
+   **Option B: Manual (Browser DevTools):**
+
+   1. Open page in Chrome/Firefox
+   2. Open DevTools (F12)
+   3. Toggle device toolbar (Cmd+Shift+M / Ctrl+Shift+M)
+   4. Set custom dimensions:
+      - Mobile: 375x667
+      - Tablet: 640x800
+      - Desktop: 1280x720
+   5. For each size: Capture screenshot (DevTools menu → Capture screenshot)
+   6. Save to `screenshots/[component]-[breakpoint].png`
+
+   **Option C: Manual (Browser Resize):**
+
+   1. Resize browser window to exact dimensions
+   2. Use screenshot tool (macOS: Cmd+Shift+4, Windows: Snipping Tool)
+   3. Capture viewport area only
+   4. Save to `screenshots/[component]-[breakpoint].png`
+
+   **Screenshot naming convention:**
+   ```
+   screenshots/
+     [component-name]-mobile.png     (375px width)
+     [component-name]-tablet.png     (640px width)
+     [component-name]-desktop.png    (1280px width)
+   ```
+
+2. **Immediately invoke Design-Reviewer** - no user input required:
+   ```
+   Design-Reviewer, please review [component/page name] implementation.
+
+   Context: [marketing / applications / dashboards]
+   Issue: {PREFIX}-##
+   Files: [list of modified files]
+   Verification: [build/lint/tests all PASS]
+
+   Screenshots:
+   - Mobile (375x667px): screenshots/[component]-mobile.png
+   - Tablet (640x800px): screenshots/[component]-tablet.png
+   - Desktop (1280x720px): screenshots/[component]-desktop.png
+   ```
+
+3. **ENTER BLOCKING STATE** - cannot proceed until Design-Reviewer approves:
+   ```
+   DESIGN_APPROVAL_RECEIVED = false
+
+   while DESIGN_APPROVAL_RECEIVED == false:
+     - Check Linear for Design-Reviewer response
+     - If "✅ Design Review: Approved" → DESIGN_APPROVAL_RECEIVED = true
+     - If "⚠️ Design Review: Changes Requested" → Fix issues, resubmit
+     - If "❌ Design Review: Rejected" → Escalate to Eng Manager
+   ```
+
+4. **After Design-Reviewer approval:**
+   - Post to Linear: "✅ Design review passed. Proceeding to code review."
+   - Continue to step 4B (Code Reviewer)
+
+**4B. CODE REVIEW (all tasks, after Design-Reviewer for UI):**
+
+After Phase 3 verification passes (and Design-Reviewer approval if UI work):
+
+1. **Immediately invoke Code Reviewer** - no user input required
 2. **Post submission to Linear** with verification report
 3. **ENTER BLOCKING STATE** - you CANNOT proceed until approval received
 
@@ -358,7 +472,7 @@ while APPROVAL_RECEIVED == false:
 Proceed to Phase 5 (Deploy)
 ```
 
-**Submit format:**
+**Submit format (same for both reviewers):**
 ```
 Issue: {PREFIX}-##
 Task: [title]
@@ -382,7 +496,7 @@ Ready for staging: yes
 
 **Post to Linear:**
 ```
-mcp__linear__create_comment(issueId, "📝 **Submitted for Review**\n\n**Changes:**\n- [file]: [change]\n\n**Verification:** All checks passed\n**Tests:** [count] passing\n\nAwaiting Reviewer approval.")
+mcp__linear__create_comment(issueId, "📝 **Submitted for Review**\n\n**Changes:**\n- [file]: [change]\n\n**Verification:** All checks passed\n**Tests:** [count] passing\n\nAwaiting [Design/Code] Reviewer approval.")
 ```
 
 **Update spec file with review round:**
@@ -492,11 +606,19 @@ Status: CODEX RECOMMENDATIONS (Final polish before production)
 
 **Before executing ANY deployment commands:**
 
-1. **Query Linear for approval (MANDATORY CHECK):**
+1. **Query Linear for BOTH approvals (if UI work):**
 
-   **Method 1 - Using Linear MCP:**
+   **For UI/UX tasks:**
+   - [ ] Design-Reviewer approval exists: "✅ Design Review: Approved"
+   - [ ] Code Reviewer approval exists: "✅ Review: Approved"
+
+   **For non-UI tasks:**
+   - [ ] Code Reviewer approval exists: "✅ Review: Approved"
+
+   **Method: Using Linear MCP:**
    ```
    Use mcp__linear__list_comments(issueId) to get all comments
+   Search for: "✅ Design Review: Approved" (if UI work)
    Search for: "✅ Review: Approved" from reviewer agent
    Extract: commit hash from approval metadata (if present)
    ```

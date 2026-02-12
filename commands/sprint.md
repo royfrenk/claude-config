@@ -336,8 +336,16 @@ This command checks `CLAUDE.md` for Linear integration settings:
       - Implements code changes
       - Runs verification loop (build, lint, types, tests, security)
 
-      **Review gate (MANDATORY - BLOCKING):**
-      - **Automatically invokes Reviewer** (no user input required)
+      **Design review gate (MANDATORY for UI work):**
+      - **Identify if task involves UI/UX** (components, layouts, forms, dashboards, marketing)
+      - **If YES:**
+        - Invoke Design-Reviewer with context (marketing/applications/dashboards)
+        - BLOCKING: Wait for "✅ Design Review: Approved" in Linear
+        - If changes requested: Fix and resubmit (max 3 rounds)
+        - Only after approval: Proceed to code review
+
+      **Code review gate (MANDATORY - BLOCKING):**
+      - **Automatically invokes Code Reviewer** (no user input required)
       - **ENTERS BLOCKING STATE** - cannot deploy until approved
       - Developer submits:
         - Issue ID and task number
@@ -350,8 +358,10 @@ This command checks `CLAUDE.md` for Linear integration settings:
         - "🚫 Blocked" → Escalate to EM (architectural issue)
 
       **Enforcement mechanism:**
-      - Developer CANNOT push to develop without "✅ Review: Approved" in Linear
-      - Developer checks Linear for approval comment before EVERY deployment
+      - Developer CANNOT push to develop without required approvals in Linear
+      - For UI work: BOTH Design-Reviewer AND Code Reviewer approval required
+      - For non-UI: Code Reviewer approval required
+      - Developer checks Linear before EVERY deployment
       - If approval missing: Developer outputs error and STOPS
       - If approval stale (new commits after approval): Developer resubmits for re-review
 
@@ -505,6 +515,10 @@ Reported by User:
 ## Rules
 
 - **MANDATORY REVIEW GATE:** Cannot mark "In Review" or deploy to staging without Reviewer approval
+- **Design-Reviewer gate for UI:** UI/UX components, layouts, forms, dashboards, marketing pages MUST pass Design-Reviewer before Code Reviewer
+- **Design-Reviewer owns:** Design standards, component contracts, responsive design, accessibility basics
+- **Code Reviewer owns:** Code quality, security, testing, logic (reviews AFTER Design-Reviewer for UI)
+- **If Design-Reviewer rejects, Code Reviewer is NOT invoked** (fix design issues first)
 - **Reviewer must approve before ANY deployment to develop branch**
 - **Auto-invoke:** If Developer attempts deployment without approval, automatically invoke Reviewer and block
 - **If Reviewer requests changes, must re-submit for re-review before deploying**

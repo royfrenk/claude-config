@@ -75,7 +75,7 @@ Draw from EM, Explorer, and Reviewer agent traits:
 
 ### 2. Design Review
 
-Reference: `~/.claude/guides/design.md`
+Reference: Use `/design` command or `~/.claude/skills/design-*.md` based on context (marketing/applications/dashboards).
 
 **User Experience:**
 - Who is the primary user? Secondary users?
