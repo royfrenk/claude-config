@@ -358,14 +358,19 @@ Platform: [Vercel/Railway/etc]
 
 ---
 
-## Recently Completed Sprints
+## P0 - Core Features
 
-### Sprint 001: [Name] (Completed YYYY-MM-DD)
-[Sprint file](sprints/sprint-001-[name].done.md)
+| Issue | Title | Status | Notes |
+|-------|-------|--------|-------|
+| [Only active/pending work - no completed items] |
 
-| Priority | Issue | Title | Status | Spec |
-|----------|-------|-------|--------|------|
-| 1 | XXX-## | [Title] | 🟩 Done | [spec](technical-specs/XXX-##.md) |
+---
+
+## P1 - Important
+
+| Issue | Title | Status | Notes |
+|-------|-------|--------|-------|
+| [Only active/pending work - no completed items] |
 
 ---
 
@@ -381,6 +386,15 @@ Sort by priority (High → Medium → Low), then by issue number.
 
 ---
 
+## Recently Completed
+
+| Issue | Title | Completed | Sprint | Outcome | Spec |
+|-------|-------|-----------|--------|---------|------|
+| XXX-## | [Title] | YYYY-MM-DD | [Sprint ###](sprints/sprint-###-name.done.md) | [Brief outcome] | [spec](technical-specs/XXX-##.md) |
+| [Most recent items at top, older items below] |
+
+---
+
 ## Notes
 
 - **Linear is source of truth** - this file mirrors it
@@ -388,6 +402,9 @@ Sort by priority (High → Medium → Low), then by issue number.
 - If Linear unavailable, this becomes temporary source of truth
 - When Linear is added/restored, EM reconciles (shows diff, User approves)
 - Specs live in `technical-specs/{ISSUE_ID}.md`
+- **Recently Completed** section at bottom shows ALL completed items in single table
+- Most recent items at TOP of Recently Completed table
+- Priority sections (P0/P1/P2) only show active work - completed items move to Recently Completed
 ```
 
 ---

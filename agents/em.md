@@ -369,14 +369,14 @@ When user says "close the sprint" (or variants: "finish sprint", "complete sprin
 When a sprint moves from `.active.md` to `.done.md`:
 
 1. **Automatic roadmap update:**
-   - Move issues from "Active Sprint" to "Recently Completed" section
-   - **Remove these issues from "Backlog" sections** (they're now done)
-   - Add to Recently Completed table with:
-     - ID, Title, Completed date
-     - **Outcome** (1-2 line summary extracted from sprint file - what was achieved)
-     - Sprint link
-   - Format: | ID | Title | Completed | Outcome | Sprint |
-   - Keep only ~15-20 most recent completed issues (older ones accessible via sprint files)
+   - Move issues from "Active Sprint" to "Recently Completed" section **at bottom of roadmap.md**
+   - **Remove these issues from P0/P1/P2 sections** (priority sections only show active work)
+   - Add to Recently Completed table (single table, all completed items):
+     - Insert at TOP of table (most recent first)
+     - Format: | Issue | Title | Completed | Sprint | Outcome | Spec |
+     - Sprint column: `[Sprint ###](sprints/sprint-###-name.done.md)` or `(pre-sprint)` for older items
+     - Outcome: 1-2 line summary of what was achieved
+   - Keep all completed items visible in single table (no pagination/truncation)
 
 2. **Sprint file rename:**
    - When user deploys to production and sprint is complete

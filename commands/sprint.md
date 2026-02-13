@@ -569,8 +569,13 @@ Reported by User:
 - **Done = Deployed to production.** Never mark Done until code is live on main branch.
 - **Sprint file lifecycle:** When sprint is deployed to production:
   1. Rename `*.active.md` → `*.done.md`
-  2. Update roadmap.md to move issues to "Recently Completed Sprints" section (with sprint file link)
-  3. Keep 2-3 most recent completed sprints in roadmap (older ones remain accessible via sprint files)
+  2. Update roadmap.md:
+     - Remove completed issues from P0/P1/P2 sections (priority sections only show active work)
+     - Add to "Recently Completed" section at BOTTOM of roadmap.md
+     - Insert at TOP of Recently Completed table (most recent first)
+     - Table format: | Issue | Title | Completed | Sprint | Outcome | Spec |
+     - Sprint column: link to sprint file `[Sprint ###](sprints/sprint-###-name.done.md)`
+  3. All completed items remain visible in single table (no truncation)
 - **Linear sync strategy (if enabled):**
   - Use `/sync-roadmap` for bidirectional sync at 3 touchpoints:
     1. **Sprint start:** Pull latest from Linear, push any pending updates
