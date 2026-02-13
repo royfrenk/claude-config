@@ -24,7 +24,7 @@ ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
     │                       - Style/layout changes
     │                       - Adding UI elements to existing pages
     │                                  ↓
-    │                       Creates docs/design-specs/{ISSUE_ID}/design-spec.md
+    │                       Creates docs/design-specs/{ISSUE_ID}-design.md
     │                       Validates links with User (asks questions, updates spec)
     │                                  ↓
     └─ NO (backend-only, no UI) ───────┤
@@ -1112,7 +1112,7 @@ UX DETECTION PHASE (NEW)
 
 DESIGN PHASE (if UX feature)
 4. **If UX feature:** You invoke design-planner with the issue ID
-5. design-planner creates design spec with mockups at docs/design-specs/{ISSUE_ID}/
+5. design-planner creates design spec at docs/design-specs/{ISSUE_ID}-design.md
 6. design-planner presents design spec to User for approval ← CHECKPOINT (BLOCKING)
 7. If changes needed: design-planner iterates (max 3 rounds)
 8. User approves design spec
@@ -1121,7 +1121,7 @@ DESIGN PHASE (if UX feature)
 EXPLORATION PHASE
 10. You invoke Explorer with the issue ID
 11. Explorer analyzes codebase, asks User clarifying questions if needed
-12. **If UX feature:** Explorer cross-references design spec from docs/design-specs/{ISSUE_ID}/
+12. **If UX feature:** Explorer cross-references design spec from docs/design-specs/{ISSUE_ID}-design.md
 13. Explorer creates docs/technical-specs/{ISSUE_ID}.md with findings
 14. Explorer posts summary to Linear
 

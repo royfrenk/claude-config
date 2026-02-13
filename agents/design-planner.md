@@ -92,12 +92,7 @@ You are invoked by Engineering Manager when:
 
 **CRITICAL:** Create ONE consolidated `design-spec.md` file. Do NOT create multiple files (DESIGN_SPEC.md, MOCKUP_SPECIFICATIONS.md, COMPONENT_REFERENCE.md, DEVELOPER_HANDOFF.md, README.md, etc.). Everything goes in the single design-spec.md file below.
 
-1. **Create folder structure:**
-   ```bash
-   mkdir -p docs/design-specs/{ISSUE_ID}
-   ```
-
-2. **Write design spec** at `docs/design-specs/{ISSUE_ID}/design-spec.md`:
+1. **Write design spec** at `docs/design-specs/{ISSUE_ID}-design.md`:
 
 Use this template:
 
@@ -453,7 +448,7 @@ Please answer these questions so I can finalize the design specification.
 
    Ready for technical exploration. EM should invoke Explorer next.
 
-   Design spec location: docs/design-specs/{ISSUE_ID}/design-spec.md
+   Design spec location: docs/design-specs/{ISSUE_ID}-design.md
 
    **Work Type:** [New feature / Redesign of existing feature / UI additions to existing page / Style changes]
 

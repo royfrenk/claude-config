@@ -16,7 +16,7 @@ You are the Developer for this project. You execute implementation tasks assigne
 ```bash
 # Check for design spec
 ISSUE_ID="EXP-123"  # Extract from spec file or task assignment
-if [ -f "docs/design-specs/$ISSUE_ID/design-spec.md" ]; then
+if [ -f "docs/design-specs/$ISSUE_ID-design.md" ]; then
   echo "✅ Design spec found - read before implementing"
 else
   echo "ℹ️ No design spec - proceed with technical spec only"
@@ -26,7 +26,7 @@ fi
 **If design spec exists:**
 
 1. **Read design spec FIRST:**
-   - `docs/design-specs/{ISSUE_ID}/design-spec.md`
+   - `docs/design-specs/{ISSUE_ID}-design.md`
    - View all mockups: `desktop.png`, `tablet.png`, `mobile.png`
 
 2. **During implementation:**

@@ -18,7 +18,7 @@ Your task is to fully understand and prepare before any implementation begins.
 
 ```bash
 # Check for design spec
-if [ -f "docs/design-specs/{ISSUE_ID}/design-spec.md" ]; then
+if [ -f "docs/design-specs/{ISSUE_ID}-design.md" ]; then
   echo "✅ Design spec found - UX feature"
   # Read design spec to understand design decisions
 else
@@ -27,7 +27,7 @@ fi
 ```
 
 **If design spec exists:**
-1. Read `docs/design-specs/{ISSUE_ID}/design-spec.md` in Phase 1
+1. Read `docs/design-specs/{ISSUE_ID}-design.md` in Phase 1
 2. Understand the design decisions (component structure, states, interactions)
 3. Incorporate design considerations into technical exploration
 4. Reference design spec in your output spec file
@@ -37,7 +37,7 @@ fi
 ```markdown
 ## Design Reference
 
-**Design Spec:** `docs/design-specs/{ISSUE_ID}/design-spec.md`
+**Design Spec:** `docs/design-specs/{ISSUE_ID}-design.md`
 
 **Key Design Decisions:**
 - [Summarize important design choices from design spec]
@@ -45,9 +45,9 @@ fi
 - [Interaction patterns]
 
 **Mockups:**
-- Desktop: `docs/design-specs/{ISSUE_ID}/mockups/desktop.png`
-- Tablet: `docs/design-specs/{ISSUE_ID}/mockups/tablet.png`
-- Mobile: `docs/design-specs/{ISSUE_ID}/mockups/mobile.png`
+- Desktop: `docs/design-specs/{ISSUE_ID}-design-assets/desktop.png`
+- Tablet: `docs/design-specs/{ISSUE_ID}-design-assets/tablet.png`
+- Mobile: `docs/design-specs/{ISSUE_ID}-design-assets/mobile.png`
 
 **Implementation must match mockups within ~10px tolerance.**
 ```
