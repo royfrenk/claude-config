@@ -44,9 +44,21 @@ Analyze the user's request for keywords:
 - Keywords: analytics, dashboard, KPI, metrics, chart, data visualization, monitoring, reporting
 - Auto-load: `design-dashboards` skill
 
+**Mobile - iOS context:**
+- Keywords: iOS app, iPhone, iPad, SwiftUI, UIKit, tab bar, navigation bar, SF Symbols, Apple HIG, mobile iOS, native iOS
+- Auto-load: `design-mobile-ios` skill
+
+**Mobile - Android context:**
+- Keywords: Android app, Material Design, Jetpack Compose, bottom navigation, FAB, Material You, native Android
+- Auto-load: `design-mobile-android` skill
+
+**Mobile - Cross-platform context:**
+- Keywords: React Native, Flutter, Expo, mobile app, cross-platform, iOS and Android, multiplatform
+- Auto-load: `design-mobile-crossplatform` skill
+
 **Ambiguous:**
 - If no clear keywords, or multiple contexts detected
-- Ask: "What are you designing? (1) Marketing/Landing page, (2) Application/SaaS interface, (3) Analytics Dashboard"
+- Ask: "What are you designing? (1) Marketing/Landing page, (2) Application/SaaS interface, (3) Analytics Dashboard, (4) iOS App, (5) Android App, (6) Cross-platform Mobile App"
 
 ---
 
