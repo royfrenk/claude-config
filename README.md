@@ -578,33 +578,64 @@ npm run test     # Tests
 ```markdown
 # Roadmap
 
-> Mirrors Linear. Fallback when Linear unavailable.
+> **Purpose:** Lightweight backlog index. Brief context shown; full details in spec files.
+> **Last Updated:** YYYY-MM-DD
+
+---
 
 ## Active Sprint
 
-| Priority | Issue | Title | Status | Spec |
-|----------|-------|-------|--------|------|
-| 1 | PROJ-01 | [Title] | 🟨 In Progress | [spec](technical-specs/PROJ-01.md) |
+**None** - Run `/sprint` to start a new sprint
 
-**Status:** 🟥 To Do | 🟨 In Progress | 🟩 Done | ⏸️ Blocked
-
-## Recently Completed Sprints
-
-### Sprint 001: [Name] (Completed YYYY-MM-DD)
-[Sprint file](sprints/sprint-001-[name].done.md)
-
-| Priority | Issue | Title | Status | Spec |
-|----------|-------|-------|--------|------|
-| 1 | PROJ-## | [Title] | 🟩 Done | [spec](technical-specs/PROJ-##.md) |
+---
 
 ## Backlog
 
-Sort by priority (High → Medium → Low), then by issue number.
+### High Priority
 
-| Priority | Issue | Title | Added | Notes |
-|----------|-------|-------|-------|-------|
-| High | PROJ-## | [Title] | YYYY-MM-DD | [context] |
-| Medium | PROJ-## | [Title] | YYYY-MM-DD | [context] |
+| ID | Title | Priority | Est | Context | Spec |
+|----|-------|----------|-----|---------|------|
+| PROJ-## | [Title] | High (P1) | 2d | [1-2 line summary] | [spec](technical-specs/PROJ-##.md) |
+
+### Medium Priority
+
+| ID | Title | Priority | Est | Context | Spec |
+|----|-------|----------|-----|---------|------|
+| PROJ-## | [Title] | Medium (P2) | 1w | [1-2 line summary] | [spec](technical-specs/PROJ-##.md) |
+
+### Low Priority
+
+| ID | Title | Priority | Est | Context | Spec |
+|----|-------|----------|-----|---------|------|
+| PROJ-## | [Title] | Low (P3) | 3d | [1-2 line summary] | [spec](technical-specs/PROJ-##.md) |
+
+---
+
+## Recently Completed
+
+| ID | Title | Completed | Outcome | Sprint |
+|----|-------|-----------|---------|--------|
+| PROJ-## | [Title] | YYYY-MM-DD | [Brief outcome - what was achieved] | [sprint-###](sprints/sprint-###-[name].done.md) |
+
+---
+
+## Notes
+
+- **Spec files are source of truth** - Click spec links for full context
+- **Roadmap shows brief context only** - 1-2 line summary per issue
+- **Roadmap is auto-updated** by `/sprint`, `/iterate`, `/create-issue` commands
+- **Priority:** High → Medium → Low (work on High first)
+- **Estimates:** d=days, w=weeks
+
+---
+
+## Quick Actions
+
+```bash
+/sprint                    # Start working on highest priority task
+/create-issue "bug desc"   # Add new issue to Backlog
+/context                   # Load project context
+```
 ```
 
 ### PROJECT_STATE.md Template

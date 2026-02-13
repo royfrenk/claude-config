@@ -466,12 +466,23 @@ This command checks `CLAUDE.md` for Linear integration settings:
       - Update sprint file Notes: "Linear sync: [success/failed at Done]"
     - Rename sprint file from `.active.md` to `.done.md`
     - Update `docs/roadmap.md`:
-      - Move issues from "Active Sprint" to new section under "Recently Completed Sprints"
-      - **Remove these issues from "Todo" and "Backlog" sections** (they're now done)
-      - Include sprint name, completion date, link to sprint file
-      - Show table of completed issues with priority, issue, title, status, spec
-      - Keep only 2-3 most recent completed sprints (remove older entries)
-    - Clear "Active Sprint" section (or leave empty if no next sprint)
+      - Move issues from "Active Sprint" to "Recently Completed" section
+      - **Remove these issues from "Backlog" sections** (they're now done)
+      - Add to Recently Completed table with: ID, Title, Completed date, **Outcome** (1-2 line summary of what was achieved), Sprint link
+      - Keep only ~15-20 most recent completed issues (older ones accessible via sprint files)
+      - Clear "Active Sprint" section to "**None** - Run `/sprint` to start a new sprint"
+
+**Recently Completed format:**
+```markdown
+| ID | Title | Completed | Outcome | Sprint |
+|----|-------|-----------|---------|--------|
+| EXP-## | [Title] | YYYY-MM-DD | [Brief outcome] | [sprint-###](sprints/sprint-###-name.done.md) |
+```
+
+**Example outcomes:**
+- "Implemented Material Design 3 tokens and typography scale"
+- "Added bulk operations API with transaction support"
+- "Redesigned dashboard with Linear-inspired information density"
 13. **Move to next issue:**
     - Ensure completed issue is tracked in active sprint file
     - Return to step 3 and repeat until:

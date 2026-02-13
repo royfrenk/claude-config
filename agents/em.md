@@ -154,7 +154,13 @@ Before any Linear operation, read `CLAUDE.md` to check:
   3. At sprint start: invoke `/sync-roadmap`
   4. At sprint end: invoke `/sync-roadmap`
   5. On-demand: User runs `/sync-roadmap` after making Linear changes
-- **Contains:** Active Sprint, Recently Completed Sprints (2-3 most recent with links to sprint files), Backlog (prioritized: High/Medium/Low)
+- **Contains:** Active Sprint, Recently Completed (~15-20 most recent with brief outcomes and sprint links), Backlog (prioritized: High/Medium/Low)
+
+**Roadmap Structure:**
+- Shows brief Context (1-2 lines) for quick scanning
+- Full details always in spec file (click spec link)
+- When presenting issues to User, include Context from roadmap for quick understanding
+- Recently Completed includes brief Outcome (1-2 lines summarizing achievement)
 
 **Status Ownership:**
 - **Backlog, Todo:** User can change in Linear → respect and replicate to roadmap.md
@@ -349,8 +355,10 @@ When user says "close the sprint" (or variants: "finish sprint", "complete sprin
 3. Monitor deployment for errors
 4. Rename sprint file: `.active.md` → `.done.md`
 5. Update roadmap.md:
-   - Move issues to "Recently Completed Sprints"
-   - **Remove these issues from "Todo" and "Backlog" sections** (avoid duplicates)
+   - Move issues to "Recently Completed" section with brief Outcome
+   - **Remove these issues from "Backlog" sections** (avoid duplicates)
+   - Format: | ID | Title | Completed | Outcome | Sprint |
+   - Outcome should be action-oriented: "Implemented X", "Added Y", "Redesigned Z"
 6. Update Linear: All issues → "Done" status
 7. Alert user if any post-deploy errors detected
 
@@ -361,21 +369,26 @@ When user says "close the sprint" (or variants: "finish sprint", "complete sprin
 When a sprint moves from `.active.md` to `.done.md`:
 
 1. **Automatic roadmap update:**
-   - Move issues from "Active Sprint" to "Recently Completed Sprints"
-   - **Remove these issues from "Todo" and "Backlog" sections** (they're now done)
-   - Add new sprint section with:
-     - Sprint name and completion date
-     - Link to sprint file
-     - Table of completed issues (with priority, issue, title, status, spec)
-   - Keep only 2-3 most recent sprints (remove older ones from roadmap)
-   - Issues removed from roadmap are still accessible via sprint files
+   - Move issues from "Active Sprint" to "Recently Completed" section
+   - **Remove these issues from "Backlog" sections** (they're now done)
+   - Add to Recently Completed table with:
+     - ID, Title, Completed date
+     - **Outcome** (1-2 line summary extracted from sprint file - what was achieved)
+     - Sprint link
+   - Format: | ID | Title | Completed | Outcome | Sprint |
+   - Keep only ~15-20 most recent completed issues (older ones accessible via sprint files)
 
 2. **Sprint file rename:**
    - When user deploys to production and sprint is complete
    - Rename `sprint-###-name.active.md` → `sprint-###-name.done.md`
-   - Update roadmap with this sprint as "Recently Completed"
+   - Update roadmap with issues as "Recently Completed"
 
-3. **Backlog organization:**
+3. **Outcome extraction:**
+   - Extract brief outcome from sprint file (1-2 lines summarizing achievement)
+   - Should be action-oriented: "Implemented X", "Added Y", "Redesigned Z"
+   - Examples: "Implemented Material Design 3 tokens and typography scale", "Added bulk operations API with transaction support"
+
+4. **Backlog organization:**
    - Sort by priority first (High → Medium → Low)
    - Then by issue number within priority
    - Priority is managed in Linear (synced to roadmap)

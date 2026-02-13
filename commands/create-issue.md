@@ -59,6 +59,25 @@ Before creating the Linear issue, check project configuration:
 - Max 3 files in context - most relevant only
 - Bullet points over paragraphs
 
+## Roadmap Update Format
+
+When adding issue to roadmap.md:
+
+**Required fields:**
+- ID (issue number)
+- Title
+- Priority (High/Medium/Low with P1/P2/P3)
+- Est (estimate in d=days or w=weeks)
+- **Context** (1-2 line summary or TL;DR from spec)
+- Spec (link to spec file)
+
+**Example:**
+```markdown
+| EXP-048 | Add receipt tagging | High (P1) | 2d | Allow users to add custom tags to receipts for better organization | [spec](technical-specs/EXP-048.md) |
+```
+
+**Note:** Full details live in spec file. Roadmap only shows brief context for scanning.
+
 ## Critical Workflow (Execute All Steps in One Response)
 
 **IMPORTANT:** After asking clarifying questions, execute ALL of the following steps in a SINGLE response with parallel tool calls. Do NOT pause between steps.
