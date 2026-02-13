@@ -689,27 +689,44 @@ After completing sprint (or when stopping):
 For each issue in sprint:
 1. Read `docs/technical-specs/QUO-##.md`
 2. Find "Review Tracking" section
-3. Extract "Total Review Rounds" count
-4. Extract final status (Approved / Pending / Not Reviewed)
+3. Check for Design Review status (if UI work)
+4. Check for Code Review status
+5. Count total rounds for each review type
 
-| Issue | Title | Review Rounds | Status |
-|-------|-------|---------------|--------|
-| QUO-## | [Title] | [N] rounds | ✅ Approved |
-| QUO-## | [Title] | [N] rounds | ✅ Approved |
+| Issue | Title | Design Review | Code Review | Status |
+|-------|-------|---------------|-------------|--------|
+| QUO-## | [Title] | ✅ Approved ([N] rounds) | ✅ Approved ([N] rounds) | ✅ Complete |
+| QUO-## | [Title] | ⚠️ N/A (non-UI) | ✅ Approved ([N] rounds) | ✅ Complete |
 
 **Review Summary:**
 - Total issues: [X]
-- Issues reviewed: [X] (100%)
-- Total review rounds: [sum of all rounds]
-- Average: [avg] rounds per issue
+- Design reviews: [Y] completed, [Z] total rounds
+- Code reviews: [X] completed, [N] total rounds
+- Issues reviewed: [X]/[X] (100%)
 
-**If any issues NOT reviewed (0 rounds or missing Review Tracking section):**
+**If any issues NOT reviewed (missing Review Tracking section):**
 ```
 ⚠️ Issues deployed without review:
 - QUO-##: [Title] - NOT REVIEWED
 
 This violates the mandatory review gate. Recommend retroactive review before production.
 ```
+
+### Cost Tracking (This Sprint)
+
+**Gemini 3 Pro (Design Planner + Design Reviewer):**
+- Estimated: $X.XX
+  - Input: ~XXk tokens @ $X.XX per 1M tokens
+  - Output: ~XXk tokens @ $X.XX per 1M tokens
+- Note: Design costs only apply to issues with UI/UX work
+
+**OpenAI Codex (if run):**
+- Cost: $X.XX (gpt-4o-mini)
+  - Input: ~XXk tokens @ $X.XX per 1M tokens
+  - Output: ~XXk tokens @ $X.XX per 1M tokens
+- Status: [Not run yet / Completed / Skipped]
+
+**Total This Sprint:** $X.XX
 
 ### Acceptance Criteria Report
 
@@ -741,7 +758,7 @@ For each completed issue, verify all acceptance criteria:
 
 2. **Optional: Run Codex Peer Review**
 
-   All issues have been reviewed by the Reviewer agent ([X] review rounds total).
+   All issues have been reviewed by the Reviewer agent ([X] total code review rounds this sprint).
 
    **Before production deployment, you can request an AI peer review:**
 

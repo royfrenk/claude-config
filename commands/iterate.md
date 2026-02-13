@@ -257,17 +257,36 @@ After each batch:
 For each fixed issue in batch:
 1. Read `docs/technical-specs/QUO-##.md`
 2. Find "Review Tracking" section
-3. Count total rounds for this issue
+3. Check for Design Review status (if UI work)
+4. Check for Code Review status
+5. Count total rounds for this issue
 
-| Issue | Description | Commit | Review Rounds |
-|-------|-------------|--------|---------------|
-| QUO-## | [description] | [hash] | [N] rounds, approved |
-| QUO-## | [description] | [hash] | [N] rounds, approved |
+| Issue | Description | Commit | Design Review | Code Review | Status |
+|-------|-------------|--------|---------------|-------------|--------|
+| QUO-## | [description] | [hash] | ✅ Approved / ⚠️ N/A (non-UI) | ✅ Approved ([N] rounds) | ✅ Fixed |
+| QUO-## | [description] | [hash] | ✅ Approved ([N] rounds) | ✅ Approved ([N] rounds) | ✅ Fixed |
 
 **Review Summary:**
 - Issues fixed this batch: [X]
-- Review rounds this batch: [sum]
+- Design reviews: [Y] completed, [Z] rounds total
+- Code reviews: [X] completed, [N] rounds total
 - All issues reviewed: ✅ / ⚠️ [if any skipped review]
+
+### Cost Tracking (This Batch)
+
+**Gemini 3 Pro (Design Planner + Design Reviewer):**
+- Estimated: $X.XX
+  - Input: ~XXk tokens @ $X.XX per 1M tokens
+  - Output: ~XXk tokens @ $X.XX per 1M tokens
+- Note: Design review costs only apply if batch included UI/UX work
+
+**OpenAI Codex (if run):**
+- Cost: $X.XX (gpt-4o-mini)
+  - Input: ~XXk tokens @ $X.XX per 1M tokens
+  - Output: ~XXk tokens @ $X.XX per 1M tokens
+- Status: [Not run yet / Completed]
+
+**Total This Batch:** $X.XX
 
 ### Still Open
 - [ ] [description]
@@ -286,14 +305,29 @@ For each fixed issue in batch:
 
 2. **Optional: Run Codex Peer Review**
 
-   This batch has been reviewed by the Reviewer agent ([X] review rounds this batch).
+   This batch has been reviewed by the Reviewer agent ([X] code review rounds this batch).
 
-   **Optional AI peer review before continuing:**
+   **For additional AI peer review, you have three options:**
 
-   **Options:**
-   - **A - Automated Codex:** Tell me "Run Codex review" (~$0.01-0.50, 30 seconds)
-   - **B - Manual Review:** I'll generate diff, you review with VS Code Copilot (free, 10-20 min)
-   - **C - Skip:** Continue without peer review (fine for low-risk changes)
+   **Option A - Automated Codex Review** (~$0.01-0.50 depending on diff size)
+   - I'll run the script and present findings
+   - Uses OpenAI gpt-4o-mini for cost efficiency
+   - Structured output with security, bugs, and quality analysis
+   - Takes ~30 seconds
+   - Tell me: "Run Codex review"
+
+   **Option B - Manual Review (Free)**
+   - I'll generate the diff file: `docs/diffs/sprint-[NUMBER]-diff.txt`
+   - You review with VS Code Copilot:
+     1. Open VS Code Copilot Chat (Cmd+Shift+I)
+     2. Attach diff file
+     3. Ask: "Review this diff for security, bugs, and quality issues"
+   - Tell me: "Generate diff for manual review"
+
+   **Option C - Skip Peer Review**
+   - Continue without additional peer review
+   - Fine for low-risk changes
+   - Tell me: "Skip peer review"
 
    **Recommended for:**
    - Infrastructure changes (database, auth, payments)
