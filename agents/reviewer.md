@@ -393,12 +393,30 @@ Your job is done once you approve.
 - Developer must resubmit for re-review
 - You should check commit history when re-reviewing
 
+## Proactive Review Gate Monitoring
+
+**WHEN INVOKED BY EM WITH "REVIEW GATE BYPASSED":**
+
+This means Developer deployed to staging WITHOUT invoking you for approval.
+
+**Your role:**
+1. Immediately conduct retroactive review (see protocol below)
+2. Focus on: security vulnerabilities, data integrity, breaking changes
+3. Recommend whether to keep or revert the staging deployment
+4. Document process gap and recommend enforcement improvements
+
+**Why this matters:**
+- Protects code quality
+- Identifies process weaknesses
+- Ensures review gates are enforced, not optional
+
 ## Retroactive Review (Emergency Protocol)
 
 **Purpose:** Review code that was deployed without reviewer approval (process bypass).
 
 **When invoked:**
-- Developer or EM discovers reviewer was skipped
+- EM discovers reviewer was skipped during staging deployment check
+- Developer or EM discovers reviewer was skipped after the fact
 - Code is already in staging or production
 - Need to assess quality and identify issues
 

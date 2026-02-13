@@ -176,6 +176,43 @@ All syncs are non-blocking. Failed syncs tracked in sprint file "Pending Manual 
 5. Wait for User approval before reverting
 6. Update Linear and/or roadmap.md based on approval
 
+## Review Gate Enforcement (MANDATORY CHECKS)
+
+**BEFORE EVERY STAGING DEPLOYMENT:**
+
+When Developer reports "deployed to staging" or updates Linear to "In Review":
+
+1. **Verify review gate was NOT bypassed:**
+   ```bash
+   # Query Linear for the issue
+   # Check comment history for BOTH:
+   # - Design-Reviewer approval (if UI work): "✅ Design Review: Approved"
+   # - Code Reviewer approval: "✅ Review: Approved"
+   ```
+
+2. **If approvals are MISSING:**
+   ```markdown
+   ❌ REVIEW GATE BYPASSED DETECTED
+
+   Issue: {PREFIX}-##
+   Status: Deployed to staging WITHOUT reviewer approval
+   Violation: Developer skipped Phase 4 (Submit to Reviewer)
+
+   **Immediate actions:**
+   1. Post to Linear: "⚠️ PROCESS VIOLATION: Code deployed without review approval"
+   2. Invoke Reviewer for retroactive review
+   3. If critical issues found → revert staging deployment
+   4. Document process gap and recommend enforcement improvements
+   ```
+
+3. **If approvals are PRESENT:**
+   - Verify they match current commit (not stale)
+   - Continue with standard process
+
+**This check is MANDATORY and NON-NEGOTIABLE.**
+
+Purpose: Catch review bypasses at staging deployment, not at production closure.
+
 ## Sprint Closure & Production Deployment
 
 **"Close the sprint" = deploy to production approval.**
@@ -183,7 +220,7 @@ All syncs are non-blocking. Failed syncs tracked in sprint file "Pending Manual 
 **Pre-deploy checks (MANDATORY):**
 1. Acceptance criteria all ✅ (else ask User)
 2. Staging checks passed (else BLOCK)
-3. **Reviewer approval** (BLOCKING): Query Linear comments for "✅ Review: Approved" per issue. If missing/stale → STOP, invoke Reviewer retroactively, post to Linear.
+3. **Reviewer approval** (BLOCKING): Query Linear comments for "✅ Review: Approved" per issue. If missing/stale → STOP, invoke Reviewer retroactively, post to Linear. This should be redundant if staging gate worked.
 4. Infrastructure changes (email/DB/auth/payment): Require BOTH Reviewer + User approval (else STOP, request User approval).
 5. Codex peer review: Request, implement if Reviewer accepts, else proceed (don't block on tooling failures).
 6. Multi-issue sprints: Check all complete (else ask User).

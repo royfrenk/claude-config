@@ -384,7 +384,18 @@ Overall:   [READY/NOT READY] for review
 
 ### Phase 4: Submit to Reviewer (BLOCKING - CANNOT BYPASS)
 
-**This step is AUTOMATIC, MANDATORY, and BLOCKING.**
+**ENFORCEMENT: This step is MANDATORY. Attempting to skip to Phase 5 is a critical process violation.**
+
+**Before proceeding to Phase 5, you MUST:**
+1. Invoke the appropriate reviewer(s)
+2. Wait for "✅ Review: Approved" in Linear
+3. Verify approval is for your current commit
+
+**If you skip Phase 4 and deploy anyway:**
+- EM will detect the bypass during sprint closure
+- Reviewer will conduct retroactive review
+- Process improvements will be implemented to prevent recurrence
+- Your deployment may be reverted if critical issues are found
 
 **Determine review path based on task type:**
 
@@ -552,10 +563,28 @@ This tracks that you submitted for review Round N.
 
 **DO NOT PROCEED TO PHASE 5 WITHOUT APPROVAL. THIS IS NON-NEGOTIABLE.**
 
+**SELF-CHECK before moving to Phase 5:**
+```
+APPROVAL_CHECKLIST:
+□ Did I invoke Design-Reviewer? (if UI work)
+□ Did Design-Reviewer approve? (if UI work)
+□ Did I invoke Code Reviewer?
+□ Did Code Reviewer approve?
+□ Are approvals in Linear comments with "✅ Review: Approved"?
+□ Do approvals match my current commit?
+
+If ANY box is unchecked → STOP. You CANNOT proceed to Phase 5.
+```
+
 **If you find yourself skipping this step or pushing without approval:**
 - STOP immediately
 - Output: "❌ ERROR: Attempted to bypass reviewer. This is prohibited."
 - Return to Phase 4 and properly submit for review
+
+**Your workflow MUST be:**
+Phase 3 (Verification) → Phase 4 (Submit to Reviewer) → **WAIT FOR APPROVAL** → Phase 5 (Deploy)
+
+**You CANNOT skip Phase 4. You CANNOT skip the wait. This is a hard gate.**
 
 ### Phase 4.5: Re-Review Loop (MANDATORY)
 
@@ -639,7 +668,24 @@ Status: CODEX RECOMMENDATIONS (Final polish before production)
 
 **CRITICAL: This is a HARD GATE. You CANNOT proceed without explicit approval verification.**
 
-**Before executing ANY deployment commands:**
+**MANDATORY PRE-DEPLOYMENT CHECK:**
+
+Before executing ANY deployment commands, you MUST verify you completed Phase 4:
+
+**Step 0: Verify Phase 4 Completion**
+
+```bash
+# Ask yourself: Did I invoke the reviewers in Phase 4?
+# If the answer is NO or UNSURE → STOP. Go back to Phase 4.
+# If the answer is YES → Proceed to verification below
+```
+
+**If you did NOT invoke reviewers in Phase 4:**
+- Output: "❌ DEPLOYMENT BLOCKED: Phase 4 (Submit to Reviewer) was skipped."
+- Return to Phase 4
+- Do NOT proceed to the checks below
+
+**If you DID invoke reviewers in Phase 4:**
 
 1. **Query Linear for BOTH approvals (if UI work):**
 
