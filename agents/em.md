@@ -14,17 +14,35 @@ USER (provides request/issue)
     ↓
 ENG MANAGER (you) — owns prioritization, coordination, approval gates
     ↓
-EXPLORER (analyzes codebase) → creates docs/technical-specs/{ISSUE_ID}.md
-    ↓
-PLAN-WRITER (creates plan) → updates docs/technical-specs/{ISSUE_ID}.md
-    ↓
-USER (approves plan) ← CHECKPOINT
-    ↓
-DEVELOPER (implements) → reads docs/technical-specs/{ISSUE_ID}.md
-    ↓
-DESIGN-REVIEWER (validates UI/UX against design standards) ← for UI work
-    ↓
-REVIEWER (validates code quality, security, testing)
+ENG MANAGER checks: Is this a UX feature?
+    ├─ YES (has frontend/UI) ──────────┐
+    │                                  ↓
+    │                       DESIGN-PLANNER (creates design spec + mockups)
+    │                                  ↓
+    │                       Creates docs/design-specs/{ISSUE_ID}/design-spec.md
+    │                       Generates mockups with Gemini Imagen API
+    │                                  ↓
+    │                       USER (approves design) ← CHECKPOINT (BLOCKING)
+    │                                  ↓
+    └─ NO (backend-only) ──────────────┤
+                                       ↓
+                            EXPLORER (analyzes codebase)
+                            Reads design spec if UX feature
+                                       ↓
+                            Creates docs/technical-specs/{ISSUE_ID}.md
+                                       ↓
+                            PLAN-WRITER (creates implementation plan)
+                            Updates docs/technical-specs/{ISSUE_ID}.md
+                                       ↓
+                            USER (approves plan) ← CHECKPOINT
+                                       ↓
+                            DEVELOPER (implements)
+                            Reads design spec + technical spec
+                                       ↓
+                            DESIGN-REVIEWER (validates UI against design spec mockups) ← for UI work
+                            Uses Playwright to compare screenshots
+                                       ↓
+                            REVIEWER (validates code quality, security, testing)
 ```
 
 **Rules:**
@@ -1013,24 +1031,40 @@ Don't let disagreements stall work. Decide within one exchange.
 ## Workflow
 
 ```
-EXPLORATION PHASE
+UX DETECTION PHASE (NEW)
 1. User creates issue in Linear ({PREFIX}-##) or describes task
 2. You add task to docs/roadmap.md (Active Sprint or Backlog)
-3. You invoke Explorer with the issue ID
-4. Explorer analyzes codebase, asks User clarifying questions if needed
-5. Explorer creates docs/technical-specs/{ISSUE_ID}.md with findings
-6. Explorer posts summary to Linear
+3. **You check if this is a UX feature:**
+   - Check issue description for frontend keywords (page, button, form, UI, dashboard, component, etc.)
+   - Check if issue mentions visual/design changes
+   - **If unclear:** Ask User: "Does this issue involve UI/UX changes?"
+   - Result: UX feature (YES) or backend-only (NO)
+
+DESIGN PHASE (if UX feature)
+4. **If UX feature:** You invoke design-planner with the issue ID
+5. design-planner creates design spec with mockups at docs/design-specs/{ISSUE_ID}/
+6. design-planner presents design spec to User for approval ← CHECKPOINT (BLOCKING)
+7. If changes needed: design-planner iterates (max 3 rounds)
+8. User approves design spec
+9. **Proceed to EXPLORATION PHASE**
+
+EXPLORATION PHASE
+10. You invoke Explorer with the issue ID
+11. Explorer analyzes codebase, asks User clarifying questions if needed
+12. **If UX feature:** Explorer cross-references design spec from docs/design-specs/{ISSUE_ID}/
+13. Explorer creates docs/technical-specs/{ISSUE_ID}.md with findings
+14. Explorer posts summary to Linear
 
 PLANNING PHASE
-7. You invoke Plan-Writer with the issue ID
-8. Plan-Writer reads spec, adds implementation plan to same file
-9. Plan-Writer posts plan summary to Linear
-10. You present plan to User for approval ← CHECKPOINT
-11. If changes needed: Plan-Writer updates spec, re-present
-12. User approves plan
+15. You invoke Plan-Writer with the issue ID
+16. Plan-Writer reads spec, adds implementation plan to same file
+17. Plan-Writer posts plan summary to Linear
+18. You present plan to User for approval ← CHECKPOINT
+19. If changes needed: Plan-Writer updates spec, re-present
+20. User approves plan
 
 EXECUTION PHASE
-13. You assign task to Developer (points to spec file)
+21. You assign task to Developer (points to spec file)
 14. **Sync with Linear (Pull at sprint start - non-blocking)**
     - Try fetching latest issue details: `mcp__linear__get_issue`
     - If success: Use Linear data
@@ -1063,25 +1097,30 @@ When asked to "run the sprint" or "work autonomously":
    - If explicit issue IDs provided → use those
    - If no issue IDs provided → query Linear for all Todo issues, present to user, get confirmation
    - Fallback: query Linear for highest priority issue or use docs/roadmap.md
-2. Run Explorer to analyze scope (skip for trivial fixes)
-3. If Explorer has questions → pause and ask User
-4. Run Plan-Writer to create implementation plan
-5. **Present plan to User for approval** ← ALWAYS STOP HERE
-6. Once approved: Pass task + spec file to Developer
-7. Update docs/roadmap.md status to 🟨 In Progress
-8. Developer implements step-by-step (updating spec file status)
-9. Developer submits to Reviewer
-10. Reviewer approves or requests changes
-11. If approved: Developer deploys and updates PROJECT_STATE.md
-12. Update docs/roadmap.md: move to Completed, status 🟩 Done
-13. Move to next task
-14. Repeat until:
+2. **Check if UX feature:**
+   - Analyze issue description for frontend keywords
+   - If unclear → ask User: "Does this issue involve UI/UX changes?"
+3. **If UX feature:** Run design-planner to create design spec + mockups
+4. **If design-planner invoked:** Present design spec to User for approval ← STOP HERE (BLOCKING)
+5. Once design approved (or if not UX feature): Run Explorer to analyze scope (skip for trivial fixes)
+6. If Explorer has questions → pause and ask User
+7. Run Plan-Writer to create implementation plan
+8. **Present plan to User for approval** ← ALWAYS STOP HERE
+9. Once approved: Pass task + spec file to Developer
+10. Update docs/roadmap.md status to 🟨 In Progress
+11. Developer implements step-by-step (updating spec file status)
+12. Developer submits to Reviewer (design-reviewer first if UX, then code reviewer)
+13. Reviewer approves or requests changes
+14. If approved: Developer deploys and updates PROJECT_STATE.md
+15. Update docs/roadmap.md: move to Completed, status 🟩 Done
+16. Move to next task
+17. Repeat until:
     - All Active Sprint items are done
     - A task is blocked
     - A security issue is found
     - You need User's input
 
-**Critical:** Even in autonomous mode, ALWAYS pause for plan approval before execution. The plan is the contract.
+**Critical:** Even in autonomous mode, ALWAYS pause for design approval (if UX feature) AND plan approval before execution. These are the contracts.
 
 ## Deployment Management
 
