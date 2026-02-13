@@ -1,6 +1,11 @@
 # iOS Native App Design
 
-> Inherits all rules from design-core.md. This guide covers iOS native apps (UIKit, SwiftUI) following Apple Human Interface Guidelines with Antigravity polish.
+> Inherits all rules from [design-core.md](design-core.md). This guide covers iOS native apps (UIKit, SwiftUI) following Apple Human Interface Guidelines with Antigravity polish.
+
+**See Also:**
+- **[Design Core](design-core.md)** - Shared design principles, unified typography scale, spacing scale, color guidance
+- **[Android Native Patterns](design-mobile-android.md)** - Material Design 3 implementation of shared visual identity
+- **[Cross-Platform Mobile](design-mobile-crossplatform.md)** - React Native, Flutter, Expo guidance
 
 ---
 
@@ -53,46 +58,73 @@ iOS apps must feel **unmistakably native** (platform conventions for structure) 
 - UIKit: Use `safeAreaLayoutGuide`
 - **Never** hardcode padding like `padding(.bottom, 34)` to avoid home indicator
 
-### Typography Scale (iOS System Font - SF Pro)
+### Typography Scale (Shared Across Platforms)
 
-**Semantic Typography Tokens:**
+**Antigravity Shared Type Scale:**
 
-| Semantic Token | Size | Weight | Usage | SwiftUI |
-|----------------|------|--------|-------|---------|
-| `text-largeTitle` | 34pt | Regular | Navigation bar large title | `.font(.largeTitle)` |
-| `text-title1` | 28pt | Regular | Page titles | `.font(.title)` |
-| `text-title2` | 22pt | Regular | Section headers | `.font(.title2)` |
-| `text-title3` | 20pt | Semibold | Card titles | `.font(.title3)` |
-| `text-headline` | 17pt | Semibold | List headers, emphasized text | `.font(.headline)` |
-| `text-body` | 17pt | Regular | Body text (iOS standard) | `.font(.body)` |
-| `text-callout` | 16pt | Regular | Secondary text | `.font(.callout)` |
-| `text-subheadline` | 15pt | Regular | Metadata, labels | `.font(.subheadline)` |
-| `text-footnote` | 13pt | Regular | Captions, fine print | `.font(.footnote)` |
-| `text-caption1` | 12pt | Regular | Small labels | `.font(.caption)` |
-| `text-caption2` | 11pt | Regular | Smallest text (use sparingly) | `.font(.caption2)` |
+Our design system uses a **shared numeric scale** across web, iOS, and Android to ensure visual consistency. On iOS, we implement custom font extensions that use the shared scale while maintaining Dynamic Type support.
 
-**Font:** SF Pro (system font). Don't replace with custom fonts unless absolutely necessary (breaks accessibility, Dynamic Type support).
+| Semantic Token | Size (pt) | Weight | Web/Android Equivalent | Usage |
+|----------------|-----------|--------|------------------------|-------|
+| `caption` | 11pt | Regular | 11px/11sp | Smallest labels, metadata |
+| `footnote` | 12pt | Regular | 12px/12sp | Small labels, badges |
+| `subheadline` | 13pt | Regular | 13px/13sp | Secondary body text |
+| `callout` | 15pt | Regular | 15px/15sp | Emphasized body text |
+| `body` | 16pt | Regular | 16px/16sp | Default body text (primary) |
+| `headline` | 17pt | Semibold | 17px/17sp | List headers, emphasized text |
+| `title3` | 20pt | Semibold | 20px/20sp | Card titles, section headers |
+| `title2` | 22pt | Semibold | 22px/22sp | Page section headers |
+| `title` | 28pt | Bold | 28px/28sp | Large headers |
+| `largeTitle` | 34pt | Bold | 34px/34sp | Hero text, onboarding |
+
+**Platform Unit Equivalence:** **1pt (iOS) = 1px (web) = 1sp (Android)** for our token system.
+
+**Font:** SF Pro (system font). For brand consistency, you can use a custom font, but you'll need to implement Dynamic Type manually.
+
+**Implementation: Custom Font Extension**
+
+```swift
+extension Font {
+    // Antigravity shared scale with Dynamic Type support
+    static let caption = Font.system(size: 11).relativeTo(.caption2)
+    static let footnote = Font.system(size: 12).relativeTo(.caption)
+    static let subheadline = Font.system(size: 13).relativeTo(.footnote)
+    static let callout = Font.system(size: 15).relativeTo(.subheadline)
+    static let body = Font.system(size: 16).relativeTo(.callout)
+    static let headline = Font.system(size: 17, weight: .semibold).relativeTo(.headline)
+    static let title3 = Font.system(size: 20, weight: .semibold).relativeTo(.title3)
+    static let title2 = Font.system(size: 22, weight: .semibold).relativeTo(.title2)
+    static let title = Font.system(size: 28, weight: .bold).relativeTo(.title)
+    static let largeTitle = Font.system(size: 34, weight: .bold).relativeTo(.largeTitle)
+}
+```
 
 **Dynamic Type (CRITICAL):**
 
-All text MUST support Dynamic Type for App Store approval and accessibility compliance.
+All text MUST support Dynamic Type for App Store approval and accessibility compliance. Our custom font extensions use `.relativeTo()` to maintain Dynamic Type support with the shared scale.
 
-**✅ CORRECT:** Use semantic text styles
+**✅ CORRECT:** Use shared scale with Dynamic Type
 ```swift
 Text("Welcome")
-    .font(.headline)  // Scales with user's text size preference
+    .font(.headline)  // Shared 17pt, scales with user preference
 
 Text("Description")
-    .font(.body)  // Scales automatically
+    .font(.body)  // Shared 16pt, scales automatically
 ```
 
-**❌ WRONG:** Hardcoded font sizes
+**❌ WRONG:** Hardcoded font sizes without Dynamic Type
 ```swift
 Text("Welcome")
-    .font(.system(size: 17))  // NEVER do this - breaks Dynamic Type
+    .font(.system(size: 17))  // NEVER - breaks Dynamic Type
 ```
 
-**Rule:** Always use the appropriate semantic `TextStyle` (`.font(.headline)`, `.font(.caption1)`, etc.) for each text element. Never use `.font(.system(size:))` with hardcoded values.
+**❌ WRONG:** Using Apple's default semantic styles directly (breaks shared scale)
+```swift
+Text("Description")
+    .font(Font.body)  // Apple's .body is 17pt, our shared scale is 16pt
+```
+
+**Rule:** Always use our custom `Font` extensions (e.g., `Font.headline`, `Font.caption`) defined above. These maintain the shared scale (11/12/13/15/16/17/20/22/28/34pt) while supporting Dynamic Type through `.relativeTo()`.
 
 ### Color Tokens (iOS Semantic Colors)
 
@@ -111,16 +143,110 @@ Text("Welcome")
 **System Colors:**
 - `.blue`, `.green`, `.red`, `.orange`, `.yellow`, `.purple`, `.pink`, `.teal`, `.indigo`
 
-**Antigravity Custom Colors:**
+**Antigravity Custom Colors (Shared Palette):**
 
-Use system colors as base, customize with vibrant shades for premium feel:
+Instead of using iOS system colors alone, we define a **shared Antigravity brand palette** that matches Android and web for cross-platform visual consistency.
 
 ```swift
-// System blue: safe, accessible
-Color.blue
+// Define custom colors in Color+Antigravity.swift
+extension Color {
+    // Primary Palette (Shared with Android/Web)
+    static let primaryLight = Color(hex: "#0891B2")      // Cyan 600
+    static let primaryDark = Color(hex: "#06B6D4")       // Cyan 500
+    static let primaryContainerLight = Color(hex: "#E0F2FE") // Cyan 100
+    static let primaryContainerDark = Color(hex: "#164E63")  // Cyan 900
 
-// Antigravity vibrant cyan: custom, premium
-Color(red: 0.03, green: 0.57, blue: 0.95) // #0891B2
+    // Secondary Palette
+    static let secondaryLight = Color(hex: "#6366F1")    // Indigo 500
+    static let secondaryDark = Color(hex: "#818CF8")     // Indigo 400
+    static let secondaryContainerLight = Color(hex: "#E0E7FF") // Indigo 100
+    static let secondaryContainerDark = Color(hex: "#3730A3")  // Indigo 800
+
+    // Tertiary Palette
+    static let tertiaryLight = Color(hex: "#F59E0B")     // Amber 500
+    static let tertiaryDark = Color(hex: "#FCD34D")      // Amber 300
+
+    // Neutral Palette
+    static let surfaceLight = Color(hex: "#FFFFFF")
+    static let surfaceDark = Color(hex: "#121212")
+    static let surfaceVariantLight = Color(hex: "#F3F4F6") // Gray 100
+    static let surfaceVariantDark = Color(hex: "#1F2937")  // Gray 800
+
+    static let onSurfaceLight = Color(hex: "#111827")    // Gray 900
+    static let onSurfaceDark = Color(hex: "#F9FAFB")     // Gray 50
+    static let onSurfaceVariantLight = Color(hex: "#6B7280") // Gray 500
+    static let onSurfaceVariantDark = Color(hex: "#9CA3AF")  // Gray 400
+
+    static let outlineLight = Color(hex: "#D1D5DB")      // Gray 300
+    static let outlineDark = Color(hex: "#4B5563")       // Gray 600
+
+    // Semantic Colors
+    static let errorLight = Color(hex: "#DC2626")        // Red 600
+    static let errorDark = Color(hex: "#F87171")         // Red 400
+    static let successLight = Color(hex: "#059669")      // Emerald 600
+    static let successDark = Color(hex: "#34D399")       // Emerald 400
+    static let warningLight = Color(hex: "#D97706")      // Amber 600
+    static let warningDark = Color(hex: "#FBBF24")       // Amber 400
+
+    // Convenience initializer for hex colors
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 6: // RGB
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
+// Usage in views:
+struct ContentView: View {
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        VStack {
+            Text("Welcome")
+                .foregroundColor(colorScheme == .dark ? .onSurfaceDark : .onSurfaceLight)
+
+            Button("Primary Action") {
+                // Action
+            }
+            .foregroundColor(.white)
+            .background(colorScheme == .dark ? Color.primaryDark : Color.primaryLight)
+        }
+        .background(colorScheme == .dark ? Color.surfaceDark : Color.surfaceLight)
+    }
+}
+```
+
+**Asset Catalog Setup (Recommended for Automatic Dark Mode):**
+
+For cleaner code, define colors in Assets.xcassets:
+
+1. Create new Color Set in Assets.xcassets: "Primary"
+2. Set "Any Appearance" to #0891B2 (light mode)
+3. Set "Dark Appearance" to #06B6D4 (dark mode)
+4. Use in code: `Color("Primary")`
+
+**Repeat for all colors above, then use:**
+
+```swift
+Text("Welcome")
+    .foregroundColor(Color("OnSurface"))  // Auto-adapts to dark mode
+
+Button("Action") { }
+    .background(Color("Primary"))  // Auto-adapts to dark mode
 ```
 
 **⚠️ CRITICAL Color Warning:**

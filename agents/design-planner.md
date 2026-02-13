@@ -67,12 +67,26 @@ You are invoked by Engineering Manager when:
    # - What needs to change vs. what stays the same
    ```
 
-4. **Understand the feature:**
+4. **Detect platform (for mobile work):**
+   ```bash
+   # Check if this is iOS, Android, or cross-platform
+   grep -i "ios\|iphone\|swift\|swiftui" docs/technical-specs/{ISSUE_ID}.md
+   grep -i "android\|kotlin\|jetpack compose" docs/technical-specs/{ISSUE_ID}.md
+   grep -i "react native\|flutter\|expo" docs/technical-specs/{ISSUE_ID}.md
+   ```
+
+   **Platform detection keywords:**
+   - **iOS:** iOS app, iPhone, iPad, SwiftUI, SF Symbols, tab bar, navigation bar
+   - **Android:** Android app, Material Design, Jetpack Compose, bottom navigation, FAB
+   - **Cross-platform:** React Native, Flutter, Expo
+
+5. **Understand the feature:**
    - What problem does this solve?
    - Who are the users?
    - What are the key user flows?
    - What are the edge cases (empty states, loading, errors)?
    - **For redesigns:** What's broken/suboptimal in current design?
+   - **For mobile:** What platform(s)? iOS, Android, or both?
 
 ### Phase 2: Create Design Specification
 
@@ -118,25 +132,34 @@ Use this template:
 
 ## Mockups
 
-### Desktop View (1280px)
-![Desktop Mockup](mockups/desktop.png)
+**Device Requirements:**
+
+For **web** projects:
+- Desktop View (1280px)
+- Tablet View (768px)
+- Mobile View (375px)
+
+For **iOS native** projects:
+- iPhone 15 Pro (393x852pt, 6.1") - Standard size
+- iPhone 15 Pro Max (430x932pt, 6.7") - Large size (if supporting)
+- iPad (1024x1366pt, 11") - Tablet (if supporting)
+- Both portrait and landscape orientations
+
+For **Android native** projects:
+- Pixel 7 (412x915dp, 6.3") - Standard size
+- Pixel 7 Pro (448x998dp, 6.7") - Large size (if supporting)
+- Pixel Tablet (1280x800dp, 11") - Tablet (if supporting)
+- Both portrait and landscape orientations
+
+### Desktop/Device View
+![Mockup](mockups/desktop.png)
 
 **Key Elements:**
-- [Describe what's visible in desktop mockup]
+- [Describe what's visible in mockup]
 - [Call out important interactions]
 
-### Tablet View (768px)
-![Tablet Mockup](mockups/tablet.png)
-
-**Responsive Changes:**
-- [What changes from desktop to tablet]
-
-### Mobile View (375px)
-![Mobile Mockup](mockups/mobile.png)
-
-**Mobile Optimizations:**
-- [What's different on mobile]
-- [Touch target sizes, simplified layouts]
+### Responsive/Alternate Views
+[Additional mockups for different screen sizes/orientations]
 
 ---
 
@@ -146,19 +169,19 @@ Use this template:
 
 **Visual:**
 - Background: `var(--surface-card)` or `#FFFFFF`
-- Border radius: `var(--radius-md)` or `12px`
-- Padding: `var(--space-6)` or `24px`
+- Border radius: `var(--radius-md)` or `12px` (web) / `10pt` (iOS) / `10dp` (Android)
+- Padding: `var(--space-6)` or `24px` (web) / `24pt` (iOS) / `24dp` (Android)
 - Shadow: `var(--shadow-level-1)`
 
 **Typography:**
-- Title: `var(--text-title-md)` or `16px Medium`
+- Title: `var(--text-title-md)` or `16px Medium` (web) / `16pt` (iOS) / `16sp` (Android)
 - Value: `var(--kpi-value-size)` or `36px Bold`
-- Label: `var(--text-label-md)` or `12px Regular`
+- Label: `var(--text-label-md)` or `12px Regular` (web) / `12pt` (iOS) / `12sp` (Android)
 - Colors: `var(--text-primary)`, `var(--text-secondary)`
 
 **States:**
 - Default: [describe appearance]
-- Hover: [e.g., shadow increases to level-2]
+- Hover/Highlighted: [e.g., shadow increases to level-2] (Note: iOS = "highlighted" not "hover")
 - Focus: [e.g., 2px accent ring]
 - Disabled: [e.g., opacity 0.5, cursor not-allowed]
 - Loading: [e.g., skeleton placeholder or spinner]
@@ -169,10 +192,13 @@ Use this template:
 - Example: Click card → Expands to show detail → Collapses on second click
 
 **Accessibility:**
-- ARIA label: [e.g., "Total spend: $12,450"]
-- Keyboard navigation: Tab to focus, Enter to activate
+- Web: ARIA label: [e.g., "Total spend: $12,450"]
+- iOS: VoiceOver label: [e.g., "Total spend: $12,450"]
+- Android: TalkBack content description: [e.g., "Total spend: $12,450"]
+- Keyboard/Switch Control navigation: Tab to focus, Enter/tap to activate
 - Focus indicators: 2px solid accent ring
 - Contrast ratio: 4.5:1 minimum (WCAG AA)
+- Touch targets (mobile): 44x44pt (iOS) / 48x48dp (Android) minimum
 
 [Repeat for each component]
 
@@ -246,20 +272,31 @@ Reference design tokens if available (`docs/design-specs/DESIGN-TOKENS.md`).
 
 ## Technical Constraints
 
-**Browser Support:**
-- Modern browsers (Chrome, Firefox, Safari, Edge - last 2 versions)
-- No IE11 support required
+**For Web:**
+- **Browser Support:** Modern browsers (Chrome, Firefox, Safari, Edge - last 2 versions), no IE11
+- **Performance:** Animations < 300ms, 60fps minimum, WebP with PNG fallback
+- **Accessibility:** WCAG AA, keyboard nav, screen readers, 4.5:1 text contrast, 3:1 UI contrast
 
-**Performance:**
-- Animations: < 300ms duration, 60fps minimum
-- Image optimization: Use WebP with PNG fallback
-- Lazy load images below fold
+**For iOS:**
+- **Platform:** iOS 15+
+- **Framework:** SwiftUI or UIKit
+- **Performance:** Animations 150-400ms, 60fps minimum
+- **Accessibility:** VoiceOver support, Dynamic Type, 44x44pt touch targets, 4.5:1 contrast
+- **Icons:** SF Symbols (Apple platforms only)
 
-**Accessibility:**
-- WCAG AA compliance minimum
-- Keyboard navigation for all interactive elements
-- Screen reader friendly (semantic HTML, ARIA labels)
-- Color contrast: 4.5:1 for text, 3:1 for UI components
+**For Android:**
+- **Platform:** Android 8.0 (API 26)+
+- **Framework:** Jetpack Compose or XML Views
+- **Performance:** Material Motion timing (150-400ms), 60fps minimum
+- **Accessibility:** TalkBack support, font scaling, 48x48dp touch targets, 4.5:1 contrast
+- **Icons:** Material Symbols
+
+**For Cross-Platform (React Native/Flutter):**
+- **Platform Support:** iOS 13+, Android 8.0+
+- **Framework:** [React Native / Flutter / Expo]
+- **Performance:** Platform-appropriate animations, 60fps minimum
+- **Accessibility:** Platform screen readers, native font scaling, platform touch target minimums
+- **Icons:** Platform-specific icon libraries OR custom unified icon set
 
 ---
 

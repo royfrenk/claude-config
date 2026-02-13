@@ -1,6 +1,11 @@
 # Android Native App Design
 
-> Inherits all rules from design-core.md. This guide covers Android native apps (Jetpack Compose, XML Views) following Material Design 3 with Antigravity polish.
+> Inherits all rules from [design-core.md](design-core.md). This guide covers Android native apps (Jetpack Compose, XML Views) following Material Design 3 with Antigravity polish.
+
+**See Also:**
+- **[Design Core](design-core.md)** - Shared design principles, unified typography scale, spacing scale, color guidance
+- **[iOS Native Patterns](design-mobile-ios.md)** - Apple HIG implementation of shared visual identity
+- **[Cross-Platform Mobile](design-mobile-crossplatform.md)** - React Native, Flutter, Expo guidance
 
 ---
 
@@ -87,18 +92,20 @@ Scaffold(
 
 Our app uses a shared typographic scale across iOS and Android. The sizes are identical; only the platform implementation differs.
 
-| Semantic Token | Size (sp/pt) | Weight | iOS Equivalent | Usage |
-|----------------|--------------|--------|----------------|-------|
-| `display-large` | 34sp | Bold (700) | .largeTitle | Hero text, onboarding |
-| `display-medium` | 28sp | Bold (700) | .title | Large headers |
-| `headline-large` | 22sp | Semibold (600) | .title2 | Section headers |
-| `headline-medium` | 20sp | Semibold (600) | .title3 | Card titles |
-| `title-large` | 17sp | Semibold (600) | .headline | List headers, emphasized text |
-| `body-large` | 16sp | Regular (400) | .body | Body text (large) |
-| `body-medium` | 15sp | Regular (400) | .callout | Body text (standard) |
-| `body-small` | 13sp | Regular (400) | .subheadline | Secondary text |
-| `label-large` | 12sp | Medium (500) | .footnote | Button text, labels |
-| `label-small` | 11sp | Medium (500) | .caption | Smallest labels, metadata |
+| Semantic Token | Size (sp) | Weight | Web/iOS Equivalent | Usage |
+|----------------|-----------|--------|--------------------|----|
+| `largeTitle` | 34sp | Bold (700) | 34px/34pt | Hero text, onboarding |
+| `title` | 28sp | Bold (700) | 28px/28pt | Large headers |
+| `title2` | 22sp | Semibold (600) | 22px/22pt | Section headers |
+| `title3` | 20sp | Semibold (600) | 20px/20pt | Card titles |
+| `headline` | 17sp | Semibold (600) | 17px/17pt | List headers, emphasized text |
+| `body` | 16sp | Regular (400) | 16px/16pt | Body text (primary) |
+| `callout` | 15sp | Regular (400) | 15px/15pt | Emphasized body text |
+| `subheadline` | 13sp | Regular (400) | 13px/13pt | Secondary text |
+| `footnote` | 12sp | Medium (500) | 12px/12pt | Button text, small labels |
+| `caption` | 11sp | Medium (500) | 11px/11pt | Smallest labels, metadata |
+
+**Platform Unit Equivalence:** **1sp (Android) = 1px (web) = 1pt (iOS)** for our token system.
 
 **What is sp?** Scale-independent pixels. Font sizes use `sp` (not `dp`) to respect the user's system font size settings. This ensures accessibility when users increase font size in system settings.
 
@@ -115,18 +122,19 @@ All text MUST scale with user's font size preference (similar to iOS Dynamic Typ
 **Implementation: Define Custom Typography**
 
 ```kotlin
-// In your Theme.kt
+// In your Theme.kt - Antigravity shared scale
 val AntigravityTypography = Typography(
-    displayLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 34.sp),
-    displayMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 28.sp),
-    headlineLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 22.sp),
-    headlineMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
-    titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 17.sp),
-    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 16.sp),
-    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 15.sp),
-    bodySmall = TextStyle(fontWeight = FontWeight.Normal, fontSize = 13.sp),
-    labelLarge = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp),
-    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp)
+    // Map Material 3 semantic names to shared scale values
+    displayLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 34.sp),      // largeTitle
+    displayMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 28.sp),     // title
+    displaySmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 22.sp),  // title2
+    headlineLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 20.sp), // title3
+    headlineMedium = TextStyle(fontWeight = FontWeight.Semibold, fontSize = 17.sp), // headline
+    titleLarge = TextStyle(fontWeight = FontWeight.Regular, fontSize = 16.sp),     // body
+    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 15.sp),       // callout
+    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 13.sp),      // subheadline
+    labelLarge = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp),      // footnote
+    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp)       // caption
 )
 ```
 

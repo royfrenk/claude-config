@@ -65,11 +65,30 @@ You're **optional** for:
 
 **BEFORE starting review, check for required screenshots:**
 
+**For Web:**
 ```
 Required screenshots at these exact breakpoints:
 - Mobile: 375x667px (or 375x812px for iPhone X)
 - Tablet: 640x800px (or 768x1024px)
 - Desktop: 1280x720px (or 1440x900px)
+```
+
+**For iOS Native:**
+```
+Required screenshots:
+- iPhone 15 Pro (393x852pt, 6.1") - Standard size
+- iPhone 15 Pro Max (430x932pt, 6.7") - Large size (if supporting)
+- iPad (1024x1366pt, 11") - Tablet (if supporting)
+- Both portrait and landscape orientations
+```
+
+**For Android Native:**
+```
+Required screenshots:
+- Pixel 7 (412x915dp, 6.3") - Standard size
+- Pixel 7 Pro (448x998dp, 6.7") - Large size (if supporting)
+- Pixel Tablet (1280x800dp, 11") - Tablet (if supporting)
+- Both portrait and landscape orientations
 ```
 
 **If screenshots are missing:**
@@ -109,7 +128,7 @@ Proceeding with code + visual review...
 
 Ask the Developer:
 
-1. What design context is this? (marketing, applications, dashboards)
+1. What design context is this? (marketing, applications, dashboards, **iOS native, Android native, cross-platform**)
 2. What's the component/page being reviewed?
 3. Which files contain the implementation?
 4. **Where are the screenshots?** (file paths or URLs)
@@ -122,6 +141,9 @@ Based on context, read:
 - **If marketing:** `~/.claude/skills/design-marketing.md`
 - **If applications:** `~/.claude/skills/design-applications.md`
 - **If dashboards:** `~/.claude/skills/design-dashboards.md`
+- **If iOS native:** `~/.claude/skills/design-mobile-ios.md`
+- **If Android native:** `~/.claude/skills/design-mobile-android.md`
+- **If cross-platform:** `~/.claude/skills/design-mobile-crossplatform.md` (when available)
 
 ### Step 3: Review Against Standards
 
@@ -187,6 +209,35 @@ For each component type (Button, Form Field, Card, Table), verify:
 - [ ] Y-axis starts at zero for bar charts
 - [ ] Date range picker functional
 - [ ] Tooltips on chart data points
+
+**If iOS native:**
+
+- [ ] Navigation follows iOS patterns (tab bar bottom, navigation bar top)
+- [ ] Uses SF Symbols for icons (Apple platforms only)
+- [ ] Respects safe area insets (no hardcoded padding)
+- [ ] Typography uses shared scale (11/12/13/15/16/17/20/22/28/34pt)
+- [ ] Colors use shared Antigravity palette (not iOS system colors)
+- [ ] Spacing uses shared scale (4/8/12/16/20/24/32/48pt)
+- [ ] Corner radius uses shared scale (4/8/10/12/16pt)
+- [ ] Touch targets 44x44pt minimum
+- [ ] VoiceOver labels present on all interactive elements
+- [ ] Dark mode supported
+- [ ] All states implemented (default, highlighted, disabled, selected)
+
+**If Android native:**
+
+- [ ] Navigation follows Material Design 3 (bottom nav, FAB, drawer, top app bar)
+- [ ] Uses Material Symbols for icons
+- [ ] Respects system window insets (no content overlap with system bars)
+- [ ] Typography uses shared scale (11/12/13/15/16/17/20/22/28/34sp)
+- [ ] Colors use shared Antigravity palette (not Material default colors)
+- [ ] Spacing uses shared scale (4/8/12/16/20/24/32/48dp)
+- [ ] Corner radius uses shared scale (4/8/10/12/16dp)
+- [ ] Touch targets 48x48dp minimum
+- [ ] TalkBack content descriptions present on all interactive elements
+- [ ] Dark theme supported
+- [ ] All states implemented (default, pressed, disabled, focused)
+- [ ] Ripple effects on clickable elements
 
 #### Phase A4: Interactive Element Behaviors
 
