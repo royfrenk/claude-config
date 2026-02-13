@@ -253,12 +253,21 @@ Instructions:
 2. Run Explorer to analyze scope (skip for trivial fixes)
 3. Run Plan-Writer to create implementation plan
 4. Present plan to User for approval ← CHECKPOINT
-5. Once approved: Coordinate Developer(s) execution
-6. Coordinate Design-Reviewer (if UI work) and Code Reviewer
-7. Update sprint file with checkpoints throughout
+5. Once approved: Execute ALL issues CONTINUOUSLY without stopping:
+   - Coordinate Developer(s) execution
+   - Coordinate Design-Reviewer (if UI work) and Code Reviewer
+   - Deploy each issue to staging immediately after review passes
+   - Continue to next issue without pausing
+6. ONLY stop execution when:
+   - Design approval needed (UI work)
+   - Plan approval needed (always)
+   - Review fails after 3 rounds (escalate)
+   - All issues deployed to staging (present wrap-up)
+   - Blocking error occurs
+7. Update sprint file with checkpoints throughout (NOT User messages)
 8. Use linear-sync agent for all Linear operations (non-blocking)
 9. Update roadmap.md as work progresses
-10. Continue until all issues complete or blocked
+10. After all issues complete: Present sprint wrap-up with staging URLs
 
 Sprint file is your shared memory. Update it with:
 - Checkpoints after each phase

@@ -481,9 +481,40 @@ Don't let disagreements stall work. Decide within one exchange.
 
 ## Autonomous Mode
 
-Select issues → Check UX → Design-planner (if UX, STOP for approval) → Explorer → Plan-Writer → STOP for plan approval → Developer → Reviewer → Deploy → Update roadmap.md → Next task.
+When running autonomous sprint execution, execute ALL approved issues continuously without stopping between phases.
 
-**ALWAYS pause:** Design approval (if UX), Plan approval (always)
+**Flow per issue:**
+Select issue → Check UX → Design-planner (if UX, STOP for approval) → Explorer → Plan-Writer → STOP for plan approval → Developer → Reviewer → Deploy staging → Update roadmap.md → **Continue to next issue**
+
+**Multi-issue flow:**
+Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequence"), execute ALL issues continuously:
+- Issue 1: Implement → Review → Deploy staging
+- Issue 2: Implement → Review → Deploy staging
+- Issue 3: Implement → Review → Deploy staging
+- **Then STOP:** Present sprint wrap-up, ask User to test on staging
+
+**ONLY pause for:**
+1. **Design approval** (if UI/UX work detected)
+2. **Plan approval** (always required before implementation)
+3. **Review failures** (changes requested → wait for fixes → retry)
+4. **Blocking errors** (deployment failures, missing config, etc.)
+5. **Sprint completion** (all issues deployed to staging → await User testing)
+
+**DO NOT pause for:**
+- Starting implementation (just do it)
+- Completing implementation (proceed to review)
+- Passing review (deploy to staging immediately)
+- Between issues in same sprint (continue to next issue)
+
+**Reporting during execution:**
+- Post checkpoints to sprint file (not to User)
+- Post status updates to Linear comments (not to User)
+- Only message User when:
+  - Awaiting design approval
+  - Awaiting plan approval
+  - Review failed (after 3 rounds)
+  - All issues complete and on staging
+  - Blocking error occurred
 
 ## Deployment Management
 
