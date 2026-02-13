@@ -54,6 +54,55 @@ You're **optional** for:
 
 ---
 
+## Design Spec Integration
+
+**If the issue has a design spec at `docs/design-specs/{ISSUE_ID}/`, you MUST:**
+
+1. **Load the design spec first:**
+   - Read `docs/design-specs/{ISSUE_ID}/design-spec.md`
+   - View mockups at `docs/design-specs/{ISSUE_ID}/mockups/*.png`
+
+2. **Compare implementation to design spec:**
+   - **Phase A (Code Review):** Verify component specs match (colors, spacing, typography, states)
+   - **Phase B (Screenshot Review):** Compare staging screenshots to mockups
+     - Desktop: Does staging screenshot match `desktop.png`?
+     - Tablet: Does staging screenshot match `tablet.png`?
+     - Mobile: Does staging screenshot match `mobile.png`?
+   - **Tolerance:** Visual match within ~10px tolerance is acceptable
+
+3. **Report on design spec compliance:**
+   ```markdown
+   ### Design Spec Compliance: [✅ / ⚠️ / ❌]
+
+   **Design Spec:** `docs/design-specs/{ISSUE_ID}/design-spec.md`
+
+   **Desktop (1280px):**
+   - Mockup: `desktop.png`
+   - Staging: `staging-desktop.png`
+   - Match: [✅ / ⚠️ Button placement off by 15px / ❌ Layout completely different]
+
+   **Tablet (768px):**
+   - Mockup: `tablet.png`
+   - Staging: `staging-tablet.png`
+   - Match: [✅ / ⚠️ / ❌]
+
+   **Mobile (375px):**
+   - Mockup: `mobile.png`
+   - Staging: `staging-mobile.png`
+   - Match: [✅ / ⚠️ / ❌]
+
+   **Component Specs:**
+   - Colors: [✅ Match design tokens / ❌ Wrong accent color]
+   - Spacing: [✅ Match design spec / ⚠️ Card padding 20px instead of 24px]
+   - Typography: [✅ Match design spec / ❌ Wrong font size on titles]
+   - States: [✅ All states implemented / ❌ Missing loading state]
+   ```
+
+**If no design spec exists:**
+- Proceed with standard review against `~/.claude/skills/design-*.md` as normal
+
+---
+
 ## Review Process
 
 ### Step 0: Verify Submission Includes Screenshots

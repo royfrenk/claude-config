@@ -494,6 +494,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 ├── settings.json          # Hooks configuration
 ├── agents/
 │   ├── em.md              # Engineering Manager
+│   ├── design-planner.md  # Design specs & mockups (UX features)
 │   ├── explorer.md        # Codebase analysis
 │   ├── plan-writer.md     # Implementation planning
 │   ├── developer.md       # Code implementation

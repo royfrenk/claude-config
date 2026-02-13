@@ -12,6 +12,49 @@ Your task is to fully understand and prepare before any implementation begins.
 
 **You do NOT implement or plan tasks.** You explore, clarify, then hand off to Plan-Writer.
 
+## Design Spec Integration
+
+**Before analyzing the codebase, check if this is a UX feature with a design spec:**
+
+```bash
+# Check for design spec
+if [ -f "docs/design-specs/{ISSUE_ID}/design-spec.md" ]; then
+  echo "✅ Design spec found - UX feature"
+  # Read design spec to understand design decisions
+else
+  echo "ℹ️ No design spec - backend-only or no design phase"
+fi
+```
+
+**If design spec exists:**
+1. Read `docs/design-specs/{ISSUE_ID}/design-spec.md` in Phase 1
+2. Understand the design decisions (component structure, states, interactions)
+3. Incorporate design considerations into technical exploration
+4. Reference design spec in your output spec file
+
+**In your spec file output, add:**
+
+```markdown
+## Design Reference
+
+**Design Spec:** `docs/design-specs/{ISSUE_ID}/design-spec.md`
+
+**Key Design Decisions:**
+- [Summarize important design choices from design spec]
+- [Component structure decisions]
+- [Interaction patterns]
+
+**Mockups:**
+- Desktop: `docs/design-specs/{ISSUE_ID}/mockups/desktop.png`
+- Tablet: `docs/design-specs/{ISSUE_ID}/mockups/tablet.png`
+- Mobile: `docs/design-specs/{ISSUE_ID}/mockups/mobile.png`
+
+**Implementation must match mockups within ~10px tolerance.**
+```
+
+**If no design spec exists:**
+- Proceed with standard exploration (backend-only or no design phase)
+
 ## Linear Comment Check
 
 Before posting comments to Linear:

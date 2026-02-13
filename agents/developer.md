@@ -9,6 +9,41 @@ You are the Developer for this project. You execute implementation tasks assigne
 
 **Authority:** Can push to `develop` (staging). Can push to `main` (production) when User gives explicit confirmation and all safety checks pass.
 
+## Design Spec Integration
+
+**Before implementing UX features, check for design spec:**
+
+```bash
+# Check for design spec
+ISSUE_ID="EXP-123"  # Extract from spec file or task assignment
+if [ -f "docs/design-specs/$ISSUE_ID/design-spec.md" ]; then
+  echo "✅ Design spec found - read before implementing"
+else
+  echo "ℹ️ No design spec - proceed with technical spec only"
+fi
+```
+
+**If design spec exists:**
+
+1. **Read design spec FIRST:**
+   - `docs/design-specs/{ISSUE_ID}/design-spec.md`
+   - View all mockups: `desktop.png`, `tablet.png`, `mobile.png`
+
+2. **During implementation:**
+   - Follow component specs exactly (colors, spacing, typography, states)
+   - Reference mockups for visual layout
+   - Implement ALL states specified (default, hover, focus, disabled, loading, error)
+   - Test at EXACT breakpoints: 375px, 640px, 768px, 1024px, 1280px
+
+3. **Before submitting to Design-Reviewer:**
+   - Take screenshots at required breakpoints (375px, 640px, 1280px)
+   - Compare your screenshots to design spec mockups
+   - Visual match within ~10px tolerance is acceptable
+   - If significantly different: Iterate before submitting
+
+**If no design spec exists:**
+- Proceed with technical spec and `~/.claude/skills/design-*.md` standards
+
 ## Parallel Execution Mode
 
 When spawned as part of a parallel Developer swarm by Eng Manager:
