@@ -338,6 +338,255 @@ When investigating recurring breakages, check:
 
 ---
 
+## 7. External Service Failures (Linear, APIs)
+
+### Problem
+
+External services can:
+- Timeout (slow network, service overload)
+- Return errors (rate limits, authentication issues)
+- Stall indefinitely (hanging connections)
+- Block critical workflow when unavailable
+
+### Rules
+
+**For all external service calls:**
+
+1. **Always set timeouts** - No indefinite waits (default: 30 seconds)
+2. **Always have fallbacks** - System continues without external service
+3. **Track failures** - Log what needs manual reconciliation
+4. **Non-blocking by default** - Don't halt workflow for non-critical syncs
+
+### Pattern: Timeout Wrapper
+
+**Bash approach (preferred for MCP operations):**
+
+```bash
+# Wrapper for Linear MCP calls
+function call_linear_with_timeout() {
+  local operation=$1
+  local timeout_seconds=${2:-30}
+
+  # Run operation with timeout
+  timeout ${timeout_seconds}s ${operation}
+
+  # Check exit code
+  local exit_code=$?
+  if [ $exit_code -eq 124 ]; then
+    echo "ERROR: Operation timed out after ${timeout_seconds}s"
+    return 124
+  elif [ $exit_code -ne 0 ]; then
+    echo "ERROR: Operation failed with code $exit_code"
+    return $exit_code
+  fi
+
+  return 0
+}
+
+# Usage
+if call_linear_with_timeout "mcp__linear__get_issue QUO-42" 30; then
+  echo "Success"
+else
+  echo "Failed or timed out - using fallback"
+  # Use roadmap.md fallback
+fi
+```
+
+**TypeScript/JavaScript approach:**
+
+```typescript
+async function callExternalService<T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeout = 30000
+): Promise<{ success: boolean; data?: T; reason?: string; error?: Error }> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+  try {
+    const result = await operation(controller.signal)
+    clearTimeout(timeoutId)
+    return { success: true, data: result }
+  } catch (error) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      console.warn(`Operation timed out after ${timeout}ms`)
+      return { success: false, reason: 'timeout' }
+    }
+    console.error('Operation failed:', error.message)
+    return { success: false, reason: 'error', error }
+  }
+}
+
+// Usage
+const result = await callExternalService(
+  async (signal) => {
+    return await fetch('https://api.linear.app/graphql', { signal })
+  },
+  30000
+)
+
+if (!result.success) {
+  // Use fallback (roadmap.md)
+  console.log('Using fallback due to:', result.reason)
+}
+```
+
+### Pattern: Graceful Failure with Tracking
+
+**1. Try operation with timeout**
+**2. If timeout/error: Use fallback and track**
+**3. Report at sprint end for manual reconciliation**
+
+```javascript
+// Example: Linear status update
+async function updateLinearStatus(issueId, status) {
+  const result = await callExternalService(
+    async (signal) => {
+      return await linearClient.updateIssue(issueId, { status }, { signal })
+    },
+    30000  // 30 second timeout
+  )
+
+  if (!result.success) {
+    // Log failure
+    console.warn(`Linear sync failed for ${issueId}:`, result.reason)
+
+    // Track in sprint file
+    await appendToSprintFile(`
+## Pending Manual Sync
+- ${issueId}: Status update to "${status}" failed (${result.reason})
+`)
+
+    // Update roadmap.md (source of truth)
+    await updateRoadmap(issueId, status)
+
+    // Continue workflow - don't block
+    return { synced: false, fallbackUsed: 'roadmap.md' }
+  }
+
+  return { synced: true }
+}
+```
+
+### Pattern: Retry Logic (Soft Retry)
+
+For transient errors, retry once with backoff:
+
+```javascript
+async function softRetry(operation, timeoutMs = 30000) {
+  // Attempt 1
+  let result = await callExternalService(operation, timeoutMs)
+
+  if (result.success) {
+    return result
+  }
+
+  // Wait 2 seconds before retry
+  await sleep(2000)
+
+  // Attempt 2
+  result = await callExternalService(operation, timeoutMs)
+
+  if (!result.success) {
+    console.warn('Operation failed after 2 attempts:', result.reason)
+  }
+
+  return result
+}
+```
+
+**When to use soft retry:**
+- Network errors (transient)
+- Rate limit errors (with backoff)
+- Timeout errors (might succeed second time)
+
+**When NOT to retry:**
+- Authentication errors (won't fix itself)
+- Permission errors (structural issue)
+- After 2 failed attempts (give up, use fallback)
+
+### Integration Tests Required
+
+Test timeout behavior:
+
+```typescript
+test('Linear sync continues workflow on timeout', async () => {
+  // Mock Linear API to stall
+  mockLinearApi.delay(60000)  // 60 second delay
+
+  const sprint = await startSprint('QUO-42')
+
+  // Should not hang - should timeout and continue
+  expect(sprint.linearStatus).toBe('unavailable')
+  expect(sprint.usingFallback).toBe(true)
+  expect(sprint.canContinue).toBe(true)
+})
+
+test('Linear sync tracks failed operations for reconciliation', async () => {
+  // Mock Linear API to fail
+  mockLinearApi.fail('timeout')
+
+  await updateIssueStatus('QUO-42', 'In Review')
+
+  // Should track failure in sprint file
+  const sprintFile = await readSprintFile()
+  expect(sprintFile).toContain('Pending Manual Sync')
+  expect(sprintFile).toContain('QUO-42: Status update to "In Review" failed')
+
+  // Should still update roadmap.md (fallback)
+  const roadmap = await readRoadmap()
+  expect(roadmap).toContain('QUO-42')
+  expect(roadmap).toContain('In Review')
+})
+```
+
+### Fallback Behavior
+
+When external service unavailable:
+
+**Immediate actions:**
+1. Log warning (don't error)
+2. Use local fallback (roadmap.md for Linear)
+3. Track failed operation in sprint file
+4. Continue workflow normally
+
+**At sprint end:**
+1. Present all failed operations
+2. Offer manual reconciliation
+3. User decides: retry now, skip, or manual fix
+
+**Example sprint file tracking:**
+
+```markdown
+## Notes
+
+**Linear Sync Status:**
+- Sprint start: ✅ Success (3/3 issues synced)
+- Status updates: ⚠️ 2 failures (QUO-38, QUO-39 timeout)
+- Sprint end: Pending reconciliation
+
+**Pending Manual Sync:**
+- QUO-38: Push "In Review" status (timeout)
+- QUO-39: Push "Done" status (timeout)
+
+**Recommendation:**
+Run `/sync-roadmap` to reconcile Linear with roadmap.md
+```
+
+### When to Escalate
+
+**Escalate to User when:**
+- Authentication fails (needs config fix)
+- All operations timing out (service may be down)
+- Rate limit exceeded repeatedly (need API key upgrade)
+
+**Do NOT escalate for:**
+- Single timeout (use fallback)
+- Transient network errors (retry once)
+- Sprint end reconciliation (present options, don't block)
+
+---
+
 ## Quick Reference
 
 | Issue Type | First Check | Prevention |
@@ -347,3 +596,4 @@ When investigating recurring breakages, check:
 | **Race Conditions** | Test concurrently | Use transactions |
 | **Configuration** | Validate at startup | No silent fallbacks |
 | **Over-Engineering** | Count conditions/nesting | Simplify when > 3 levels |
+| **External Service Failures** | Check timeout settings | 30s timeout + fallback + tracking |

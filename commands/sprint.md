@@ -19,499 +19,181 @@ This command checks `CLAUDE.md` for Linear integration settings:
 - Missing field → Default to `false` (roadmap.md only)
 
 **If Linear is disabled:**
-- Skip all Linear sync attempts (steps 2, 7, 10a, 12)
+- Skip all Linear sync attempts
 - Use roadmap.md as single source of truth
 - No Linear MCP calls, no retry logic
 - Sprint operates entirely on roadmap.md
 
 **If Linear is enabled:**
-- Use `/sync-roadmap` for bidirectional sync
-- Follow existing workflow with soft retry logic
+- Use `linear-sync` agent for all Linear operations
+- Graceful failure handling with 30s timeouts
 - Use Team ID from CLAUDE.md for all MCP calls
 
 ## Workflow
 
-1. Read `CLAUDE.md` to get:
-   - `linear_enabled: true/false` (default: false)
-   - Linear team ID and issue prefix (if enabled)
-   - If `linear_enabled: false`: Skip to step 2b (issue selection from roadmap.md)
-2. **Run `/sync-roadmap`** (if Linear enabled) to reconcile any Linear changes before starting work
-2b. **Handle issue selection (if no explicit issues provided):**
-   - **If user provided issue IDs in command (e.g., `/sprint QUO-57 QUO-58`):**
-     - Parse issue IDs from arguments
-     - Skip to step 2a with these specific issues
+### 1. Read CLAUDE.md
 
-   - **If no issue IDs provided (user typed just `/sprint`):**
-     - **If `linear_enabled: true`:** Query Linear for all issues with "Todo" status: `mcp__linear__list_issues` with `state: "Todo"`, ordered by priority
-     - **If `linear_enabled: false` or Linear unavailable:** Read `docs/roadmap.md` Backlog section for Todo items
-     - **If Todo issues found:**
-       ```
-       Found [N] issues in Todo status (ordered by priority):
+Get configuration:
+- `linear_enabled: true/false` (default: false)
+- Linear team ID and issue prefix (if enabled)
+- If `linear_enabled: false`: Skip Linear sync, use roadmap.md only
 
-       1. [ISSUE-ID] (Priority): [Title]
-       2. [ISSUE-ID] (Priority): [Title]
-       ...
+### 2. Sync with Linear (if enabled)
 
-       Add all these issues to the sprint? (yes/no)
-       If no, specify which issues: (e.g., "57, 58" or "QUO-57, QUO-58")
-       ```
-     - **Wait for user response:**
-       - If "yes" → Use all Todo issues for the sprint
-       - If "no" with specific issues → Parse issue numbers (support both "57" and "QUO-57" formats)
-       - If "no" without issues → Prompt: "Which issues should I work on? (provide issue IDs or say 'Priority 1' to use highest priority issue)"
+**If `linear_enabled: true`:**
+- Run `/sync-roadmap` to reconcile any Linear changes before starting work
+- If sync fails: Log warning, continue with roadmap.md as fallback
 
-     - **If NO Todo issues found:**
-       ```
-       No issues found in Todo status.
+**If `linear_enabled: false`:**
+- Skip sync, proceed directly to issue selection
 
-       Please specify which issues to work on, or I can:
-       - Query for highest Priority issue in Backlog
-       - Wait for you to move issues to Todo in Linear
+### 2b. Handle Issue Selection
 
-       What would you like to do?
-       ```
-2a. **Check for existing active sprint or create new one:**
-   - **Search for active sprint file:**
-     ```bash
-     find docs/sprints/ -name "*.active.md" 2>/dev/null
-     ```
-   - **If multiple active sprints found:**
-     ```
-     ❌ BLOCKING ERROR
+#### If user provided issue IDs in command
 
-     Found multiple active sprint files:
-     [list files]
+Example: `/sprint QUO-57 QUO-58`
+- Parse issue IDs from arguments
+- Skip to step 2a (sprint file check) with these specific issues
 
-     Only ONE active sprint should exist at a time.
+#### If no issue IDs provided
 
-     Please resolve manually:
-     1. Rename completed sprint to .done.md
-     2. Or delete the old sprint file
-     3. Then run /sprint again
+User typed just `/sprint`:
 
-     CANNOT PROCEED until resolved.
-     ```
-     **EXIT - Do not proceed**
+**If `linear_enabled: true`:**
+- Spawn `linear-sync` agent: "Pull Todo issues from team <team-id>"
+- If Linear available: Get issues with "Todo" status, ordered by priority
+- If Linear unavailable: Read `docs/roadmap.md` Backlog section for Todo items
 
-   - **If one active sprint found:**
-     ```
-     ✓ Resuming active sprint: [filename]
+**If `linear_enabled: false`:**
+- Read `docs/roadmap.md` Backlog section for Todo items
 
-     Current sprint: [name]
-     Issues in sprint: [list from sprint file]
-     Status: [status from sprint file]
-     ```
-     **CONTINUE** - Use this sprint file for all subsequent work
+**If Todo issues found:**
+```
+Found [N] issues in Todo status (ordered by priority):
 
-   - **If no active sprint found:**
-     - **Determine next sprint number:**
-       - Scan ALL sprint files: `find docs/sprints/ -name "sprint-*.md" 2>/dev/null`
-       - Extract all sprint numbers from both `*.active.md` and `*.done.md` files
-       - Parse numbers handling suffixes (e.g., sprint-004a → 004)
-       - Use highest number + 1 (or 001 if no sprints exist)
-       - Example: If sprint-003.done.md, sprint-004a.done.md, sprint-004b.done.md exist, use 005
-     - **Parallel sprint validation:**
-       - Get list of issues for new sprint (from step 2b)
-       - For each existing `*.active.md` sprint file:
-         - Read the "Issues in Sprint" table
-         - Extract issue IDs
-         - **If overlap detected (same issue ID in both sprints):**
-           ```
-           ❌ BLOCKING ERROR
+1. [ISSUE-ID] (Priority): [Title]
+2. [ISSUE-ID] (Priority): [Title]
+...
 
-           Issue [ISSUE-ID] is already in an active sprint:
-           - Active sprint: [filename]
-
-           Cannot run parallel sprints on the same issue.
-
-           Options:
-           1. Resume existing sprint with /sprint [ISSUE-ID]
-           2. Wait for existing sprint to complete
-           3. Remove [ISSUE-ID] from the active sprint first
-
-           CANNOT PROCEED.
-           ```
-           **EXIT - Do not proceed**
-         - **If different issues but both have spec files:**
-           - Read spec files for both sprints' issues
-           - Extract file paths from Implementation Plan sections
-           - Calculate overlap: common files / total files
-           - **If >50% overlap detected:**
-             ```
-             ⚠️ WARNING: Potential file conflicts detected
-
-             New sprint ([ISSUE-ID]) and active sprint ([OTHER-ISSUE]) may modify overlapping files:
-             - [list up to 5 common files]
-             ... and [N] more
-
-             This could cause merge conflicts.
-
-             Proceed anyway? (yes/no)
-             ```
-             - Wait for user response
-             - If "no": EXIT with "Sprint creation cancelled"
-             - If "yes": Continue with sprint creation
-     - Create new sprint file at `docs/sprints/sprint-###-[name].active.md`
-     - Name: short descriptor from Priority 1 issue (will update after step 3)
-     - **Blocking enforcement:**
-       - Directory creation must succeed or EXIT with error
-       - File write must succeed or EXIT with error
-       - If file created but unreadable, WARN and ask user to continue/cancel
-     - **Initial content** (skeleton format):
-       ```markdown
-       # Sprint [###]: [Placeholder - will update after querying Linear]
-
-       **Status:** 🔵 Starting
-       **Started:** [date]
-       **Issues:** [Will be populated as issues are worked on]
-
-       ## Issues in Sprint
-
-       | Issue | Title | Spec | Status |
-       |-------|-------|------|--------|
-       | — | — | — | — |
-
-       ## Iteration Log
-
-       [Will be populated during iteration]
-
-       ## New Acceptance Criteria Discovered
-
-       | Issue | New AC | Added to Spec |
-       |-------|--------|---------------|
-       | — | — | — |
-
-       ## Notes
-       [Context, decisions, blockers will be added as work progresses]
-       ```
-     - After creating, update sprint file title and first issue after step 3
-     - **Example sprint number calculation:**
-       ```bash
-       # Existing files in docs/sprints/:
-       sprint-001-auth.done.md
-       sprint-002-payments.done.md
-       sprint-003-search.done.md
-       sprint-004a-rag-memory.done.md    # Parallel sprint (finished)
-       sprint-004b-email-fix.done.md     # Parallel sprint (finished)
-       sprint-005-calendar.active.md     # Currently running
-
-       # New sprint starting:
-       # Scan finds: 001, 002, 003, 004a, 004b, 005
-       # Parse numbers: 1, 2, 3, 4, 4, 5
-       # Highest = 005
-       # New sprint gets: 006
-
-       # Result:
-       docs/sprints/sprint-006-notifications.active.md
-       ```
-
-       This ensures unique sprint numbers even when multiple sprints run in parallel.
-       If duplicates exist with suffixes (004a, 004b), the next sprint uses the next base number (005).
-3. **Work with selected issues:**
-   - Issues are now selected (from step 2b or command args)
-   - For each issue in the sprint, continue with spec check (step 5)
-   - **If Linear unavailable (any MCP call fails):**
-     - Use `docs/roadmap.md` as fallback
-     - Add to roadmap.md Sync Status: "Linear unavailable - using roadmap.md"
-   - If work was done while Linear was down, flag for reconciliation at sprint end
-4. Read `docs/PROJECT_STATE.md` for current codebase state
-5. **Check for technical spec at `docs/technical-specs/{PREFIX}-##.md`:**
-   - **If spec exists:** Read it and proceed to step 7
-   - **If spec does NOT exist:** Create it first (step 6)
-6. **Create technical spec (if missing):**
-   - **Analyze task complexity to decide on exploration strategy:**
-     - Simple tasks (bug fix, one-file change): Single Explorer
-     - Complex tasks (2+ areas: frontend, backend, db, integrations): Parallel Explorers
-   - **Spawn Explorer(s) with Task tool:**
-     - **Single Explorer:**
-       ```
-       Issue: {PREFIX}-## (Linear issue ID)
-       Task: [short title]
-       Context: [why this matters]
-       Spec: [what to build]
-       ```
-     - **Parallel Explorers (if complex):**
-       ```
-       Issue: {PREFIX}-##
-       Task: [short title]
-
-       Spawning 3 Explorers in parallel:
-       - Explorer A: Frontend UI exploration (src/components/, src/pages/)
-       - Explorer B: Backend API exploration (src/api/, src/services/)
-       - Explorer C: Database schema exploration (src/db/)
-       ```
-   - **Explorer(s) create `docs/technical-specs/{PREFIX}-##.md`** with exploration findings
-   - **After exploration completes, spawn Plan-Writer** to add implementation plan to spec
-7. **Sync with Linear (Pull - try once, non-blocking):**
-   - Attempt: `mcp__linear__get_issue` to fetch latest issue details
-   - If success: Use Linear data (priority, labels, description updates)
-   - If fails: Log warning, continue using `docs/roadmap.md` as source of truth
-   - Add to sprint file Notes: "Linear sync: [success/failed at sprint start]"
-7a. **Parallelization Decision (after Plan-Writer, before User approval):**
-   - Read the Implementation Plan from spec file
-   - **Analyze task dependencies:**
-     - Read "Task Dependencies" table from spec
-     - Group tasks by dependency level (Level 0 = no deps, Level 1 = depends on Level 0, etc.)
-   - **Within each level, analyze file conflicts:**
-     - For each task, list files it will modify
-     - Detect overlaps between tasks at same dependency level
-     - **If no overlap:** Tasks can run in parallel
-     - **If overlap exists:** Assign file zones OR sequence the tasks
-   - **Create Execution Plan in spec file:**
-     ```markdown
-     ## Execution Plan
-
-     **Wave 1 (parallel):**
-     - Dev A: Task 1 [schema migration] - Files: src/db/*
-     - Dev B: Task 4 [logging utility] - Files: src/utils/logger.ts
-
-     **Wave 2 (after Wave 1, parallel):**
-     - Dev C: Task 2 [backend API] - Files: src/api/*
-     - Dev D: Task 5 [update docs] - Files: docs/*
-
-     **Wave 3 (after Wave 2):**
-     - Dev E: Task 3 [frontend UI] - Files: src/components/*
-
-     **File Conflict Management:**
-     | Developer | File Zone | Sequence Notes |
-     |-----------|-----------|----------------|
-     | Dev A | src/db/* | First |
-     | Dev C | src/api/* | After Dev A (may need schema) |
-     ```
-   - **Present Execution Plan + Implementation Plan to User for approval** ← CHECKPOINT
-   - Wait for User's "yes" before proceeding
-7b. **Check-in: Plan Approved**
-   - Update sprint file with checkpoint:
-     ```markdown
-     ## Check-in: Plan Approved — [YYYY-MM-DD HH:MM]
-
-     **Status:** 🔵 Development Starting
-     **Plan:** Approved by user
-     **Execution Strategy:** [Sequential / X waves]
-     **Next:** Begin Wave 1 implementation
-
-     **Issues in Sprint:**
-     - QUO-##: [Title] - Plan approved, ready to implement
-     ```
-   - This check-in helps resume if sprint is interrupted before development starts
-8. **Execute according to Execution Plan:**
-
-   **For each wave in the Execution Plan:**
-
-   a. **Spawn Developer(s) using Task tool:**
-      - **Single Developer (sequential):**
-        ```
-        Issue: {PREFIX}-##
-        Task: [task name]
-        Spec: docs/technical-specs/{PREFIX}-##.md
-        Assigned Tasks: Task 1
-        ```
-      - **Multiple Developers (parallel wave):**
-        ```
-        # Spawn these in ONE message (parallel execution):
-
-        Developer A:
-          Issue: {PREFIX}-##
-          Task: Task 1 - Schema migration
-          Spec: docs/technical-specs/{PREFIX}-##.md
-          Assigned Tasks: Task 1
-          File Zone: src/db/*
-          Parallel Mode: true
-          Sequence: first
-
-        Developer B:
-          Issue: {PREFIX}-##
-          Task: Task 4 - Logging utility
-          Spec: docs/technical-specs/{PREFIX}-##.md
-          Assigned Tasks: Task 4
-          File Zone: src/utils/logger.ts
-          Parallel Mode: true
-          Sequence: independent
-        ```
-
-   b. **Each Developer (runs automatically with MANDATORY review gate):**
-
-      **Implementation phase:**
-      - Updates spec status (🟥→🟨→🟩) for their assigned tasks
-      - Implements code changes
-      - Runs verification loop (build, lint, types, tests, security)
-
-      **Design review gate (MANDATORY for UI work):**
-      - **Identify if task involves UI/UX** (components, layouts, forms, dashboards, marketing)
-      - **If YES:**
-        - Invoke Design-Reviewer with context (marketing/applications/dashboards)
-        - BLOCKING: Wait for "✅ Design Review: Approved" in Linear
-        - If changes requested: Fix and resubmit (max 3 rounds)
-        - Only after approval: Proceed to code review
-
-      **Code review gate (MANDATORY - BLOCKING):**
-      - **Automatically invokes Code Reviewer** (no user input required)
-      - **ENTERS BLOCKING STATE** - cannot deploy until approved
-      - Developer submits:
-        - Issue ID and task number
-        - Files changed
-        - Verification report (all checks PASS)
-        - Commit hash
-      - Reviewer reviews and posts to Linear:
-        - "✅ Review: Approved" → Developer proceeds to deployment
-        - "🔄 Changes Requested" → Developer fixes and resubmits (max 3 rounds)
-        - "🚫 Blocked" → Escalate to EM (architectural issue)
-
-      **Enforcement mechanism:**
-      - Developer CANNOT push to develop without required approvals in Linear
-      - For UI work: BOTH Design-Reviewer AND Code Reviewer approval required
-      - For non-UI: Code Reviewer approval required
-      - Developer checks Linear before EVERY deployment
-      - If approval missing: Developer outputs error and STOPS
-      - If approval stale (new commits after approval): Developer resubmits for re-review
-
-      **Fast-track (Production incidents):**
-      - If issue labeled "CRITICAL - Production Incident":
-        - Reviewer response time: 15 minutes (vs 30 min normal)
-        - Reviewer prioritizes: security, data integrity, breaking changes
-        - **Fast-track does NOT bypass review** - approval still required
-        - All blocking gates still apply
-
-      **Deployment (only after approval verified):**
-      - Developer verifies approval exists and matches current commit
-      - Developer pushes to develop branch
-      - Verifies deployment succeeded (Phase 5.5 of Developer agent)
-      - Updates spec: marks task 🟩 complete
-      - Posts to Linear: "✅ Deployed to staging"
-
-      **If changes requested:**
-      - Developer fixes issues per Reviewer feedback
-      - Re-runs verification loop
-      - Resubmits to Reviewer (Round 2, then Round 3 if needed)
-      - Max 3 rounds - after that, escalate to EM
-
-   c. **Reviewer reviews all submissions from the wave:**
-      - If multiple Developers in wave → spawn parallel Reviewer sub-agents
-      - Each Reviewer posts approval/changes to Linear
-      - Parent Reviewer consolidates: "Wave 1: All approved" or "Dev A approved, Dev B needs changes"
-
-   d. **After wave approval:**
-      - All Developers in wave deploy to staging (push to develop)
-      - Update spec: mark wave complete
-      - Post wave completion to Linear (non-blocking - log if fails)
-      - **Check-in: Wave Complete**
-        ```markdown
-        ## Check-in: Wave [X] Complete — [YYYY-MM-DD HH:MM]
-
-        **Status:** 🟨 In Progress
-        **Wave:** [X] of [Y]
-        **Completed Tasks:** [list]
-        **Next:** Wave [X+1] [or "Final verification" if last wave]
-
-        **Wave [X] Details:**
-        - Dev A: Task [#] - ✅ Deployed
-        - Dev B: Task [#] - ✅ Deployed
-        ```
-
-   e. **Move to next wave** (if any)
-
-   f. **Repeat until all waves complete**
-
-9. **Pre-handoff verification (MANDATORY before user testing):**
-   - Run full test suite (backend + frontend) — not just changed code
-   - Check: do tests exist for the flows user will test?
-     - If missing → create them or verify via API/curl yourself
-   - Test the flow yourself locally (start servers, verify it works)
-   - Only proceed after YOU confirm it works
-10. When all subtasks complete and deployed to staging:
-    - **MANDATORY: Verify ALL acceptance criteria are met** before proceeding
-    - Generate acceptance criteria report (see Output section)
-    - If any criteria are ⚠️ or ❌, get User approval before marking In Review
-    - **Sync with Linear (Push - In Review status, soft retry):**
-      - Attempt 1: `mcp_linear_update_issue(issueId, status: "<In Review UUID>")`
-      - If fails: Wait 2 seconds, attempt 2
-      - If still fails: Log warning, continue (mark for manual sync later)
-      - Update sprint file Notes: "Linear sync: [success/failed at In Review]"
-    - Update `docs/roadmap.md` status to 🟨 In Review
-
-10a. **Check-in: Issue Complete**
-    - Update sprint file with checkpoint:
-      ```markdown
-      ## Check-in: Issue [QUO-##] Complete — [YYYY-MM-DD HH:MM]
-
-      **Status:** 🟨 In Review (Staging)
-      **Issue:** [QUO-##] - [Title]
-      **Deployed:** [staging URL]
-      **AC Status:** [X/Y criteria met - ✅/⚠️/❌]
-      **Linear Sync:** [success/failed - needs manual update if failed]
-      **Next:** User testing on staging
-
-      **Pending Manual Sync (if any):**
-      - [QUO-##]: Status update to "In Review" failed
-      ```
-    - This check-in helps resume if sprint is interrupted during testing phase
-
-10a. **OpenAI Codex peer review (before production):**
-    - When User is ready to deploy to production (says "close the sprint"), invoke Reviewer
-    - Reviewer requests OpenAI Codex peer review via script
-    - Reviewer evaluates Codex recommendations
-    - If accepted recommendations: Developer implements, resubmits to Reviewer
-    - If no accepted recommendations: Proceed to step 11
-
-11. **Update sprint file:**
-    - Add completed issue to sprint file Issues table (if not already there)
-    - Update status to 🟨 In Review (awaiting user testing)
-    - Add completion notes and next steps
-    - Tell user: "Use `/iterate` when you find issues during testing."
-12. **When sprint completes and user deploys to production:**
-    - **Sync with Linear (Push - Done status, soft retry):**
-      - Attempt 1: `mcp_linear_update_issue(issueId, status: "<Done UUID>")`
-      - If fails: Wait 2 seconds, attempt 2
-      - If still fails: Log warning, add to sprint file for manual sync
-      - Update sprint file Notes: "Linear sync: [success/failed at Done]"
-    - Rename sprint file from `.active.md` to `.done.md`
-    - Update `docs/roadmap.md`:
-      - Move issues from "Active Sprint" to "Recently Completed" section
-      - **Remove these issues from "Backlog" sections** (they're now done)
-      - Add to Recently Completed table with: ID, Title, Completed date, **Outcome** (1-2 line summary of what was achieved), Sprint link
-      - Keep only ~15-20 most recent completed issues (older ones accessible via sprint files)
-      - Clear "Active Sprint" section to "**None** - Run `/sprint` to start a new sprint"
-
-**Recently Completed format:**
-```markdown
-| ID | Title | Completed | Outcome | Sprint |
-|----|-------|-----------|---------|--------|
-| EXP-## | [Title] | YYYY-MM-DD | [Brief outcome] | [sprint-###](sprints/sprint-###-name.done.md) |
+Add all these issues to the sprint? (yes/no)
+If no, specify which issues: (e.g., "57, 58" or "QUO-57, QUO-58")
 ```
 
-**Example outcomes:**
-- "Implemented Material Design 3 tokens and typography scale"
-- "Added bulk operations API with transaction support"
-- "Redesigned dashboard with Linear-inspired information density"
-13. **Move to next issue:**
-    - Ensure completed issue is tracked in active sprint file
-    - Return to step 3 and repeat until:
-    - All Active Sprint items are done
-    - A task is blocked
-    - A security issue is found
-    - Critical decision needed from the User
+**Wait for user response:**
+- If "yes" → Use all Todo issues for the sprint
+- If "no" with specific issues → Parse issue numbers (support both "57" and "QUO-57" formats)
+- If "no" without issues → Prompt: "Which issues should I work on? (provide issue IDs or say 'Priority 1' to use highest priority issue)"
 
-## Sprint File Template
+**If NO Todo issues found:**
+```
+No issues found in Todo status.
 
+Please specify which issues to work on, or I can:
+- Query for highest Priority issue in Backlog
+- Wait for you to move issues to Todo in Linear
+
+What would you like to do?
+```
+
+### 2a. Check for Existing Active Sprint or Create New One
+
+#### Search for active sprint file
+
+```bash
+find docs/sprints/ -name "*.active.md" 2>/dev/null
+```
+
+#### If multiple active sprints found
+
+```
+❌ BLOCKING ERROR
+
+Found multiple active sprint files:
+[list files]
+
+Only ONE active sprint should exist at a time.
+
+Please resolve manually:
+1. Rename completed sprint to .done.md
+2. Or delete the old sprint file
+3. Then run /sprint again
+
+CANNOT PROCEED until resolved.
+```
+
+**EXIT - Do not proceed**
+
+#### If one active sprint found
+
+```
+✓ Resuming active sprint: [filename]
+
+Current sprint: [name]
+Issues in sprint: [list from sprint file]
+Status: [status from sprint file]
+```
+
+**CONTINUE** - Use this sprint file for all subsequent work, delegate to EM (step 3)
+
+#### If no active sprint found
+
+**Determine next sprint number:**
+- Scan ALL sprint files: `find docs/sprints/ -name "sprint-*.md" 2>/dev/null`
+- Extract all sprint numbers from both `*.active.md` and `*.done.md` files
+- Parse numbers handling suffixes (e.g., sprint-004a → 004)
+- Use highest number + 1 (or 001 if no sprints exist)
+- Example: If sprint-003.done.md, sprint-004a.done.md, sprint-004b.done.md exist, use 005
+
+**Parallel sprint validation (only check issue overlap, skip file overlap):**
+- Get list of issues for new sprint (from step 2b)
+- For each existing `*.active.md` sprint file:
+  - Read the "Issues in Sprint" table
+  - Extract issue IDs
+  - **If overlap detected (same issue ID in both sprints):**
+    ```
+    ❌ BLOCKING ERROR
+
+    Issue [ISSUE-ID] is already in an active sprint:
+    - Active sprint: [filename]
+
+    Cannot run parallel sprints on the same issue.
+
+    Options:
+    1. Resume existing sprint with /sprint [ISSUE-ID]
+    2. Wait for existing sprint to complete
+    3. Remove [ISSUE-ID] from the active sprint first
+
+    CANNOT PROCEED.
+    ```
+    **EXIT - Do not proceed**
+
+**Note:** File overlap calculation is expensive and rarely useful. Skipping it during initialization saves ~2K context tokens. EM agent will handle merge conflict resolution if parallel sprints touch overlapping files.
+
+**Create new sprint file:**
+- Path: `docs/sprints/sprint-###-[name].active.md`
+- Name: short descriptor from first issue title
+- **Blocking enforcement:**
+  - Directory creation must succeed or EXIT with error
+  - File write must succeed or EXIT with error
+  - If file created but unreadable, WARN and ask user to continue/cancel
+
+**Initial content (skeleton format):**
 ```markdown
-# Sprint [###]: [Name]
+# Sprint [###]: [Placeholder - will update after EM starts]
 
-**Status:** 🟨 In Review
+**Status:** 🔵 Starting
 **Started:** [date]
-**Issues:** [QUO-##, QUO-##]
+**Issues:** [Will be populated by EM]
 
 ## Issues in Sprint
 
 | Issue | Title | Spec | Status |
 |-------|-------|------|--------|
-| QUO-## | [Title] | [spec](../technical-specs/QUO-##.md) | 🟨 In Review |
+| — | — | — | — |
 
 ## Iteration Log
 
-### Batch 1 — [date time]
-Reported by User:
-1. [ ] [description] → [QUO-## or "unclear"]
-2. [x] [description] → fixed in [commit]
+[Will be populated during iteration]
 
 ## New Acceptance Criteria Discovered
 
@@ -520,316 +202,147 @@ Reported by User:
 | — | — | — |
 
 ## Notes
-[Context, decisions, blockers]
+[Context, decisions, blockers will be added as work progresses]
+
+**Linear Sync Status:**
+- Sprint start: [pending EM]
 ```
+
+**Example sprint number calculation:**
+```bash
+# Existing files in docs/sprints/:
+sprint-001-auth.done.md
+sprint-002-payments.done.md
+sprint-003-search.done.md
+sprint-004a-rag-memory.done.md    # Parallel sprint (finished)
+sprint-004b-email-fix.done.md     # Parallel sprint (finished)
+sprint-005-calendar.active.md     # Currently running
+
+# New sprint starting:
+# Scan finds: 001, 002, 003, 004a, 004b, 005
+# Parse numbers: 1, 2, 3, 4, 4, 5
+# Highest = 005
+# New sprint gets: 006
+
+# Result:
+docs/sprints/sprint-006-notifications.active.md
+```
+
+This ensures unique sprint numbers even when multiple sprints run in parallel. If duplicates exist with suffixes (004a, 004b), the next sprint uses the next base number (005).
+
+### 3. Delegate to EM Agent
+
+**Now that sprint file exists and issues are selected, delegate everything else to EM:**
+
+Spawn EM agent with Task tool:
+
+```
+Role: Engineering Manager
+Sprint: [sprint file path]
+Issues: [issue IDs from step 2b]
+Linear Config:
+  - Enabled: [true/false]
+  - Team ID: [team-id]
+  - Issue Prefix: [prefix]
+
+Instructions:
+1. For each issue in sprint:
+   - Check if this involves UI/UX work (lines 57-110 in em.md)
+   - If YES: Invoke Design-Planner before Explorer
+   - If NO: Skip directly to Explorer
+2. Run Explorer to analyze scope (skip for trivial fixes)
+3. Run Plan-Writer to create implementation plan
+4. Present plan to User for approval ← CHECKPOINT
+5. Once approved: Coordinate Developer(s) execution
+6. Coordinate Design-Reviewer (if UI work) and Code Reviewer
+7. Update sprint file with checkpoints throughout
+8. Use linear-sync agent for all Linear operations (non-blocking)
+9. Update roadmap.md as work progresses
+10. Continue until all issues complete or blocked
+
+Sprint file is your shared memory. Update it with:
+- Checkpoints after each phase
+- Linear sync status (success/failure)
+- Issue progress (spec status, review status)
+- Pending manual syncs
+
+Refer to em.md for full coordination protocol.
+```
+
+**EM agent handles:**
+- UX detection and Design-Planner invocation
+- Explorer spawning (single or parallel)
+- Plan-Writer coordination
+- User approval checkpoint
+- Developer coordination (sequential or parallel waves)
+- Design-Reviewer gate (for UI work)
+- Code Reviewer gate (mandatory)
+- Linear syncs via linear-sync agent
+- Sprint file updates with checkpoints
+- Roadmap.md updates
+- Escalation to User when blocked
+
+**Sprint command tracks progress:**
+- Read sprint file periodically for status
+- EM updates sprint file with checkpoints
+- Sprint command can resume if interrupted
+
+### 4. Sprint Completion
+
+When EM completes all issues:
+
+1. EM presents sprint wrap-up (see em.md lines 422-514)
+2. User tests on staging
+3. User says "close the sprint" or "deploy to production"
+4. EM validates all safety checks (see em.md lines 218-365):
+   - All acceptance criteria met
+   - Automated verification passed
+   - Reviewer approval exists for all issues
+   - Infrastructure changes have User approval
+   - OpenAI Codex peer review complete (optional)
+5. If all checks pass: EM invokes Developer to deploy to production
+6. EM renames sprint file: `.active.md` → `.done.md`
+7. EM updates roadmap.md: Move to "Recently Completed"
+8. EM uses linear-sync for final status sync (non-blocking)
 
 ## Rules
 
-- **MANDATORY REVIEW GATE:** Cannot mark "In Review" or deploy to staging without Reviewer approval
-- **Design-Reviewer gate for UI:** UI/UX components, layouts, forms, dashboards, marketing pages MUST pass Design-Reviewer before Code Reviewer
-- **Design-Reviewer owns:** Design standards, component contracts, responsive design, accessibility basics
-- **Code Reviewer owns:** Code quality, security, testing, logic (reviews AFTER Design-Reviewer for UI)
-- **If Design-Reviewer rejects, Code Reviewer is NOT invoked** (fix design issues first)
-- **Reviewer must approve before ANY deployment to develop branch**
-- **Auto-invoke:** If Developer attempts deployment without approval, automatically invoke Reviewer and block
-- **If Reviewer requests changes, must re-submit for re-review before deploying**
-- **N-iteration trigger:** After 3 failed fix attempts on same bug, Reviewer MUST review before 4th attempt
-- **Infrastructure changes:** Email provider, database, auth, payment changes require BOTH Reviewer + User approval
-- **"In Review" status means "Under review by Reviewer", not "ready for User"**
-- Invoke Reviewer immediately after verification passes, before any deployment
-- **Test before handoff:** Never ask user to test without first running all tests and verifying the flow yourself
-- **Spec-first:** Never implement without a technical spec file
-- **Plan approval required:** Present the implementation plan and wait for User's approval before coding
-- **No confirmation needed within a task:** Once a plan is approved, execute subtasks without asking
-- **All acceptance criteria must be met:** Before marking any issue "In Review" or "Done", verify ALL acceptance criteria are implemented. If a criterion can't be met, flag it and get User approval to proceed without it.
-- Push only to `develop` (staging) by default
-- **Production deployment:** Developer can deploy when User gives explicit confirmation ("deploy", "push to main", "deploy to production", **"close the sprint"**, or variants like "finish sprint", "complete sprint"). Follow sprint closure protocol:
-  - **Safety requirement:** Before auto-pushing on "close the sprint", verify:
-    - [ ] All acceptance criteria are ✅ (no ⚠️ or ❌)
-    - [ ] All automated staging verification checks passed
-    - [ ] No failing tests
-    - [ ] No deployment errors on staging
-    - [ ] **✅ REVIEWER APPROVAL exists for ALL commits in sprint** (check Linear for approval comments)
-    - [ ] **OpenAI Codex peer review complete** (either no recommendations accepted, or accepted recommendations implemented and approved)
-  - **If reviewer approval check fails:**
-    - STOP immediately
-    - Search Linear for "✅ Review: Approved" comments from reviewer agent
-    - If missing: Post "⚠️ Cannot deploy - missing reviewer approval"
-    - Invoke Reviewer retroactively for all commits: `git diff main..develop`
-    - Wait for approval before proceeding
-  - **If any other check fails:** STOP and ask user what to do before proceeding
-  - **If ACs are incomplete:** STOP and confirm user wants to proceed anyway
-  - **If Codex review blocked:** Notify user which recommendations are pending implementation
-- Run tests before each commit
-- Update spec file progress (🟥→🟨→🟩) as you complete tasks
-- Post status updates to Linear issue as comments
-- Update `docs/PROJECT_STATE.md` after completing a Priority item
-- Update `docs/PROJECT_STATE.md` at sprint end (even if not deployed; mark "NOT UPDATED — reason")
-- Update `docs/roadmap.md` when status changes (immediately, not just at sprint end)
-- **Done = Deployed to production.** Never mark Done until code is live on main branch.
-- **Sprint file lifecycle:** When sprint is deployed to production:
-  1. Rename `*.active.md` → `*.done.md`
-  2. Update roadmap.md:
-     - Remove completed issues from P0/P1/P2 sections (priority sections only show active work)
-     - Add to "Recently Completed" section at BOTTOM of roadmap.md
-     - Insert at TOP of Recently Completed table (most recent first)
-     - Table format: | Issue | Title | Completed | Sprint | Outcome | Spec |
-     - Sprint column: link to sprint file `[Sprint ###](sprints/sprint-###-name.done.md)`
-  3. All completed items remain visible in single table (no truncation)
-- **Linear sync strategy (if enabled):**
-  - Use `/sync-roadmap` for bidirectional sync at 3 touchpoints:
-    1. **Sprint start:** Pull latest from Linear, push any pending updates
-    2. **Staging deploy:** Push "In Review" status (soft retry)
-    3. **Production deploy:** Push "Done" status (soft retry)
-  - **Soft retry logic:** Try once, wait 2s, try again. If fails, log and continue.
-  - **Fallback:** If Linear unavailable, use `docs/roadmap.md` as source of truth
-  - **Pending syncs:** Track failed syncs in sprint file "Pending Manual Sync" section
-  - **Manual reconciliation:** Run `/sync-roadmap` at sprint end if syncs failed
-- Stop and report if:
-  - Tests fail and can't be fixed
-  - External dependency is missing (secrets, credentials, etc.)
-  - Spec is ambiguous and blocks work
-
-## Technical Spec Template
-
-When creating a new spec file, use this structure:
-
-```markdown
-# {PREFIX}-##: [Title]
-
-**Status:** 🟨 In Progress
-**Created:** [date]
-
-## Summary
-[What needs to be built and why]
-
-## Exploration
-- Files to create/modify
-- Integration points
-- Dependencies
-- Edge cases to handle
-
-## Implementation Plan
-
-**Progress:** 0%
-
-- [ ] 🟥 Task 1: [description]
-- [ ] 🟥 Task 2: [description]
-- [ ] 🟥 Task 3: [description]
-
-## Acceptance Criteria
-- [ ] [Criterion 1]
-- [ ] [Criterion 2]
-
-## Review Tracking
-
-**Total Review Rounds:** 0
-
-| Round | Date | Status | Commits Reviewed | Reviewer Comment |
-|-------|------|--------|------------------|------------------|
-| — | — | — | — | — |
-
-## Notes
-[Any risks, decisions, or context]
-```
-
-## Task Execution Format
-
-For each subtask, work through:
-```
-1. Update spec status: 🟥 → 🟨 (starting task)
-2. Read spec and acceptance criteria
-3. Identify files to create/modify
-4. Implement changes
-5. Run verification loop:
-   - Build check
-   - Type check (if TypeScript)
-   - Lint check
-   - Run existing tests
-   - Security scan (secrets, console.log)
-6. Add E2E tests for user-facing changes (new UI, new flows, error messages)
-7. Fix any issues found, repeat verification until all pass
-8. Update spec status: 🟨 → 🟩 (task complete)
-9. Commit with descriptive message
-10. **MANDATORY: Submit to Reviewer for code review**
-11. **Wait for Reviewer approval (may require multiple fix rounds)**
-12. **GATE: Cannot proceed without approval**
-13. After approval: Push to develop
-14. Post completion comment to Linear issue
-15. Proceed to next subtask
-```
-
-**Verification must pass before committing.** See Developer agent for full verification commands.
-
-**E2E test requirement:** If a criterion involves user-visible behavior (UI, messages, flows), either:
-- Add an E2E test that verifies it, OR
-- Mark the criterion ⚠️ "Needs manual verification" in the acceptance criteria report
+- **Thin sprint command:** Only handles config, issue selection, sprint file creation
+- **Delegate early:** EM handles all orchestration (UX detection, exploration, planning, execution)
+- **Non-blocking Linear:** Use `linear-sync` agent with 30s timeouts, fallback to roadmap.md
+- **Sprint file = shared memory:** Both sprint command and EM update it with checkpoints
+- **Resume support:** Can read sprint file to resume interrupted work
+- **No PROJECT_STATE.md read here:** EM or Explorer will read it when needed (saves ~500 tokens)
+- **Lazy validation:** Only check issue overlap, skip expensive file overlap calculation
 
 ## Output
 
-**Follow the formats in `~/.claude/rules/task-completion.md`:**
-- After every commit → use commit format
-- After completing a full issue → use task complete format with **full acceptance criteria report**
+When sprint starts:
 
-**MANDATORY: Acceptance Criteria Report for each issue** — Before marking any issue "In Review", output a table showing each acceptance criterion from the Linear issue, whether it's met (✅/⚠️/❌), and how you verified it. Do not skip this step.
-
-**Always include** the staging URL from project's CLAUDE.md Deployment section.
-
-After completing sprint (or when stopping):
 ```
-## Sprint Wrap-Up — [date]
+## Sprint [###] Started — [date]
 
-### Deployments
-- Staging: [label](URL) — [what's live]
-- Production: [label](URL) — [what's live / not deployed]
-- **Diff File:** `docs/diffs/sprint-[NUMBER]-diff.txt` — Complete sprint changes (main...develop)
+**Issues in sprint:** [issue IDs]
+**Sprint file:** docs/sprints/sprint-###-[name].active.md
+**Linear sync:** [success / unavailable - using roadmap.md fallback]
 
-### Project State
-- PROJECT_STATE.md: [updated YYYY-MM-DD / NOT UPDATED — reason]
+**Delegated to EM agent:**
+- EM will check each issue for UI/UX work
+- Design-Planner invoked before Explorer if UI work detected
+- Full workflow: Design → Explore → Plan → Approve → Execute → Review → Deploy
 
-### Completed This Sprint
+**Tracking:**
+- Sprint file updated with checkpoints
+- Linear syncs via linear-sync agent (non-blocking)
+- Roadmap.md updated as work progresses
 
-**Read review tracking from each spec file before outputting this section:**
-
-For each issue in sprint:
-1. Read `docs/technical-specs/QUO-##.md`
-2. Find "Review Tracking" section
-3. Check for Design Review status (if UI work)
-4. Check for Code Review status
-5. Count total rounds for each review type
-
-| Issue | Title | Design Review | Code Review | Status |
-|-------|-------|---------------|-------------|--------|
-| QUO-## | [Title] | ✅ Approved ([N] rounds) | ✅ Approved ([N] rounds) | ✅ Complete |
-| QUO-## | [Title] | ⚠️ N/A (non-UI) | ✅ Approved ([N] rounds) | ✅ Complete |
-
-**Review Summary:**
-- Total issues: [X]
-- Design reviews: [Y] completed, [Z] total rounds
-- Code reviews: [X] completed, [N] total rounds
-- Issues reviewed: [X]/[X] (100%)
-
-**If any issues NOT reviewed (missing Review Tracking section):**
-```
-⚠️ Issues deployed without review:
-- QUO-##: [Title] - NOT REVIEWED
-
-This violates the mandatory review gate. Recommend retroactive review before production.
+**EM is now coordinating the sprint...**
 ```
 
-### Cost Tracking (This Sprint)
-
-**Gemini 3 Pro (Design Planner + Design Reviewer):**
-- Estimated: $X.XX
-  - Input: ~XXk tokens @ $X.XX per 1M tokens
-  - Output: ~XXk tokens @ $X.XX per 1M tokens
-- Note: Design costs only apply to issues with UI/UX work
-
-**OpenAI Codex (if run):**
-- Cost: $X.XX (gpt-4o-mini)
-  - Input: ~XXk tokens @ $X.XX per 1M tokens
-  - Output: ~XXk tokens @ $X.XX per 1M tokens
-- Status: [Not run yet / Completed / Skipped]
-
-**Total This Sprint:** $X.XX
-
-### Acceptance Criteria Report
-
-For each completed issue, verify all acceptance criteria:
-
-| Criteria | Status | Verification |
-|----------|--------|--------------|
-| [Criterion 1] | ✅ | [How verified] |
-| [Criterion 2] | ⚠️ | [Partial - what's missing] |
-
-**Gap types to flag:**
-- ⚠️ Criteria not fully met (e.g., pre-existing issues, partial implementation)
-- ⚠️ Requires manual testing (can't be verified via code/build)
-- ⚠️ Ambiguous criteria (needs clarification)
-
-**Recommendations:** (if any gaps)
-- [What to do: fix now / track as separate issue / needs User verification]
-
-### What's Next
-- [Next sprint focus / priority]
-
-### What You Should Do Next
-
-1. **Test on staging:** [staging URL]
-
-   Test each completed issue:
-   - QUO-##: [Specific test instructions]
-   - QUO-##: [Specific test instructions]
-
-2. **Optional: Run Codex Peer Review**
-
-   All issues have been reviewed by the Reviewer agent ([X] total code review rounds this sprint).
-
-   **Before production deployment, you can request an AI peer review:**
-
-   **Option A - Automated Codex Review (~$0.01-0.50):**
-   - Tell me: "Run Codex peer review" or "Option A"
-   - I'll generate diff: `docs/diffs/sprint-{NUMBER}-diff.txt`
-   - Run OpenAI analysis via `~/.claude/scripts/codex-review.sh`
-   - Reviews: security vulnerabilities, bugs, code quality
-   - Cost: ~$0.01-0.50 with gpt-4o-mini (depends on diff size)
-   - Time: ~30 seconds
-
-   **Option B - Manual Review (Free):**
-   - I'll generate diff file on your Desktop
-   - Open in VS Code
-   - Use Copilot Chat: "Review this code for security and quality issues"
-   - Apply your own judgment and expertise
-   - Time: 10-20 minutes
-
-   **Option C - Skip:**
-   - Proceed directly to production
-   - Reviewer agent approval is sufficient for most changes
-
-   **When to use Codex peer review:**
-   - ✓ Complex feature launches (multi-file, architectural changes)
-   - ✓ Infrastructure changes (database, auth, payments, email)
-   - ✓ High-risk changes (data mutations, user-facing critical paths)
-   - ✓ First time implementing a pattern (new to codebase)
-   - ✓ Security-sensitive code (authentication, authorization, data access)
-
-   **When to skip:**
-   - Simple bug fixes (1-2 file changes)
-   - UI-only changes (styling, text updates)
-   - Low-risk iterations (minor tweaks)
-   - Changes already manually reviewed by human
-
-3. **After testing (and optional peer review):**
-   - If issues found: Report them and I'll iterate
-   - If all good: Tell me "Deploy to production" or "Close the sprint"
-
-### Next Issues In Line
-- [Issue IDs / titles]
-
-### Next Steps
-- [Action] — Owner: Roy/Claude
-
-### Linear Sync Issues (if any)
-⚠️ Linear was unavailable during this sprint. Pending updates:
-- [Issue]: [what changed - status, created, etc.]
-
-Please update Linear manually or ask User to repair integration.
-
-### Before Closing Sprint
-Run `/sync-roadmap` to reconcile any Linear changes made during the sprint.
-```
+When EM completes (or needs input):
+- EM posts updates directly to User
+- Sprint command can be run again to resume if interrupted
 
 ---
 
-## After Sprint: Iteration Phase
-
-After initial implementation, users typically test and find bugs. Use `/iterate` to:
-- Maintain protocol during bug-fix loops
-- Track all reported issues in the sprint file
-- Keep context via external memory (sprint file survives context compaction)
-
-The sprint isn't truly done until iteration completes and user approves for production.
-
----
-
-**Start now. Query Linear for Priority 1 task and begin with spec check.**
+**Start now. Read CLAUDE.md and begin workflow.**
