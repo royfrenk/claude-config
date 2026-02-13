@@ -8,10 +8,14 @@
 
 | You're Building | Use This Skill |
 |-----------------|----------------|
-| Landing page, marketing site, pricing page | `/design` (will auto-select marketing) |
-| Admin panel, SaaS dashboard, CRUD interface | `/design` (will auto-select applications) |
-| Analytics dashboard, data viz, KPIs | `/design` (will auto-select dashboards) |
+| Landing page, marketing site, pricing page (new or redesign) | `/design` (will auto-select marketing) |
+| Admin panel, SaaS dashboard, CRUD interface (new or redesign) | `/design` (will auto-select applications) |
+| Analytics dashboard, data viz, KPIs (new or redesign) | `/design` (will auto-select dashboards) |
+| Editing existing UI (buttons, modals, layouts) | `/design` (will auto-select based on context) |
+| Style/layout changes to existing pages | `/design` (will auto-select based on context) |
 | Unsure / mixed context | `/design` (will ask you to choose) |
+
+**Note:** Use `/design` for ANY UI work - whether creating new features or changing existing ones.
 
 ---
 
@@ -45,6 +49,8 @@
 Before submitting frontend work:
 - [ ] All interactive elements have focus states
 - [ ] Touch targets minimum 44x44px (mobile) / 36x36px (desktop)
+- [ ] All links and CTAs point to existing features (no placeholder "#" or "TODO" links)
+- [ ] External links (social media, help docs) use actual URLs provided by User
 - [ ] Empty state designed
 - [ ] Loading state designed
 - [ ] Error state designed

@@ -60,15 +60,13 @@ You're **optional** for:
 
 1. **Load the design spec first:**
    - Read `docs/design-specs/{ISSUE_ID}/design-spec.md`
-   - View mockups at `docs/design-specs/{ISSUE_ID}/mockups/*.png`
 
 2. **Compare implementation to design spec:**
    - **Phase A (Code Review):** Verify component specs match (colors, spacing, typography, states)
-   - **Phase B (Screenshot Review):** Compare staging screenshots to mockups
-     - Desktop: Does staging screenshot match `desktop.png`?
-     - Tablet: Does staging screenshot match `tablet.png`?
-     - Mobile: Does staging screenshot match `mobile.png`?
-   - **Tolerance:** Visual match within ~10px tolerance is acceptable
+   - **Phase B (Screenshot Review):** Compare staging screenshots to design spec descriptions
+     - Verify visual layout matches described structure
+     - Check responsive behavior at breakpoints
+     - **Tolerance:** Visual approximation of design spec is acceptable
 
 3. **Report on design spec compliance:**
    ```markdown
@@ -76,26 +74,16 @@ You're **optional** for:
 
    **Design Spec:** `docs/design-specs/{ISSUE_ID}/design-spec.md`
 
-   **Desktop (1280px):**
-   - Mockup: `desktop.png`
-   - Staging: `staging-desktop.png`
-   - Match: [✅ / ⚠️ Button placement off by 15px / ❌ Layout completely different]
-
-   **Tablet (768px):**
-   - Mockup: `tablet.png`
-   - Staging: `staging-tablet.png`
-   - Match: [✅ / ⚠️ / ❌]
-
-   **Mobile (375px):**
-   - Mockup: `mobile.png`
-   - Staging: `staging-mobile.png`
-   - Match: [✅ / ⚠️ / ❌]
-
    **Component Specs:**
    - Colors: [✅ Match design tokens / ❌ Wrong accent color]
    - Spacing: [✅ Match design spec / ⚠️ Card padding 20px instead of 24px]
    - Typography: [✅ Match design spec / ❌ Wrong font size on titles]
    - States: [✅ All states implemented / ❌ Missing loading state]
+
+   **Visual Layout (Screenshots):**
+   - Desktop (1280px): [✅ Matches design spec structure / ⚠️ Minor layout differences]
+   - Tablet (768px): [✅ / ⚠️ / ❌]
+   - Mobile (375px): [✅ / ⚠️ / ❌]
    ```
 
 **If no design spec exists:**
@@ -271,6 +259,61 @@ Waiting for element list before proceeding.
 - Hover state too slow (> 150ms) or too fast (< 100ms)
 - Focus ring invisible or same color as background
 - Disabled state still shows hover effects
+
+---
+
+#### Phase A5: Link Validation
+
+**Check that all links and CTAs point to valid targets:**
+
+| Link Type | Validation |
+|-----------|------------|
+| **Internal navigation** | Verify route exists in codebase (check routes/, server.js) |
+| **CTA buttons** | Verify action handler exists (auth route, form submission, etc.) |
+| **External links** | Verify URL is not placeholder (no "TODO", "example.com", "#") |
+| **Social media** | Verify actual URLs provided (not generic placeholder icons) |
+
+**How to check:**
+```bash
+# Check for route definitions
+grep -r "app.get('/pricing" routes/ server.js
+grep -r "router.get('/about" routes/
+
+# Check for auth routes
+grep -r "auth/google/login" routes/ server.js
+
+# Read HTML/templates to find href values
+grep -r 'href="#"' views/
+grep -r 'href="TODO"' views/
+grep -r 'href="example.com"' views/
+```
+
+**Report format:**
+
+```markdown
+### Link Validation: [✅ / ⚠️ / ❌]
+
+**Internal Links:**
+- Navigation "Pricing" → [✅ Route exists at /pricing / ❌ Route not found - remove or implement]
+- Navigation "About" → [✅ / ❌]
+
+**CTAs:**
+- "Start Free Trial" → [✅ Points to /auth/google/login / ❌ No auth route found]
+- "Watch Demo" → [❌ Points to "#" placeholder - remove or add real URL]
+
+**External Links:**
+- Twitter icon → [✅ Points to https://twitter.com/... / ❌ Placeholder "#" or missing href]
+- LinkedIn icon → [✅ / ❌]
+
+**Critical Issues:**
+- [File:line] - Link to /pricing page but route doesn't exist
+- [File:line] - CTA "Watch Demo" points to placeholder "#"
+```
+
+**Severity:**
+- Missing route for navigation link: High (⚠️ Request changes)
+- CTA points to placeholder: High (⚠️ Request changes)
+- External link is placeholder: Medium (⚠️ Request changes)
 
 ---
 

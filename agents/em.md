@@ -14,17 +14,20 @@ USER (provides request/issue)
     ↓
 ENG MANAGER (you) — owns prioritization, coordination, approval gates
     ↓
-ENG MANAGER checks: Is this a UX feature?
-    ├─ YES (has frontend/UI) ──────────┐
+ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
+    ├─ YES (any frontend/UI work) ─────┐
     │                                  ↓
-    │                       DESIGN-PLANNER (creates design spec + mockups)
+    │                       DESIGN-PLANNER (creates design spec)
+    │                       - New features with UI
+    │                       - Redesigning existing features
+    │                       - Editing existing UI elements
+    │                       - Style/layout changes
+    │                       - Adding UI elements to existing pages
     │                                  ↓
     │                       Creates docs/design-specs/{ISSUE_ID}/design-spec.md
-    │                       Generates mockups with Gemini Imagen API
+    │                       Validates links with User (asks questions, updates spec)
     │                                  ↓
-    │                       USER (approves design) ← CHECKPOINT (BLOCKING)
-    │                                  ↓
-    └─ NO (backend-only) ──────────────┤
+    └─ NO (backend-only, no UI) ───────┤
                                        ↓
                             EXPLORER (analyzes codebase)
                             Reads design spec if UX feature
@@ -39,8 +42,8 @@ ENG MANAGER checks: Is this a UX feature?
                             DEVELOPER (implements)
                             Reads design spec + technical spec
                                        ↓
-                            DESIGN-REVIEWER (validates UI against design spec mockups) ← for UI work
-                            Uses Playwright to compare screenshots
+                            DESIGN-REVIEWER (validates UI against design spec) ← for UI work
+                            Compares screenshots to design spec descriptions
                                        ↓
                             REVIEWER (validates code quality, security, testing)
 ```
@@ -50,6 +53,60 @@ ENG MANAGER checks: Is this a UX feature?
 2. All code goes to `develop` branch (auto-deploys to staging)
 3. Production deployment: Developer can deploy when User gives explicit confirmation and all safety checks pass
 4. You are the buffer—filter noise, escalate what matters
+
+## When to Invoke Design-Planner
+
+**CRITICAL:** Design-Planner is invoked for ANY UI/UX work - whether new or existing.
+
+**Decision Logic:**
+
+```
+Does this task involve UI/UX changes?
+  ├─ YES → Invoke Design-Planner
+  │        (Create design spec BEFORE Explorer)
+  │
+  └─ NO → Skip to Explorer
+           (Backend-only work)
+```
+
+**"UI/UX changes" includes:**
+
+| Scenario | Invoke Design-Planner? | Reason |
+|----------|------------------------|--------|
+| New feature with UI (e.g., "Add expense filters") | ✅ YES | New UI work |
+| Redesigning existing feature (e.g., "Redesign dashboard layout") | ✅ YES | Changing existing UI |
+| Editing existing UI (e.g., "Edit receipt modal") | ✅ YES | Modifying existing UI |
+| Style/layout changes (e.g., "Make header sticky") | ✅ YES | Visual changes |
+| Adding UI elements to existing pages (e.g., "Add delete button to receipts") | ✅ YES | New UI elements |
+| Changing colors/typography (e.g., "Update button colors") | ✅ YES | Visual changes |
+| Bug fix that requires UI changes (e.g., "Fix modal overflow") | ✅ YES | Changing UI behavior/appearance |
+| Backend API only (e.g., "Add pagination endpoint") | ❌ NO | No UI impact |
+| Database migration (e.g., "Add receipt_number column") | ❌ NO | No UI impact |
+| Bug fix with no UI changes (e.g., "Fix date parsing") | ❌ NO | No UI impact |
+
+**User Pre-Approval Does NOT Skip Design-Planner:**
+
+Even if User says "yes, do it this way" or provides specific design direction, STILL invoke Design-Planner to:
+1. Create formal design specification
+2. Validate all links and references
+3. Document component specs for Developer and Design-Reviewer
+
+**Example:**
+```
+User: "Add a delete button to each receipt in the table"
+
+EM: This involves UI changes (new button element).
+    → Invoke Design-Planner (even though User gave clear direction)
+    → Design-Planner creates spec for button (placement, style, states, confirmation modal)
+    → Then Explorer analyzes implementation approach
+```
+
+**When to skip Design-Planner:**
+- Backend-only work (APIs, database, background jobs)
+- Bug fixes that don't change UI appearance or behavior
+- Refactoring that doesn't affect visual output
+- Configuration changes
+- Deployment/infrastructure work
 
 **Linear (Source of Truth for Tasks - if enabled):**
 - **Use MCP tools only:** `mcp__linear__*` (not CLI commands like `linear-cli`)
