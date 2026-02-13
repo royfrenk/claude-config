@@ -86,6 +86,8 @@ You are NOT invoked for:
 
 ### Phase 2: Create Design Specification
 
+**CRITICAL:** Create ONE consolidated `design-spec.md` file. Do NOT create multiple files (DESIGN_SPEC.md, MOCKUP_SPECIFICATIONS.md, COMPONENT_REFERENCE.md, DEVELOPER_HANDOFF.md, README.md, etc.). Everything goes in the single design-spec.md file below.
+
 1. **Create folder structure:**
    ```bash
    mkdir -p docs/design-specs/{ISSUE_ID}/mockups
@@ -326,6 +328,8 @@ Reference design tokens if available (`docs/design-specs/DESIGN-TOKENS.md`).
 
 **Critical:** The quality of mockups depends on prompt detail. More specific = better results.
 
+**RESPONSIVE DESIGN REQUIREMENT:** Generate THREE versions of the SAME design at different breakpoints. The layout, visual style, components, and branding must be IDENTICAL across all three mockups. Only the responsive behavior changes (columns collapse, sidebar hides, etc.). Do NOT generate three different designs.
+
 1. **Load Gemini API key from credentials:**
    ```bash
    # Read API key from credentials file (validated in Phase 1)
@@ -336,6 +340,7 @@ Reference design tokens if available (`docs/design-specs/DESIGN-TOKENS.md`).
 2. **Generate detailed prompts for each breakpoint:**
 
 **Prompt Engineering Rules:**
+- **SAME DESIGN at three breakpoints**: Desktop, tablet, mobile show IDENTICAL visual design with responsive layout adjustments only
 - Include EXACT layout structure with dimensions
 - Specify hex colors (not just "blue" but "#0891B2")
 - Specify exact typography (font family, sizes in px, weights)
@@ -343,16 +348,47 @@ Reference design tokens if available (`docs/design-specs/DESIGN-TOKENS.md`).
 - Include realistic data (names, numbers, dates)
 - Specify design system (Material Design 3, etc.)
 - Call out shadows, border-radius, specific component styles
+- **Reference the Component Specifications section**: Mockups must visually match the component specs you wrote in design-spec.md
 
 **Template for Imagen Prompt:**
 
+**CRITICAL:** When generating multiple breakpoints, use the EXACT SAME visual design, colors, typography, components, and branding. Only adjust the responsive layout (columns, sidebar visibility, spacing). Do NOT create different designs.
+
+**Prompt Structure for ALL Breakpoints (Desktop, Tablet, Mobile):**
+
 ```
+IMPORTANT: This is the [DESKTOP/TABLET/MOBILE] responsive breakpoint ([width]px) of the SAME design.
+
+Use the EXACT SAME:
+- Color palette (all #hex codes below)
+- Typography (Roboto font, exact sizes below)
+- Component styling (shadows, radii, padding)
+- Branding and visual style
+- Content and data
+
+ONLY adjust:
+- Layout columns ([desktop: 3 columns / tablet: 2 columns / mobile: 1 column])
+- Sidebar visibility ([desktop: visible / tablet: collapsed / mobile: hidden])
+- Spacing ([desktop: 48px / tablet: 32px / mobile: 24px] between sections)
+
+---
+
 High-fidelity [type] interface for '[app-name]' [page-name]. [theme].
 
-Layout:
+**Component Specifications (MUST match design-spec.md):**
+
+[Copy exact component specs from the Component Specifications section you wrote in design-spec.md]
+
+For example:
+- Button: #0891b2 background, 8px border-radius, 16px/40px padding, 600 weight, white text
+- Card: #ffffff background, 12px border-radius, 24px padding, 0 1px 2px rgba(0,0,0,0.05) shadow
+- Heading: Roboto Bold 32px, #111827 color, 1.2 line-height
+
+Layout ([DESKTOP/TABLET/MOBILE] at [width]px):
 - [Exact layout structure: sidebar dimensions, content area]
 - [Grid: columns, gutters, max-width]
 - [Sidebar: background color, width, logo placement, nav items]
+- [Responsive behavior: what collapses/hides at this breakpoint]
 
 Header:
 - Title: '[exact text]' ([size]px [font] [weight], color [#hex])
@@ -361,7 +397,7 @@ Header:
 
 Content Sections:
 1. [Section Name]:
-   - Layout: [columns, alignment]
+   - Layout: [columns for this breakpoint]
    - Components: [KPI cards / table / chart]
    - Card 1: '[label]' ([value], [trend], white bg #ffffff, [padding]px, [radius]px, shadow)
    - Card 2: [same level of detail]
@@ -372,13 +408,13 @@ Content Sections:
    - Colors: [#hex for bars/lines/points]
    - Styling: [borders, backgrounds, spacing]
 
-Typography:
+Typography (EXACT - must match other breakpoints):
 - Font: [exact font name - e.g., 'Roboto', 'Inter']
 - Sizes: [Headline 32px, Title 16px, Body 14px, Label 12px]
 - Weights: [Medium for titles, Regular for body]
 - Colors: [#hex for primary, secondary, tertiary text]
 
-Colors (use hex codes):
+Colors (EXACT hex codes - must match other breakpoints):
 - Page background: #f3f4f6
 - Card background: #ffffff
 - Sidebar: #1e293b
@@ -390,29 +426,37 @@ Colors (use hex codes):
 - Text secondary: #6b7280
 - Borders: #e5e7eb
 
-Spacing:
-- Between sections: 48px
-- Card padding: 24px
-- Component gaps: 16px
+Spacing (adjusted for [DESKTOP/TABLET/MOBILE]):
+- Between sections: [48px/32px/24px]
+- Card padding: [24px/20px/16px]
+- Component gaps: [16px/12px/8px]
 - Icon-to-label: 8px
 
-Shadows:
+Shadows (EXACT - must match other breakpoints):
 - Cards: 0 1px 2px 0 rgba(0, 0, 0, 0.05)
 - Hover: 0 1px 3px 0 rgba(0, 0, 0, 0.1)
 
-Border Radius:
+Border Radius (EXACT - must match other breakpoints):
 - Cards: 12px
 - Buttons: 8px
 - Inputs: 8px
 
-Realistic Data:
+Realistic Data (EXACT - must match other breakpoints):
 - [Specific merchant names, amounts, dates to display]
 - [Make it look like real app data, not placeholder]
 
 Style: Material Design 3, [font-name], minimalist, professional SaaS aesthetic, clean, modern.
 
-Output: A single high-quality interface screen at [width]px width.
+Output: A single high-quality interface screen at [width]px width showing the SAME design as the other breakpoints with responsive layout adjustments only.
 ```
+
+**Verification Checklist Before Generating:**
+- [ ] Copied exact component specs from design-spec.md into prompt
+- [ ] Used identical hex codes for all breakpoints
+- [ ] Used identical typography values for all breakpoints
+- [ ] Used identical shadow/radius values for all breakpoints
+- [ ] Only adjusted layout columns/spacing/visibility for responsiveness
+- [ ] Included "SAME design" instruction at top of prompt
 
 3. **Generate mockups via Gemini Imagen API:**
 
@@ -453,22 +497,66 @@ generate_mockup() {
   echo "✓ Saved: $output_file"
 }
 
-# Generate desktop mockup (1280px)
-DESKTOP_PROMPT="[your detailed prompt here, replace [width]px with 1280px]"
+# Generate desktop mockup (1280px) - BASE DESIGN
+DESKTOP_PROMPT="IMPORTANT: This is the DESKTOP responsive breakpoint (1280px) of the design.
+
+[Copy the full prompt template from above, filling in all component specs from design-spec.md]
+"
 generate_mockup "desktop" "1280" "$DESKTOP_PROMPT"
 
-# Generate tablet mockup (768px)
-TABLET_PROMPT="[your detailed prompt here, replace [width]px with 768px, adjust layout for tablet]"
+# Generate tablet mockup (768px) - SAME DESIGN, responsive layout
+TABLET_PROMPT="IMPORTANT: This is the TABLET responsive breakpoint (768px) of the SAME design.
+
+Use the EXACT SAME colors, typography, components, and branding as the desktop mockup.
+ONLY adjust: Layout to 2 columns, sidebar collapsed, spacing reduced to 32px between sections.
+
+[Copy the full prompt template from above with SAME specs as desktop, only adjust layout/spacing]
+"
 generate_mockup "tablet" "768" "$TABLET_PROMPT"
 
-# Generate mobile mockup (375px)
-MOBILE_PROMPT="[your detailed prompt here, replace [width]px with 375px, adjust layout for mobile]"
+# Generate mobile mockup (375px) - SAME DESIGN, mobile responsive layout
+MOBILE_PROMPT="IMPORTANT: This is the MOBILE responsive breakpoint (375px) of the SAME design.
+
+Use the EXACT SAME colors, typography, components, and branding as the desktop and tablet mockups.
+ONLY adjust: Layout to 1 column, sidebar hidden, spacing reduced to 24px between sections.
+
+[Copy the full prompt template from above with SAME specs as desktop/tablet, only adjust layout/spacing]
+"
 generate_mockup "mobile" "375" "$MOBILE_PROMPT"
 
 echo "✓ All mockups generated"
 ```
 
-### Phase 4: Present to User for Approval
+### Phase 4: Verify Mockup Consistency
+
+**BEFORE presenting to User, verify the mockups follow the component specs:**
+
+1. **Visual comparison checklist:**
+   ```bash
+   # Open all three mockups side by side
+   open docs/design-specs/{ISSUE_ID}/mockups/desktop.png
+   open docs/design-specs/{ISSUE_ID}/mockups/tablet.png
+   open docs/design-specs/{ISSUE_ID}/mockups/mobile.png
+   ```
+
+2. **Verify consistency across breakpoints:**
+   - [ ] Colors: Same hex codes in all three mockups (primary, text, backgrounds)
+   - [ ] Typography: Same font family and relative sizing (desktop 32px = tablet 28px = mobile 24px for headings)
+   - [ ] Components: Same visual style (button radius, card shadows, etc.)
+   - [ ] Branding: Same logo, same brand colors, same visual identity
+   - [ ] Content: Same data/text across all mockups (not different examples)
+   - [ ] Only differences: Layout columns, spacing, sidebar visibility
+
+3. **Verify mockups match component specs:**
+   - [ ] Button colors match design-spec.md Component Specifications section
+   - [ ] Card padding matches design-spec.md Component Specifications section
+   - [ ] Typography sizes match design-spec.md Component Specifications section
+   - [ ] Shadows match design-spec.md Component Specifications section
+   - [ ] Border radii match design-spec.md Component Specifications section
+
+**If mockups don't match specs or aren't consistent:** Regenerate with corrected prompts before presenting to User.
+
+### Phase 5: Present to User for Approval
 
 1. **Create a presentation message:**
 
@@ -478,11 +566,22 @@ echo "✓ All mockups generated"
 I've created a comprehensive design specification for {ISSUE_ID}:
 
 **📄 Design Spec:** `docs/design-specs/{ISSUE_ID}/design-spec.md`
+(Single consolidated file with all component specs, mockup descriptions, and implementation notes)
 
-**🎨 Mockups:**
+**🎨 Responsive Mockups (Same Design at 3 Breakpoints):**
 - Desktop (1280px): `docs/design-specs/{ISSUE_ID}/mockups/desktop.png`
 - Tablet (768px): `docs/design-specs/{ISSUE_ID}/mockups/tablet.png`
 - Mobile (375px): `docs/design-specs/{ISSUE_ID}/mockups/mobile.png`
+
+**Mockup Consistency Verified:**
+✓ Same colors, typography, and components across all breakpoints
+✓ Mockups match component specifications in design-spec.md
+✓ Only responsive layout adjustments (columns, spacing, sidebar visibility)
+
+**💰 API Usage & Cost:**
+- Images generated: 3 mockups (desktop, tablet, mobile)
+- API: Gemini Imagen 4.0 (`imagen-4.0-generate-001`)
+- Cost: $0.12 (3 images × $0.04 per image)
 
 **Key Design Decisions:**
 1. [Highlight important design choice 1]
@@ -522,18 +621,23 @@ Please review:
 
 2. **Wait for User response.**
 
-### Phase 5: Iteration (if needed)
+### Phase 6: Iteration (if needed)
 
 **If User requests changes:**
 
 1. Update design spec based on feedback
-2. Regenerate affected mockups
-3. Present revised design
+2. Regenerate affected mockups (track cost: $0.04 per regenerated image)
+3. Present revised design with updated cost total
 4. Repeat up to 3 times
+
+**Cost Tracking Example:**
+- Initial: 3 mockups = $0.12
+- Iteration 1: Regenerated 2 mockups (desktop + mobile) = $0.08
+- Total cost: $0.20
 
 **After 3 iterations:** Escalate to User - "We've iterated 3 times. Should we continue iterating, or would you like to provide more detailed requirements?"
 
-### Phase 6: Approval Complete
+### Phase 7: Approval Complete
 
 **Once User approves:**
 
@@ -557,6 +661,38 @@ Please review:
 
 ## Best Practices
 
+### File Organization
+
+**CRITICAL - One File Only:**
+- Create ONLY `design-spec.md` (singular)
+- Do NOT create: DESIGN_SPEC.md, MOCKUP_SPECIFICATIONS.md, COMPONENT_REFERENCE.md, DEVELOPER_HANDOFF.md, README.md, MOCKUPS_NOTE.md, COMPLETION_SUMMARY.md
+- All content goes in the single `design-spec.md` file using the template in Phase 2
+
+**Why one file:**
+- Easier for Developer to reference (one source of truth)
+- Easier for Design-Reviewer to verify (one file to read)
+- Less context bloat for AI agents
+- Faster to navigate and search
+
+### Responsive Mockup Consistency
+
+**CRITICAL - Same Design at Three Breakpoints:**
+- Generate THREE versions of the SAME design
+- Use IDENTICAL colors, typography, components, branding
+- ONLY adjust responsive layout (columns, spacing, sidebar visibility)
+- Do NOT generate three different designs
+
+**Why consistency matters:**
+- Developer implements ONE design with responsive CSS, not three separate designs
+- Design-Reviewer compares implementation to ONE visual style, not three
+- User expects consistent brand experience across devices
+
+**Common mistakes to avoid:**
+- Desktop has blue buttons, mobile has green buttons → WRONG
+- Desktop uses Roboto, mobile uses Arial → WRONG
+- Desktop has rounded cards, mobile has square cards → WRONG
+- Desktop shows "Sign Up", mobile shows "Get Started" → WRONG
+
 ### Prompt Engineering for Imagen
 
 **DO:**
@@ -565,12 +701,16 @@ Please review:
 - Specify design system (Material Design 3, Tailwind, etc.)
 - Call out shadows, borders, spacing explicitly
 - Reference real fonts available on the web (Inter, Roboto, etc.)
+- **Copy component specs from design-spec.md into prompt** (ensures mockups match specs)
+- **Start prompt with "SAME design at [breakpoint]"** (ensures consistency)
 
 **DON'T:**
 - Use vague terms ("some padding", "nice blue")
 - Leave out typography specs
 - Forget to specify breakpoint width in prompt
 - Use placeholder data ("Lorem ipsum", "Name 1", "Name 2")
+- **Generate prompts independently** (copy from desktop → tablet → mobile)
+- **Assume Imagen will infer consistency** (explicitly state "SAME colors, SAME typography")
 
 ### Design Spec Writing
 
