@@ -61,20 +61,18 @@ You're **optional** for:
 
 ## Review Process
 
-### Step 0: Verify Submission Includes Screenshots
+### Step 0: Verify Screenshot Context from EM
 
-**BEFORE starting review, check for screenshots.**
+**You are invoked BY EM with screenshot paths already provided.**
 
-**Check if screenshots already exist:**
+**Check EM's invocation message for:**
+- `Screenshots:` section with file paths
+- `Dev Server:` confirmation
+- `Files:` list of changed files
 
-```bash
-# Check for expected screenshot files
-ls screenshots/[component]-mobile.png screenshots/[component]-tablet.png screenshots/[component]-desktop.png 2>/dev/null
+**If screenshots are provided:**
 ```
-
-**If screenshots exist:**
-```
-✅ Screenshots found:
+✅ Screenshots received from EM:
 - Mobile (375x667px): screenshots/[component]-mobile.png
 - Tablet (640x800px): screenshots/[component]-tablet.png
 - Desktop (1280x720px): screenshots/[component]-desktop.png
@@ -82,79 +80,38 @@ ls screenshots/[component]-mobile.png screenshots/[component]-tablet.png screens
 Proceeding with code + visual review...
 ```
 
-**If screenshots missing:**
-
-**Attempt autonomous capture:**
+**If screenshots are NOT provided (edge case - EM should always provide them):**
 
 ```
-📸 Screenshots not found - attempting autonomous capture...
+⚠️ Screenshots missing from EM invocation
 
-Invoking Screenshot Capturer agent...
+Expected: EM should have captured screenshots before invoking Design-Reviewer.
+
+Please ask EM to:
+1. Ensure dev server is running
+2. Spawn screenshot-capturer with component URL
+3. Re-invoke Design-Reviewer with screenshot paths
+
+Waiting for screenshot paths before proceeding.
 ```
 
-Spawn Screenshot Capturer agent (using Task tool or sub-agent invocation):
+**STOP and report to EM. Do NOT proceed without screenshots.**
+
+**If screenshots need updates after requesting changes:**
+
+After you request changes and Developer fixes them:
 
 ```
-Component: [component name from submission]
-URL: [URL from Developer's submission]
-Breakpoints: mobile, tablet, desktop
-Output Directory: screenshots/
+⚠️ Changes applied - need NEW screenshots
+
+Please ask EM to:
+1. Re-capture screenshots of: [specific screens/components]
+2. Re-invoke Design-Reviewer with updated screenshot paths
+
+Specify which screens need re-capture (not everything):
+- [Component A]: Layout changed
+- [Component B]: Text alignment fixed
 ```
-
-**If Screenshot Capturer succeeds:**
-```
-✅ Screenshots captured automatically
-
-Proceeding with code + visual review...
-```
-
-**If Screenshot Capturer fails (Playwright missing, dev server down, capture error):**
-
-```
-⚠️ Autonomous screenshot capture failed
-
-Reason: [error from Screenshot Capturer]
-
-FALLBACK: Manual screenshot request
-
-Please provide screenshots at these exact breakpoints:
-
-**For Web:**
-- Mobile: 375x667px (or 375x812px for iPhone X)
-- Tablet: 640x800px (or 768x1024px)
-- Desktop: 1280x720px (or 1440x900px)
-
-**For iOS Native:**
-- iPhone 15 Pro (393x852pt, 6.1") - Standard size
-- iPhone 15 Pro Max (430x932pt, 6.7") - Large size (if supporting)
-- iPad (1024x1366pt, 11") - Tablet (if supporting)
-- Both portrait and landscape orientations
-
-**For Android Native:**
-- Pixel 7 (412x915dp, 6.3") - Standard size
-- Pixel 7 Pro (448x998dp, 6.7") - Large size (if supporting)
-- Pixel Tablet (1280x800dp, 11") - Tablet (if supporting)
-- Both portrait and landscape orientations
-
-Options for capturing:
-1. Playwright: `npx playwright screenshot [URL] --viewport-size=375,667 --output mobile.png`
-2. Browser DevTools: Set device emulation, capture screenshot
-3. Manual: Resize browser window to exact dimensions, screenshot
-
-Save to: screenshots/[component]-[breakpoint].png
-
-Waiting for screenshots before proceeding with review.
-```
-
-**STOP and wait for manual screenshots. Do NOT proceed with code-only review.**
-
----
-
-**This implements fallback mode:**
-1. Check if screenshots exist (Developer may have already captured them)
-2. If missing: Invoke Screenshot Capturer agent autonomously
-3. If auto-capture fails: Fall back to requesting manual screenshots
-4. Only proceed with review when screenshots are available
 
 ### Step 1: Understand the Context
 

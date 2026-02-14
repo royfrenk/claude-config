@@ -415,58 +415,39 @@ If task involves UI components, layout changes, forms, dashboards, or marketing 
    **Before invoking Design-Reviewer, ensure:**
    - [ ] Dev server is running (e.g., `npm run dev`)
    - [ ] Component/page is accessible at a specific URL/route
-   - [ ] You know the exact URL to provide (e.g., `http://localhost:3000/login`)
+   - [ ] You know the exact URL to provide
 
-   **Screenshot options:**
+   **Screenshot handling:**
+   - EM will handle screenshot capture (not you)
+   - EM spawns screenshot-capturer automatically
+   - You only need to ensure dev server is running and provide the URL
 
-   **Option A: Let Design-Reviewer capture autonomously (Recommended)**
-   - Design-Reviewer will invoke Screenshot Capturer agent automatically
-   - You only need to provide the URL when submitting
-   - Screenshots saved to temporary directory for review
+   **If EM's screenshot capture fails:**
+   - EM will ask you to verify dev server status
+   - EM may request manual screenshots as fallback
+   - Follow EM's instructions for fallback capture
 
-   **Option B: Capture screenshots yourself (Optional)**
-   - Use Playwright: `npx playwright screenshot [URL] --viewport-size=375,667 --output screenshots/[component]-mobile.png`
-   - Save to `screenshots/[component]-[breakpoint].png`
-   - Design-Reviewer will detect existing screenshots and use them
-
-   **Required breakpoints (if capturing manually):**
-   - Mobile: 375x667px
-   - Tablet: 640x800px
-   - Desktop: 1280x720px
-
-   **Why both options exist:**
-   - Option A (autonomous): Faster workflow, less manual work
-   - Option B (manual): Useful if you want to verify screenshots before submission, or if Playwright unavailable
-
-2. **Immediately invoke Design-Reviewer** - no user input required:
+2. **Report completion to EM** (don't invoke Design-Reviewer directly):
    ```
-   Design-Reviewer, please review [component/page name] implementation.
+   EM, implementation complete and ready for design review.
 
-   Context: [marketing / applications / dashboards]
    Issue: {PREFIX}-##
-   Component: [component name]
+   Component: [component/page name]
    URL: [full URL including route, e.g., http://localhost:3000/login]
    Files: [list of modified files]
    Verification: [build/lint/tests all PASS]
 
    Dev Server: ✓ Running at [URL]
-   Screenshots: [Provided in screenshots/ directory OR "Not provided - request auto-capture"]
+
+   Please orchestrate screenshot capture and Design-Reviewer.
    ```
 
-3. **ENTER BLOCKING STATE** - cannot proceed until Design-Reviewer approves:
-   ```
-   DESIGN_APPROVAL_RECEIVED = false
+3. **EM will handle:**
+   - Spawning screenshot-capturer
+   - Invoking Design-Reviewer with screenshot paths
+   - Re-capture if Design-Reviewer requests changes
 
-   while DESIGN_APPROVAL_RECEIVED == false:
-     - Check Linear for Design-Reviewer response
-     - If "✅ Design Review: Approved" → DESIGN_APPROVAL_RECEIVED = true
-     - If "⚠️ Design Review: Changes Requested" → Fix issues, resubmit
-     - If "❌ Design Review: Rejected" → Escalate to Eng Manager
-   ```
-
-4. **After Design-Reviewer approval:**
-   - Post to Linear: "✅ Design review passed. Proceeding to code review."
-   - Continue to step 4B (Code Reviewer)
+4. **ENTER BLOCKING STATE** - wait for Design-Reviewer approval via EM
 
 **4B. CODE REVIEW (all tasks, after Design-Reviewer for UI):**
 
