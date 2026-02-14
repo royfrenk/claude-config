@@ -290,7 +290,12 @@ Not everything needs E2E. Match verification to the criterion:
    - Test the flow yourself (curl, browser, or automated)
    - Only after YOU verify it works → ask user to test
 
-4. **Run automated staging verification** (see `~/.claude/agents/developer.md` Phase 6):
+4. **Run automated deployment readiness checks** (see `~/.claude/agents/developer.md` Phase 5.5):
+   - Backend health, migrations, env vars
+   - Frontend build, health, API connectivity
+   - Auto-retry/fix if issues detected (max 3 attempts)
+
+5. **Run automated staging verification** (see `~/.claude/agents/developer.md` Phase 6):
    - API health checks with curl/vercel curl
    - Response structure validation
    - Log analysis for errors

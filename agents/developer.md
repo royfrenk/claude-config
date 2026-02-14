@@ -798,32 +798,141 @@ Before executing ANY deployment commands, you MUST verify you completed Phase 4:
 - If Linear MCP is unavailable, use gh CLI fallback
 - If both fail, STOP and alert User: "Cannot verify approval - Linear unavailable"
 
-### Phase 5.5: Verify Deployment Succeeded
+### Phase 5.5: Verify Backend and Frontend Ready
 
-After pushing to `develop`, verify the deployment build passes before proceeding.
+After pushing to `develop`, verify BOTH backend and frontend are fully operational before proceeding to user testing.
 
-**If project has deployment check command (from CLAUDE.md):**
-1. Poll deployment status every 20 seconds
-2. Timeout after 5 minutes
-3. If build failed:
-   - Fetch logs using the project's log command
-   - Fix the issue
-   - Push again
-   - Repeat until build passes
-4. Only proceed to Phase 6 after deployment succeeds
+**MANDATORY checks before marking "In Review":**
 
-**If no deployment check command available:**
+#### Step 1: Verify Backend Ready
+
+**Identify backend URL from CLAUDE.md** (check Deployment section for backend staging URL)
+
+1. **Health Endpoint Check:**
+   ```bash
+   # Use project's backend staging URL
+   curl -f [BACKEND_STAGING_URL]/health
+   # Expected: HTTP 200 with {"status": "healthy"} or similar
+   ```
+
+2. **Database Migrations Applied:**
+   ```bash
+   # Check database version endpoint if available
+   curl [BACKEND_STAGING_URL]/api/db/version
+   # Expected: Latest migration version matches codebase
+   # OR: Check deployment logs for "migrations applied successfully"
+   ```
+
+3. **Environment Variables Validated:**
+   ```bash
+   # Test a protected endpoint to verify auth configuration
+   curl [BACKEND_STAGING_URL]/api/config/validate
+   # Expected: All required env vars present and valid format
+   # OR: Check logs for "Configuration validated successfully"
+   ```
+
+**If ANY backend check fails:**
+- Attempt 1-3: Identify issue, apply fix, redeploy
+  - Missing env var → Add via CLI (e.g., `railway variables set KEY=VALUE`)
+  - Migration not applied → Check platform logs, trigger migration manually
+  - Build failure → Fix code, push again
+  - Health endpoint unreachable → Check deployment status, verify service started
+- After 3 attempts: Escalate to Eng Manager with failure report
+
+#### Step 2: Verify Frontend Ready
+
+**Identify frontend from CLAUDE.md** (check Deployment section or Running the Project)
+
+1. **Build Verification:**
+   ```bash
+   # Verify build completed successfully
+   npm run build 2>&1 | tail -20
+   # Expected: "Build completed successfully" or similar, no errors
+   ```
+
+2. **Frontend Health Check:**
+   ```bash
+   # If frontend has staging URL, check it responds
+   curl -f [FRONTEND_STAGING_URL]/
+   # Expected: HTTP 200 with HTML content
+
+   # OR: If local dev server for testing
+   curl -f http://localhost:[PORT]/
+   # Expected: HTTP 200 with HTML content
+   ```
+
+3. **Environment Variables Validated:**
+   ```bash
+   # Check that frontend can reach backend
+   # Inspect build output or dev console for env var errors
+   grep -i "env" [build_output] | grep -i "error\|missing\|undefined"
+   # Expected: No environment variable errors
+   ```
+
+**If ANY frontend check fails:**
+- Attempt 1-3: Identify issue, apply fix, rebuild
+  - Missing env var → Add to `.env.local`, Vercel dashboard, or platform config
+  - Build errors → Fix code issues, missing dependencies
+  - API unreachable → Check API URL configuration (e.g., VITE_API_URL, NEXT_PUBLIC_API_URL)
+  - Deployment failed → Check platform logs, verify deployment completed
+- After 3 attempts: Escalate to Eng Manager with failure report
+
+#### Step 3: Circuit Breaker
+
+**Max 3 retry attempts per component (backend or frontend).**
+
+After 3 failed attempts:
+1. Stop retrying
+2. Generate failure report (see template below)
+3. Escalate to Eng Manager
+4. DO NOT proceed to Phase 6
+
+**Failure Report Template:**
 ```
-⚠️ No deployment status command configured.
-Please verify the staging deployment succeeded before I continue testing.
-Staging URL: [URL from CLAUDE.md]
-Reply "ok" when ready.
-```
-Wait for user confirmation before proceeding to Phase 6.
+## Deployment Readiness FAILED (Attempt 3/3)
 
-**Do not mark task as "deployed to staging" until deployment actually succeeds.**
+**Component:** [Backend | Frontend]
+
+**Failed Check:** [Health endpoint | Database migrations | Env vars | Build]
+
+**Error:** [Exact error message]
+
+**Attempts:**
+1. [What was tried] → [Result]
+2. [What was tried] → [Result]
+3. [What was tried] → [Result]
+
+**Blocker:** [Why it's not resolving]
+
+**Next Steps:** Escalating to Eng Manager for investigation.
+```
+
+#### Step 4: Proceed to Phase 6
+
+**Only after BOTH backend and frontend checks pass:**
+
+1. Log verification success:
+   ```
+   ✅ DEPLOYMENT READINESS VERIFIED
+
+   Backend:
+   - Health endpoint: ✓ Responding
+   - Database migrations: ✓ Applied (or verified via logs)
+   - Environment variables: ✓ Valid
+
+   Frontend:
+   - Build: ✓ Successful
+   - Health check: ✓ Responding
+   - Environment variables: ✓ Valid
+
+   Proceeding to Phase 6 (Automated Staging Verification)...
+   ```
+
+2. Continue to Phase 6 (existing automated verification)
 
 ### Phase 6: Automated Staging Verification
+
+**Prerequisite:** Phase 5.5 passed (backend + frontend ready)
 
 **Purpose:** Verify deployment works correctly BEFORE asking User to test. This prevents wasted time when fixes are deployed but broken.
 
