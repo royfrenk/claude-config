@@ -52,8 +52,10 @@ Developer(s) — implements in waves (parallel when possible)
     ↓  ↓  ↓
 Wave 1: Dev A, Dev B, Dev C (parallel)
     ↓
-Design-Reviewer(s) — reviews UI/UX against design standards (if UI work)
+[For UI work only]
+Design-Reviewer(s) — reviews UI/UX against design standards FIRST
     ↓
+[All work]
 Reviewer(s) — reviews code quality, security, testing
     ↓
 Wave 1 deploys to staging
@@ -696,7 +698,7 @@ project/
 | **Plan-Writer** | Adds implementation plan + dependency analysis | No | No |
 | **Eval-Writer** | Writes quality benchmarks for subjective features | No | No |
 | **Developer** | Implements code, deploys to staging | Yes | No (but can run in parallel with other Developers) |
-| **Design-Reviewer** | Reviews UI implementations against design standards | No | No |
+| **Design-Reviewer** | Reviews UI implementations against design standards (runs BEFORE Code Reviewer for UI work) | No | No |
 | **Reviewer** | Reviews code, approves/blocks deploys | No | Yes (sub-Reviewers for parallel review) |
 
 ---

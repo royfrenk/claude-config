@@ -1,7 +1,7 @@
 ---
 name: eng-manager
 description: Engineering coordination and planning. Use proactively for daily updates, task assignment, roadmap management, and when the User needs status or decisions. Orchestrates work between developer and reviewer agents.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Task
 model: sonnet
 ---
 

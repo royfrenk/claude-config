@@ -234,7 +234,7 @@ This ensures unique sprint numbers even when multiple sprints run in parallel. I
 
 **Now that sprint file exists and issues are selected, delegate everything else to EM:**
 
-Spawn EM agent with Task tool:
+Spawn EM agent (EM has Task tool and will coordinate all subagents):
 
 ```
 Role: Engineering Manager
@@ -248,14 +248,15 @@ Linear Config:
 Instructions:
 1. For each issue in sprint:
    - Check if this involves UI/UX work (lines 57-110 in em.md)
-   - If YES: Invoke Design-Planner before Explorer
+   - If YES: Spawn Design-Planner before Explorer
    - If NO: Skip directly to Explorer
-2. Run Explorer to analyze scope (skip for trivial fixes)
-3. Run Plan-Writer to create implementation plan
+2. Spawn Explorer(s) to analyze scope (skip for trivial fixes)
+   - Can spawn multiple Explorers in parallel for complex issues
+3. Spawn Plan-Writer to create implementation plan
 4. Present plan to User for approval ← CHECKPOINT
 5. Once approved: Execute ALL issues CONTINUOUSLY without stopping:
-   - Coordinate Developer(s) execution
-   - Coordinate Design-Reviewer (if UI work) and Code Reviewer
+   - Spawn Developer(s) for execution (parallel when possible)
+   - Spawn Design-Reviewer (if UI work) and Code Reviewer
    - Deploy each issue to staging immediately after review passes
    - Continue to next issue without pausing
 6. ONLY stop execution when:
