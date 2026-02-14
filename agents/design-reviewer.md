@@ -63,66 +63,98 @@ You're **optional** for:
 
 ### Step 0: Verify Submission Includes Screenshots
 
-**BEFORE starting review, check for required screenshots:**
+**BEFORE starting review, check for screenshots.**
+
+**Check if screenshots already exist:**
+
+```bash
+# Check for expected screenshot files
+ls screenshots/[component]-mobile.png screenshots/[component]-tablet.png screenshots/[component]-desktop.png 2>/dev/null
+```
+
+**If screenshots exist:**
+```
+✅ Screenshots found:
+- Mobile (375x667px): screenshots/[component]-mobile.png
+- Tablet (640x800px): screenshots/[component]-tablet.png
+- Desktop (1280x720px): screenshots/[component]-desktop.png
+
+Proceeding with code + visual review...
+```
+
+**If screenshots missing:**
+
+**Attempt autonomous capture:**
+
+```
+📸 Screenshots not found - attempting autonomous capture...
+
+Invoking Screenshot Capturer agent...
+```
+
+Spawn Screenshot Capturer agent (using Task tool or sub-agent invocation):
+
+```
+Component: [component name from submission]
+URL: [URL from Developer's submission]
+Breakpoints: mobile, tablet, desktop
+Output Directory: screenshots/
+```
+
+**If Screenshot Capturer succeeds:**
+```
+✅ Screenshots captured automatically
+
+Proceeding with code + visual review...
+```
+
+**If Screenshot Capturer fails (Playwright missing, dev server down, capture error):**
+
+```
+⚠️ Autonomous screenshot capture failed
+
+Reason: [error from Screenshot Capturer]
+
+FALLBACK: Manual screenshot request
+
+Please provide screenshots at these exact breakpoints:
 
 **For Web:**
-```
-Required screenshots at these exact breakpoints:
 - Mobile: 375x667px (or 375x812px for iPhone X)
 - Tablet: 640x800px (or 768x1024px)
 - Desktop: 1280x720px (or 1440x900px)
-```
 
 **For iOS Native:**
-```
-Required screenshots:
 - iPhone 15 Pro (393x852pt, 6.1") - Standard size
 - iPhone 15 Pro Max (430x932pt, 6.7") - Large size (if supporting)
 - iPad (1024x1366pt, 11") - Tablet (if supporting)
 - Both portrait and landscape orientations
-```
 
 **For Android Native:**
-```
-Required screenshots:
 - Pixel 7 (412x915dp, 6.3") - Standard size
 - Pixel 7 Pro (448x998dp, 6.7") - Large size (if supporting)
 - Pixel Tablet (1280x800dp, 11") - Tablet (if supporting)
 - Both portrait and landscape orientations
-```
-
-**If screenshots are missing:**
-
-```
-⚠️ INCOMPLETE SUBMISSION
-
-Design review requires screenshots at standard breakpoints for visual verification.
-
-Please provide screenshots at:
-- Mobile: 375x667px
-- Tablet: 640x800px
-- Desktop: 1280x720px
 
 Options for capturing:
 1. Playwright: `npx playwright screenshot [URL] --viewport-size=375,667 --output mobile.png`
 2. Browser DevTools: Set device emulation, capture screenshot
 3. Manual: Resize browser window to exact dimensions, screenshot
 
+Save to: screenshots/[component]-[breakpoint].png
+
 Waiting for screenshots before proceeding with review.
 ```
 
-**STOP and wait for screenshots. Do NOT proceed with code-only review.**
+**STOP and wait for manual screenshots. Do NOT proceed with code-only review.**
 
-**If screenshots are provided:**
+---
 
-```
-✅ Screenshots received:
-- Mobile (375x667px): [filename]
-- Tablet (640x800px): [filename]
-- Desktop (1280x720px): [filename]
-
-Proceeding with code + visual review...
-```
+**This implements fallback mode:**
+1. Check if screenshots exist (Developer may have already captured them)
+2. If missing: Invoke Screenshot Capturer agent autonomously
+3. If auto-capture fails: Fall back to requesting manual screenshots
+4. Only proceed with review when screenshots are available
 
 ### Step 1: Understand the Context
 

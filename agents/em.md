@@ -333,6 +333,11 @@ Task: [title]
 Spec: docs/technical-specs/{PREFIX}-##.md
 Design Context: [marketing / applications / dashboards]
 Design Review Required: yes
+
+**Developer handoff requirements:**
+- Dev server must be running before Design-Reviewer submission
+- Component URL must be provided for screenshot capture
+- Screenshots can be auto-captured by Design-Reviewer (or manually provided)
 ```
 
 This signals to Developer that Design-Reviewer gate is mandatory.

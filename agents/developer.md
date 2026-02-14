@@ -408,62 +408,35 @@ If task involves UI components, layout changes, forms, dashboards, or marketing 
    - SaaS app UI, CRUD, forms → "applications"
    - Analytics, dashboards, KPIs → "dashboards"
 
-1b. **Capture screenshots at required breakpoints:**
+1b. **Prepare for Design-Reviewer submission:**
 
-   **MANDATORY for UI work:** Take screenshots at exact breakpoints before submitting.
+   **MANDATORY for UI work:**
 
-   **Required breakpoints:**
-   - Mobile: 375x667px (iPhone SE) or 375x812px (iPhone X)
-   - Tablet: 640x800px or 768x1024px
-   - Desktop: 1280x720px or 1440x900px
+   **Before invoking Design-Reviewer, ensure:**
+   - [ ] Dev server is running (e.g., `npm run dev`)
+   - [ ] Component/page is accessible at a specific URL/route
+   - [ ] You know the exact URL to provide (e.g., `http://localhost:3000/login`)
 
-   **Option A: Automated (Playwright - Recommended):**
+   **Screenshot options:**
 
-   If project has Playwright installed:
-   ```bash
-   # Start dev server first
-   npm run dev  # or appropriate command
+   **Option A: Let Design-Reviewer capture autonomously (Recommended)**
+   - Design-Reviewer will invoke Screenshot Capturer agent automatically
+   - You only need to provide the URL when submitting
+   - Screenshots saved to temporary directory for review
 
-   # Capture screenshots (adjust URL to your local dev URL)
-   npx playwright screenshot http://localhost:3000/[page] \
-     --viewport-size=375,667 \
-     --output screenshots/[component]-mobile.png
+   **Option B: Capture screenshots yourself (Optional)**
+   - Use Playwright: `npx playwright screenshot [URL] --viewport-size=375,667 --output screenshots/[component]-mobile.png`
+   - Save to `screenshots/[component]-[breakpoint].png`
+   - Design-Reviewer will detect existing screenshots and use them
 
-   npx playwright screenshot http://localhost:3000/[page] \
-     --viewport-size=640,800 \
-     --output screenshots/[component]-tablet.png
+   **Required breakpoints (if capturing manually):**
+   - Mobile: 375x667px
+   - Tablet: 640x800px
+   - Desktop: 1280x720px
 
-   npx playwright screenshot http://localhost:3000/[page] \
-     --viewport-size=1280,720 \
-     --output screenshots/[component]-desktop.png
-   ```
-
-   **Option B: Manual (Browser DevTools):**
-
-   1. Open page in Chrome/Firefox
-   2. Open DevTools (F12)
-   3. Toggle device toolbar (Cmd+Shift+M / Ctrl+Shift+M)
-   4. Set custom dimensions:
-      - Mobile: 375x667
-      - Tablet: 640x800
-      - Desktop: 1280x720
-   5. For each size: Capture screenshot (DevTools menu → Capture screenshot)
-   6. Save to `screenshots/[component]-[breakpoint].png`
-
-   **Option C: Manual (Browser Resize):**
-
-   1. Resize browser window to exact dimensions
-   2. Use screenshot tool (macOS: Cmd+Shift+4, Windows: Snipping Tool)
-   3. Capture viewport area only
-   4. Save to `screenshots/[component]-[breakpoint].png`
-
-   **Screenshot naming convention:**
-   ```
-   screenshots/
-     [component-name]-mobile.png     (375px width)
-     [component-name]-tablet.png     (640px width)
-     [component-name]-desktop.png    (1280px width)
-   ```
+   **Why both options exist:**
+   - Option A (autonomous): Faster workflow, less manual work
+   - Option B (manual): Useful if you want to verify screenshots before submission, or if Playwright unavailable
 
 2. **Immediately invoke Design-Reviewer** - no user input required:
    ```
@@ -471,13 +444,13 @@ If task involves UI components, layout changes, forms, dashboards, or marketing 
 
    Context: [marketing / applications / dashboards]
    Issue: {PREFIX}-##
+   Component: [component name]
+   URL: [full URL including route, e.g., http://localhost:3000/login]
    Files: [list of modified files]
    Verification: [build/lint/tests all PASS]
 
-   Screenshots:
-   - Mobile (375x667px): screenshots/[component]-mobile.png
-   - Tablet (640x800px): screenshots/[component]-tablet.png
-   - Desktop (1280x720px): screenshots/[component]-desktop.png
+   Dev Server: ✓ Running at [URL]
+   Screenshots: [Provided in screenshots/ directory OR "Not provided - request auto-capture"]
    ```
 
 3. **ENTER BLOCKING STATE** - cannot proceed until Design-Reviewer approves:
@@ -1361,6 +1334,12 @@ Before submitting:
 - [ ] Race conditions considered for concurrent operations
 - [ ] File types validated (not just extensions)
 - [ ] Documentation updated (env vars, routes, endpoints)
+
+**Design Review Submission (if UI work):**
+- [ ] Dev server is running and accessible
+- [ ] Component URL identified (for screenshot capture)
+- [ ] Either: Screenshots captured manually in screenshots/ directory
+- [ ] Or: Ready for Design-Reviewer to auto-capture (URL provided)
 
 ## What You Cannot Do
 
