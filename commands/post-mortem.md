@@ -141,6 +141,15 @@ Apply these changes? (yes/no/modify)
   - **Low:** Agent wasted time but self-corrected; minor harness gap
   - **Medium:** Required human intervention to fix; caused incorrect deployment
   - **High:** Caused production issue, data loss, or security vulnerability
+- **Never write learnings to MEMORY.md** -- MEMORY.md is for session-level context (user preferences, project patterns), not for technical knowledge discovered in post-mortems. Route all learnings to proper harness files:
+
+  | Learning Type | Target File | Example |
+  |---------------|-------------|---------|
+  | Platform constraint | New or existing guide in `~/.claude/guides/` | WKWebView quirks -> `guides/capacitor-wkwebview.md` |
+  | API gotcha | `~/.claude/rules/stability.md` (API Misuse table) | `position:fixed` broken in Capacitor |
+  | Testing insight | `~/.claude/rules/testing.md` or `guides/testing-patterns.md` | "Playwright WebKit != WKWebView" |
+  | Process improvement | Relevant agent or command `.md` file | Add review step to `reviewer.md` |
+  | Project-specific config | Project's `CLAUDE.md` or `docs/PROJECT_STATE.md` | Architecture constraints |
 
 ## Integration
 
