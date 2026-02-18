@@ -261,7 +261,7 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 |---------|---------|
 | `/context <project>` | Load project context (project name required) |
 | `/sprint` | Autonomous execution. Suggests Todo issues if no args provided |
-| `/iterate` | Continue iteration after bug reports |
+| `/iterate` | Continue iteration after bug reports. Supports `--model` flag for external AI delegation |
 | `/design` | Invoke design skills with auto context detection |
 | `/review-prd` | PRD review and story extraction |
 | `/create-issue` | Quick issue capture |
@@ -284,8 +284,10 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 **`/iterate`** — Bug fixes after testing
 1. You test on staging, report issues
 2. Developer fixes, tracks in sprint file
-3. Repeat until ready
-4. You push to main (production)
+3. If stuck (3+ failed attempts): auto-suggests external model delegation
+4. Manual override: `/iterate --model gemini` or `/iterate --model codex`
+5. Repeat until ready
+6. You push to main (production)
 
 ---
 
@@ -501,7 +503,8 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── plan-writer.md     # Implementation planning
 │   ├── developer.md       # Code implementation
 │   ├── reviewer.md        # Code review
-│   └── design-reviewer.md # Design/UX review
+│   ├── design-reviewer.md # Design/UX review
+│   └── external-model-delegate.md  # External AI model delegation (Gemini, Codex)
 ├── commands/
 │   ├── context.md         # /context
 │   ├── sprint.md          # /sprint
@@ -522,6 +525,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── design.md                  # Design quick reference (points to skills)
 │   ├── frontend-patterns.md       # Responsive design, breakpoints, Figma
 │   ├── google-auth.md             # Google OAuth setup, tokens, Capacitor
+│   ├── external-model-delegation.md  # External model delegation guide
 │   ├── legal.md                   # Privacy, compliance
 │   └── testing-patterns.md        # E2E, unit tests, coverage strategy
 ├── skills/
@@ -530,6 +534,9 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── design-marketing.md       # Marketing/landing page design
 │   ├── design-applications.md    # SaaS/app UI design
 │   └── design-dashboards.md      # Dashboard/data viz design
+├── scripts/
+│   ├── codex-review.sh            # OpenAI Codex peer review
+│   └── external-model-call.sh     # External model API caller
 └── rules/
     ├── security.md
     ├── coding-style.md
@@ -708,6 +715,7 @@ project/
 | **Developer** | Implements code, deploys to staging | Yes | No (but can run in parallel with other Developers) |
 | **Design-Reviewer** | Reviews UI implementations against design standards (runs BEFORE Code Reviewer for UI work) | No | No |
 | **Reviewer** | Reviews code, approves/blocks deploys | No | Yes (sub-Reviewers for parallel review) |
+| **External Model Delegate** | Consults external AI models (Gemini, Codex) for stuck bugs, implements their suggestions | Yes | No |
 
 ---
 

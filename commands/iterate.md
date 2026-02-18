@@ -1,5 +1,5 @@
 ---
-description: Continue iterating on current sprint. Use after /sprint when user reports bugs or issues.
+description: "Continue iterating on current sprint. Use after /sprint when user reports bugs or issues. Supports --model flag for external model delegation (e.g., /iterate --model gemini)."
 ---
 
 # Sprint Iteration
@@ -55,6 +55,51 @@ Continue working on the current sprint after user testing reveals bugs or issues
      - Invoke Reviewer to review approach
      - Post to Linear: "⚠️ 3 failed attempts - requesting reviewer guidance"
      - Wait for Reviewer's recommendations before continuing
+
+4a-ext. **External Model Delegation (Optional):**
+
+**Trigger conditions (ANY of these):**
+- User explicitly passed `--model <name>` flag (e.g., `/iterate --model gemini`)
+- Circuit breaker fired (3 failed attempts) AND user hasn't explicitly declined delegation
+
+**If triggered by circuit breaker (auto-suggest):**
+```
+3 failed attempts on this bug.
+
+Before trying again, I can delegate to an external model for a fresh perspective:
+- `/iterate --model gemini` — Google Gemini
+- `/iterate --model codex` — OpenAI Codex
+
+Or continue with normal iteration. What would you like to do?
+```
+
+**Wait for user response.** If user declines, continue to step 4b as normal.
+
+**If triggered (manually or accepted):**
+
+1. Parse `--model <name>` from arguments (case-insensitive)
+2. Validate model name against `~/.claude/guides/external-model-delegation.md` supported models
+3. Spawn `external-model-delegate` agent with:
+   ```
+   Role: External Model Delegate
+   Model: [model name from --model flag]
+   Bug: [description of the current bug being fixed]
+   Sprint File: [path to active sprint file]
+   Spec File: [path to relevant spec file]
+   Failed Attempts: [count and brief summary of what was tried]
+   Issue ID: [Linear issue ID]
+
+   Instructions:
+   1. Generate context file with bug details + relevant source files
+   2. Call external model via ~/.claude/scripts/external-model-call.sh
+   3. Parse response and implement the suggested fix
+   4. Run verification loop (build, lint, types, tests)
+   5. Report back with: what was changed, verification results
+   ```
+4. When delegate reports back:
+   - If verification passes: Continue to step 4b (submit to Reviewer) — normal flow
+   - If verification fails: Log attempt, ask user whether to retry with same model, try different model, or return to normal iteration
+5. Update sprint file iteration log: "External model ([name]) consulted — [outcome]"
 
 4b. **Submit to Reviewer (BLOCKING GATE - MANDATORY):**
 
@@ -244,6 +289,7 @@ Follow this for EVERY bug fix — don't skip steps:
 - After `/sprint` completes and user starts testing
 - When user says "I found some issues" or "here are bugs"
 - When returning to a sprint after a break
+- When Claude's iterations are stuck and you want a fresh perspective (`/iterate --model gemini`)
 
 ## Output
 

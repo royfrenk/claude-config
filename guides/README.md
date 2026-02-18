@@ -149,6 +149,15 @@ Guides provide detailed patterns and examples for specific domains. Use them:
 
 ---
 
+### External Model Delegation
+**File:** `external-model-delegation.md`
+
+**Purpose:** Delegate bug fixes to external AI models (Gemini, Codex) when iterations are stuck
+
+**When to read:** When `/iterate --model` is triggered or circuit breaker fires
+
+---
+
 ### Design
 **File:** `design.md`
 
