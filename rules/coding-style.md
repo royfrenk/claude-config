@@ -27,12 +27,12 @@ const updated = [...items, newItem]
 
 ## File Organization
 
-| Guideline | Target |
-|-----------|--------|
-| Lines per file | 200-400 typical |
-| Maximum | 800 (refactor if exceeds) |
-| Functions | < 50 lines each |
-| Nesting depth | < 4 levels |
+| Guideline | Target | Enforcement |
+|-----------|--------|-------------|
+| Lines per file | 200-400 typical | Hook: warns at 400+ |
+| Maximum | 800 (refactor if exceeds) | Hook: blocks at 800+ |
+| Functions | < 50 lines each | Manual review |
+| Nesting depth | < 4 levels | Manual review |
 
 **Principle:** Many small files > few large files
 
@@ -51,13 +51,13 @@ src/utils/
 
 ## Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Files | kebab-case | `episode-selector.tsx` |
-| Components | PascalCase | `EpisodeSelector` |
-| Functions (Python) | snake_case | `get_episode_by_id` |
-| Functions (TypeScript) | camelCase | `getEpisodeById` |
-| Constants | SCREAMING_SNAKE | `MAX_RETRY_COUNT` |
+| Type | Convention | Example | Enforcement |
+|------|------------|---------|-------------|
+| Files | kebab-case | `episode-selector.tsx` | Hook: warns on PascalCase/camelCase |
+| Components | PascalCase | `EpisodeSelector` | Manual review |
+| Functions (Python) | snake_case | `get_episode_by_id` | Manual review |
+| Functions (TypeScript) | camelCase | `getEpisodeById` | Manual review |
+| Constants | SCREAMING_SNAKE | `MAX_RETRY_COUNT` | Manual review |
 
 ## Error Handling
 
@@ -150,5 +150,7 @@ Hooks automatically:
 - Format code with Prettier (JS/TS)
 - Warn about console.log statements
 - Run TypeScript checks (if tsconfig exists)
+- **File size guard:** Warns at 400+ lines, blocks at 800+ lines (PostToolUse hook on Edit/Write)
+- **Naming convention guard:** Warns when new source files use PascalCase/camelCase instead of kebab-case (PostToolUse hook on Write)
 
 Fix warnings before committing.

@@ -65,7 +65,25 @@
         "hooks": [
           {
             "type": "command",
-            "command": "grep -nE '(sk-[a-zA-Z0-9]{20,}|api_key\\s*=\\s*[\"\\x27][^\"\\x27]+[\"\\x27]|password\\s*=\\s*[\"\\x27][^\"\\x27]+[\"\\x27])' \"$CLAUDE_FILE_PATH\" 2>/dev/null && echo '[SECURITY] Possible hardcoded secret detected!' >&2 || true"
+            "command": "grep -nE '(sk-[a-zA-Z0-9]{20,}|api_key\\\\s*=\\\\s*[\"\\x27][^\"\\x27]+[\"\\x27]|password\\\\s*=\\\\s*[\"\\x27][^\"\\x27]+[\"\\x27])' \"$CLAUDE_FILE_PATH\" 2>/dev/null && echo '[SECURITY] Possible hardcoded secret detected!' >&2 || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/royfrenkiel/.claude/hooks/file-size-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/royfrenkiel/.claude/hooks/naming-convention-guard.sh"
           }
         ]
       },
