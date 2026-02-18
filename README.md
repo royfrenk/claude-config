@@ -513,9 +513,17 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── checkpoint.md      # /checkpoint
 │   └── change-process.md  # /change-process
 ├── guides/
-│   ├── design.md          # Design quick reference (points to skills)
-│   ├── legal.md           # Privacy, compliance
-│   └── design-advanced.md # Advanced design topics (archived)
+│   ├── README.md                  # Guide index and usage instructions
+│   ├── agent-teams.md             # Parallel agent team coordination
+│   ├── api-integration-patterns.md # Env vars, fallbacks, error handling
+│   ├── code-performance.md        # N+1 queries, caching, memoization
+│   ├── codex-peer-review.md       # OpenAI Codex peer review process
+│   ├── database-patterns.md       # Schema, migrations, indexing
+│   ├── design.md                  # Design quick reference (points to skills)
+│   ├── frontend-patterns.md       # Responsive design, breakpoints, Figma
+│   ├── google-auth.md             # Google OAuth setup, tokens, Capacitor
+│   ├── legal.md                   # Privacy, compliance
+│   └── testing-patterns.md        # E2E, unit tests, coverage strategy
 ├── skills/
 │   ├── deploy-pi.md              # Pi deployment
 │   ├── design-core.md            # Core design tokens and contracts

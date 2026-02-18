@@ -146,6 +146,10 @@ Before reviewing code, identify the task type and verify compliance with relevan
 - [ ] Read `~/.claude/guides/frontend-patterns.md` using the Read tool
 - [ ] Verify: Tested at exact breakpoints? Matches Figma? Responsive documented?
 
+**If Google Auth / OAuth:**
+- [ ] Read `~/.claude/guides/google-auth.md` using the Read tool
+- [ ] Verify: Token audience matches backend GOOGLE_CLIENT_ID? Capacitor plugin registered? Callback URL consistent across Console, code, and env var?
+
 **If API integration:**
 - [ ] Read `~/.claude/guides/api-integration-patterns.md` using the Read tool
 - [ ] Verify: All env vars have `.trim()`? Request-time reading? Primary + fallback only?

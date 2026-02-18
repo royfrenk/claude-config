@@ -280,6 +280,10 @@ You can also run `/checkpoint` for a guided checkpoint process.
 - [ ] Test responsive design at exact breakpoints (640px, 1024px, 1280px)
 - [ ] Note: Design-Reviewer will verify against these standards before Code Reviewer
 
+**Google Auth / OAuth** (Google login, token verification, OAuth setup):
+- [ ] Read `~/.claude/guides/google-auth.md` using the Read tool
+- [ ] Note: Token audience matching, Capacitor plugin registration, callback URL triple-check
+
 **API integration** (external APIs, env vars, error handling):
 - [ ] Read `~/.claude/guides/api-integration-patterns.md` using the Read tool
 - [ ] Note: Always .trim() env vars, request-time reading, primary + simple fallback

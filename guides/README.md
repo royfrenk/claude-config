@@ -110,6 +110,25 @@ Guides provide detailed patterns and examples for specific domains. Use them:
 
 ---
 
+### Google Auth
+**File:** `google-auth.md`
+
+**When to read:**
+- Google OAuth setup (web or iOS)
+- Token verification, audience configuration
+- Capacitor native plugin bridge
+
+**Key topics:**
+- Token audience matching (iOS Client ID vs Web Client ID)
+- Capacitor local plugin registration (not auto-discovered)
+- Callback URL triple-check (Console, code, env var)
+- CapacitorHttp for CORS bypass on iOS
+- Passport.js profile validation at boundary
+
+**Critical lesson:** The token `aud` field must match backend `GOOGLE_CLIENT_ID` exactly. When supporting both web and iOS, set `serverClientID` so both platforms produce the same audience.
+
+---
+
 ## Existing Guides (Non-Domain)
 
 ### Agent Teams
@@ -158,6 +177,7 @@ Before writing any code, identify task type and read relevant guide(s):
 
 - Database work → `database-patterns.md`
 - Frontend work → `frontend-patterns.md`
+- Google Auth / OAuth → `google-auth.md`
 - API integration → `api-integration-patterns.md`
 - Testing → `testing-patterns.md`
 - Code performance → `code-performance.md`
@@ -172,6 +192,7 @@ Before reviewing code, identify task type and verify compliance with relevant gu
 
 - Database work → Verify indexing, caching, no SQL.js
 - Frontend work → Verify breakpoint testing, Figma match
+- Google Auth / OAuth → Verify token audience, plugin registration, callback URL consistency
 - API integration → Verify `.trim()`, request-time reading, fallback strategy
 - Testing → Verify >70% coverage, E2E for critical paths only
 
