@@ -154,6 +154,7 @@ When assigning tasks involving UI/UX work:
 - Flow per issue and multi-issue continuous execution
 - When to pause vs continue (5 pause conditions, 4 continue conditions)
 - Reporting during execution (sprint file, not User)
+- **Update Phase Timeline table** when each issue transitions phases (Explore, Plan, Implement, Review, Deploy)
 - Sprint closure pre-deploy checks (6 mandatory checks)
 - Sprint completion flow (rename, move, sort)
 - Review summary protocol (before sprint wrap-up)

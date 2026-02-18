@@ -100,6 +100,18 @@ cd frontend && npm test                 # Frontend tests
 
 Generate verification report (Build/Types/Lint/Tests/Security/Console: PASS/FAIL). Only proceed when Overall = READY.
 
+### Phase 3.5: Acceptance Criteria Self-Check
+
+Before submitting to Reviewer, verify functional completeness:
+
+1. Read acceptance criteria from `docs/technical-specs/{ISSUE_ID}.md`
+2. For each criterion, assess: **PASS** / **PARTIAL** / **FAIL** with evidence (test name, file:line, or manual verification)
+3. **If any FAIL:** Fix before submitting -- do not submit incomplete work
+4. **If any PARTIAL:** Document what is missing and why in the submission
+5. Include the self-check table in your review submission (see `review-submission.md` format)
+
+The Reviewer will verify your assessment. This catches functional gaps before review, reducing review rounds.
+
 ### Phase 4: Submit to Reviewer (BLOCKING -- CANNOT BYPASS)
 
 **Read `~/.claude/guides/review-submission.md`** before proceeding. It contains:

@@ -189,6 +189,7 @@ Follow this for EVERY bug fix — don't skip steps:
 
 ### Fixing
 - [ ] Run verification loop (build, lint, types, tests)
+- [ ] Run AC self-check for affected criteria (PASS/PARTIAL/FAIL with evidence)
 - [ ] Check iteration count - if 3rd attempt, invoke Reviewer before proceeding
 - [ ] Commit with proper format (see `~/.claude/rules/task-completion.md`)
 

@@ -191,6 +191,12 @@ Status: [status from sprint file]
 |-------|-------|------|--------|
 | — | — | — | — |
 
+## Phase Timeline
+
+| Issue | Phase | Started | Completed | Notes |
+|-------|-------|---------|-----------|-------|
+| — | — | — | — | — |
+
 ## Iteration Log
 
 [Will be populated during iteration]

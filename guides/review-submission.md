@@ -24,8 +24,19 @@ Verification:
 
 Tests added: [list]
 
+AC Self-Check:
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| [AC 1 from spec] | PASS | [test name / file:line / manual check] |
+| [AC 2 from spec] | PARTIAL | [what works, what is missing] |
+
 Ready for staging: yes
 ```
+
+**AC Self-Check rules:**
+- PASS = criterion fully met with evidence
+- PARTIAL = partially met, document what is missing (Reviewer will prioritize this area)
+- FAIL = not submitted -- fix before submitting (do not include FAIL rows)
 
 ## Linear Comment on Submission
 

@@ -47,7 +47,7 @@ If a change makes the system harder to reason about, increases coupling, or reli
 
 ### Step 1: Check Verification Report
 
-Developer submits with verification report (Build/Types/Lint/Tests/Security/Console). If missing or has failures, immediately request resubmission. Then read the spec file at `docs/technical-specs/{ISSUE_ID}.md`.
+Developer submits with verification report (Build/Types/Lint/Tests/Security/Console) and AC Self-Check table. If verification report is missing or has failures, immediately request resubmission. If AC Self-Check is missing, request resubmission. If any AC is PARTIAL, prioritize reviewing that area. Then read the spec file at `docs/technical-specs/{ISSUE_ID}.md`.
 
 ### Step 2: Verify Tests
 
