@@ -134,6 +134,11 @@ Based on context, read:
 - **If Android native:** `~/.claude/skills/design-mobile-android.md`
 - **If cross-platform:** `~/.claude/skills/design-mobile-crossplatform.md` (when available)
 
+**If design spec has a `## v0 Reference` section:**
+- Read the v0 component at the specified path — this is the **visual source of truth**
+- Compare the implementation against the v0 component for Tailwind classes, layout structure, spacing, and colors
+- Standard design token checks still apply, but the v0 component takes precedence for visual decisions
+
 ### Step 3: Review Against Standards
 
 **Two-phase review: Code FIRST, then Screenshots.**

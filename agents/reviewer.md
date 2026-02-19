@@ -80,6 +80,14 @@ Before reviewing code, identify the task type and read the relevant guide:
 
 **This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features.
 
+**A2. v0 Fidelity Check (When Applicable)**
+
+If the design spec (`docs/design-specs/{ISSUE_ID}-design.md`) has a `## v0 Reference` section:
+- Read the v0 component at the specified path
+- Verify Tailwind classes, layout structure, and component hierarchy match verbatim
+- Only code conventions should differ (file names, import paths, TypeScript types)
+- Flag any visual code that was changed, removed, or "improved" without justification
+
 **B. Clarity** -- Would this make sense to someone seeing it for the first time? Are names descriptive?
 
 **C. Simplicity** -- Can a junior engineer safely modify this later? Did we add new concepts when existing ones would do?

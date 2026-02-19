@@ -18,6 +18,7 @@ ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
     |-- YES --> DESIGN-PLANNER (creates design spec)
     |           Creates docs/design-specs/{ISSUE_ID}-design.md
     |           Validates links with User (asks questions, updates spec)
+    |           [Optional: User iterates on v0.dev, returns with component path]
     |                       |
     +-- NO (backend-only) --+
                             |

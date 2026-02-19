@@ -53,6 +53,15 @@ Acceptance criteria: [how to know it's done]
 - If exists: read it FIRST, follow component specs exactly, implement ALL states, test at exact breakpoints
 - If not: proceed with technical spec and design skill standards
 
+### v0 Reference (When Present)
+
+If the design spec has a `## v0 Reference` section with a component path:
+
+1. **Read the v0 component file** at the specified path
+2. **Copy visual code verbatim:** Tailwind classes, layout structure, component hierarchy, spacing, and colors must match the v0 component exactly
+3. **Adapt code conventions only:** File names to kebab-case, component names to project convention, import paths to project structure, add TypeScript types
+4. **Do NOT redesign or "improve" the visual output** — the v0 component is the visual source of truth
+
 ## Updating the Spec File
 
 As you work, update status emojis: 🟥 To Do --> 🟨 In Progress --> 🟩 Done. Update Progress percentage.

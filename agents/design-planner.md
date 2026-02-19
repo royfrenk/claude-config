@@ -343,6 +343,17 @@ Reference design tokens if available (`docs/design-specs/DESIGN-TOKENS.md`).
 
 ---
 
+## v0 Reference (Optional)
+
+> This section is filled in when the User iterates on v0.dev to produce a visual prototype. If no v0 was used, delete this section.
+
+**v0 Component Path:** `{v0-repo}/components/{path}/{component}.tsx`
+**v0.dev URL (optional):** [URL for context]
+
+**"Exact Copy" Rule:** The Developer MUST copy visual code verbatim from the v0 component — Tailwind classes, layout structure, component hierarchy, spacing, and colors. Code conventions adapt to project standards (file names to kebab-case, component names, import paths, TypeScript types).
+
+---
+
 **Next Steps:** Once approved, Engineering Manager will invoke Explorer to create technical specification.
 ```
 
@@ -431,7 +442,27 @@ Please answer these questions so I can finalize the design specification.
 - Update with actual URLs for external links
 - Add TODO notes for missing assets: "<!-- TODO: Add hero image (User to provide) -->"
 
-**Then proceed to Phase 4.**
+**Then proceed to Phase 3.5 (if v0 requested) or Phase 4.**
+
+### Phase 3.5: v0 Design Iteration (Optional)
+
+If the User says "let's go through v0 for this one" (or similar), pause here:
+
+1. **Tell the User the design spec is ready for v0 iteration:**
+   ```
+   Design spec complete at docs/design-specs/{ISSUE_ID}-design.md.
+
+   You can now iterate on v0.dev. When you're done, tell me "v0 is done"
+   and provide the v0 repo component path (e.g., recap-rabbit-v0/components/admin/profile-screen.tsx).
+   ```
+
+2. **STOP and wait.** The User iterates on v0.dev manually.
+
+3. **When User returns with "v0 is done" + component path:**
+   - Fill in the `## v0 Reference` section of the design spec with the path and optional URL
+   - Proceed to Phase 4
+
+**If the User does NOT request v0:** Skip this phase entirely. Proceed to Phase 4.
 
 ### Phase 4: Finalize and Notify EM
 
