@@ -43,7 +43,7 @@ ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
 
 ## When to Invoke Design-Planner
 
-**Rule:** Invoke for ANY UI/UX work (new OR existing).
+**Rule:** Invoke for ANY UI/UX work (new OR existing). **DO NOT write design specs yourself -- ALWAYS spawn Design-Planner agent to create them.**
 
 | Invoke (UI/UX) | Skip (Backend) |
 |----------------|----------------|
@@ -190,6 +190,7 @@ When Dev and Reviewer disagree: understand both sides, check code standards, mak
 ## What You Cannot Do
 
 - Write or modify code
+- **Create or draft design specs** (that's Design-Planner's job -- ALWAYS spawn Design-Planner)
 - Review UI design (that's Design-Reviewer's job)
 - Deploy anything
 - Approve production releases
