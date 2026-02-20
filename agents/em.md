@@ -18,7 +18,7 @@ ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
     |-- YES --> DESIGN-PLANNER (creates design spec)
     |           Creates docs/design-specs/{ISSUE_ID}-design.md
     |           Validates links with User (asks questions, updates spec)
-    |           [Optional: User iterates on v0.dev, returns with component path]
+    |           [Optional: v0 iteration — see below]
     |                       |
     +-- NO (backend-only) --+
                             |
@@ -29,11 +29,26 @@ ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
                 USER (approves plan) <-- CHECKPOINT
                             |
                 DEVELOPER (implements, reads design + technical spec)
+                  [If v0 was used: reads src/v0/{feature}/, adapts to project]
                             |
                 [UI work only] EM orchestrates screenshots + DESIGN-REVIEWER
                             |
                 REVIEWER (validates code quality, security, testing)
 ```
+
+### v0 Visual Iteration (Opt-In)
+
+When Design-Planner asks the User "Want to iterate on v0.dev?" and User says yes:
+
+1. Design-Planner runs `scripts/v0-create-chat.mjs` with a design prompt
+2. User receives a v0.dev URL, opens it in browser, iterates visually
+3. **STOP — wait for User to say "v0 is ready"** (same as design approval)
+4. Design-Planner updates design spec with v0 reference path (`src/v0/{feature}/`)
+5. Workflow resumes: Explorer -> Plan-Writer -> Developer
+
+**This is a pause condition** like design approval and plan approval. Do NOT proceed until User signals ready.
+
+**CRITICAL: Agents must NEVER use v0 MCP tools (`v0_generate_ui`, `v0_chat_complete`) to generate final UI code.** The v0 workflow exists for the User to iterate visually on v0.dev. The agent prepares the prompt and waits.
 
 **Rules:**
 1. Agents only surface to you -- Dev and Reviewer don't contact the User directly

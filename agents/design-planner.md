@@ -347,8 +347,8 @@ Reference design tokens if available (`docs/design-specs/DESIGN-TOKENS.md`).
 
 > This section is filled in when the User iterates on v0.dev to produce a visual prototype. If no v0 was used, delete this section.
 
-**v0 Component Path:** `{v0-repo}/components/{path}/{component}.tsx`
-**v0.dev URL (optional):** [URL for context]
+**v0 Component Path:** `src/v0/{feature}/{component}.tsx`
+**v0.dev Chat URL:** [URL from v0-create-chat.mjs script]
 
 **"Exact Copy" Rule:** The Developer MUST copy visual code verbatim from the v0 component — Tailwind classes, layout structure, component hierarchy, spacing, and colors. Code conventions adapt to project standards (file names to kebab-case, component names, import paths, TypeScript types).
 
@@ -448,21 +448,40 @@ Please answer these questions so I can finalize the design specification.
 
 If the User says "let's go through v0 for this one" (or similar), pause here:
 
-1. **Tell the User the design spec is ready for v0 iteration:**
+1. **Prepare a design prompt** from the design spec you just created. Include:
+   - Feature description and key user flows
+   - Component specifications (states, interactions, layout)
+   - Reference to existing components that should be matched in style
+
+2. **Create a v0.dev chat** by running the script:
+   ```bash
+   V0_API_KEY=$V0_API_KEY node scripts/v0-create-chat.mjs "Your detailed design prompt here"
+   ```
+   The script prints a `webUrl` to stdout. Present it to the User:
    ```
    Design spec complete at docs/design-specs/{ISSUE_ID}-design.md.
 
-   You can now iterate on v0.dev. When you're done, tell me "v0 is done"
-   and provide the v0 repo component path (e.g., recap-rabbit-v0/components/admin/profile-screen.tsx).
+   I've created a v0.dev chat with project context:
+   [webUrl from script]
+
+   Open this URL in your browser to iterate visually.
+   v0.dev is connected to the repo, so it sees existing components.
+   Generated code will go to src/v0/{feature}/ (staging area).
+
+   When you're happy with the result, tell me "v0 is ready".
    ```
 
-2. **STOP and wait.** The User iterates on v0.dev manually.
+3. **STOP and wait.** The User iterates on v0.dev visually.
 
-3. **When User returns with "v0 is done" + component path:**
-   - Fill in the `## v0 Reference` section of the design spec with the path and optional URL
+4. **When User returns with "v0 is ready":**
+   - Fill in the `## v0 Reference` section of the design spec:
+     - Set component path to `src/v0/{feature}/{component}.tsx`
+     - Add the v0.dev chat URL for reference
    - Proceed to Phase 4
 
 **If the User does NOT request v0:** Skip this phase entirely. Proceed to Phase 4.
+
+**CRITICAL: Never use v0 MCP tools (`v0_generate_ui`, `v0_chat_complete`, etc.) to generate final UI code.** The v0 integration exists for the User to iterate visually. Your role is to prepare the prompt and create the chat, then WAIT.
 
 ### Phase 4: Finalize and Notify EM
 

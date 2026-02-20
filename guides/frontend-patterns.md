@@ -355,11 +355,21 @@ function ImageGallery({ images }) {
 **3. Sticky positioning:**
 
 ```tsx
-// Mobile sticky action bar (fixed bottom)
+// Web-only: fixed bottom bar (works in browser)
 <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-lg md:relative md:bottom-auto">
   <button className="w-full">Write an Offer</button>
 </div>
 ```
+
+> **Capacitor/WKWebView warning:** `position: fixed` is broken in Capacitor's WKWebView.
+> For iOS native shell components (TabBar, MiniPlayer), use flex column layout instead:
+> ```tsx
+> <div className="h-screen flex flex-col">
+>   <div className="flex-1 min-h-0 overflow-y-auto">{/* content */}</div>
+>   <div className="flex-shrink-0">{/* pinned bottom bar */}</div>
+> </div>
+> ```
+> See `~/.claude/rules/stability.md` Section 8 for full constraints.
 
 ## Accessibility (WCAG 2.1)
 

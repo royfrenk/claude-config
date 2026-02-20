@@ -50,10 +50,11 @@ For features where correctness isn't binary (search, recommendations, performanc
 - Database migrations (integration test)
 - External API integrations (real API, not mocks)
 - Concurrent operations (race condition prevention)
+- Shared UI component changes (variant parity + consumer prop passing — see `~/.claude/guides/testing-patterns.md` "Component Parity Testing")
 
 **Judgment call:**
 - Simple CRUD operations
-- UI-only changes
+- UI-only changes (that don't affect shared components)
 - Prototype/experimental code
 
 ## Test Structure

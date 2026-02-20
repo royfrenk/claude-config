@@ -267,6 +267,7 @@ Instructions:
    - Continue to next issue without pausing
 6. ONLY stop execution when:
    - Design approval needed (UI work)
+   - v0 visual iteration in progress (User iterating on v0.dev — wait for "v0 is ready")
    - Plan approval needed (always)
    - Review fails after 3 rounds (escalate)
    - All issues deployed to staging (present wrap-up)

@@ -168,6 +168,202 @@ Not everything needs E2E. Match verification to the criterion:
 - E2E tests: All critical paths covered
 - Manual: Edge cases, visual design
 
+## Capacitor WKWebView Testing Limitations
+
+**Playwright WebKit is NOT a proxy for Capacitor WKWebView.** They share the WebKit engine but differ in critical ways:
+
+| Behavior | Playwright WebKit | Capacitor WKWebView |
+|----------|:-:|:-:|
+| `env(safe-area-inset-*)` | Returns `0px` | Returns real values (e.g., 34px) |
+| `viewport-fit: cover` | Ignored | Content extends under status bar/home indicator |
+| `position: fixed` | Works normally | Broken — elements don't pin |
+| Flex layout min-height | Behaves per spec | May cause child elements to scroll unexpectedly |
+
+### What to test where
+
+| Test Target | Tool | Why |
+|-------------|------|-----|
+| Web content (cards, forms, search) | Playwright WebKit | Safe — rendering is identical |
+| Logic (formatting, data transforms) | Unit tests (Vitest) | No DOM needed |
+| Native shell (TabBar, MiniPlayer, safe areas) | Physical device only | Playwright gives false positives |
+| Bottom bar pinning (does it scroll?) | Physical device only | `position: fixed` works in Playwright but breaks in WKWebView; height thresholds differ |
+| Scroll behavior in flex layouts | Physical device only | Height constraints differ in WKWebView |
+
+### Practical testing workflow for native shell changes
+
+1. Make CSS/layout change
+2. `npm run build && npx cap sync ios`
+3. Xcode: Cmd+B → Run on device
+4. Evaluate visually (~5 min per cycle)
+5. **Budget 3-5 iterations** for layout changes to native shell components
+
+**Do not** create Playwright diagnostics for native shell layout issues — you'll waste iterations fixing a test that can't replicate the real environment.
+
+**Post-mortem reference:** `docs/post-mortem/2026-02-18-wkwebview-layout-testing-RAB-58.md`
+
+---
+
+## Component Parity Testing
+
+**Problem (Sprint 010):** Agent implements a feature in one variant or one screen but not all. Example: context menu added to show-page variant but missing from collection variant. hasSummary wired in HomeScreen but not SearchScreen or PodcastScreen.
+
+**Rule:** When you change a shared component, you must verify ALL consumers.
+
+### Step 1: Find all consumers
+
+```bash
+# Find every file that imports the component
+grep -r "import.*EpisodeRow" src/ --include="*.tsx" -l
+```
+
+### Step 2: Verify prop passing
+
+For every new or changed prop, confirm each consumer passes it:
+
+```typescript
+// Test: every screen that renders EpisodeRow passes hasSummary
+describe('EpisodeRow consumers', () => {
+  it('HomeScreen passes hasSummary', () => {
+    // Render HomeScreen with mock data including hasSummary=true episodes
+    // Assert EpisodeRow receives hasSummary prop
+  })
+
+  it('SearchScreen passes hasSummary', () => { /* same pattern */ })
+  it('PodcastScreen passes hasSummary', () => { /* same pattern */ })
+})
+```
+
+### Step 3: Verify all variants
+
+```typescript
+describe('EpisodeRow variants', () => {
+  it('collection variant (showArtwork=true) has context menu', () => {
+    render(<EpisodeRow showArtwork={true} episodeId="123" {...props} />)
+    expect(screen.getByRole('button', { name: /more/i })).toBeInTheDocument()
+  })
+
+  it('show-page variant (showArtwork=false) has context menu', () => {
+    render(<EpisodeRow showArtwork={false} episodeId="123" {...props} />)
+    expect(screen.getByRole('button', { name: /more/i })).toBeInTheDocument()
+  })
+})
+```
+
+**Post-mortem reference:** `docs/post-mortem/2026-02-19-iteration-waste-sprint-010.md`
+
+---
+
+## Playwright Navigation Tests
+
+**Problem (Sprint 010):** Click handlers triggered wrong actions (playback instead of navigation). Podcast name links weren't wired. "Go to Show" was broken due to missing podcast ID.
+
+**Pattern:** Every clickable element that triggers navigation should have an E2E test.
+
+### Basic navigation test
+
+```typescript
+test('clicking episode row navigates to episode detail', async ({ page }) => {
+  await page.goto('/home')
+  await page.getByText('Episode Title').click()
+  await expect(page).toHaveURL(/\/episode\//)
+})
+
+test('clicking podcast name navigates to show page', async ({ page }) => {
+  await page.goto('/home')
+  await page.getByRole('button', { name: 'Podcast Name' }).click()
+  await expect(page).toHaveURL(/\/podcast\//)
+})
+```
+
+### Context menu navigation
+
+```typescript
+test('context menu "Go to Show" navigates correctly', async ({ page }) => {
+  await page.goto('/episode/123')
+  await page.getByRole('button', { name: /more/i }).click()
+  await page.getByText('Go to Show').click()
+  await expect(page).toHaveURL(/\/podcast\//)
+})
+```
+
+### Edge state test
+
+```typescript
+test('unprocessed episode shows metadata, not error', async ({ page }) => {
+  await page.goto('/episode/unprocessed-123')
+  await expect(page.getByText('Failed to load')).not.toBeVisible()
+  await expect(page.getByText('Summarize Episode')).toBeVisible()
+})
+```
+
+**Coverage rule:** Every `onClick` that calls `navigate()` should have a corresponding E2E test asserting the correct URL.
+
+---
+
+## Screenshot Regression Testing
+
+**Problem (Sprint 010):** Visual inconsistencies (row height differences between 1-line and 2-line titles, extra spacing from min-h) required multiple iteration cycles to discover and fix.
+
+### Setup (Playwright)
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  projects: [
+    {
+      name: 'visual-regression',
+      use: {
+        ...devices['iPhone 13 Pro'],
+        screenshot: 'only-on-failure',
+      },
+    },
+  ],
+  // Store baselines
+  snapshotDir: './test-results/screenshots',
+})
+```
+
+### Capture key screens
+
+```typescript
+test('HomeScreen visual regression', async ({ page }) => {
+  await page.goto('/home')
+  await page.waitForLoadState('networkidle')
+  await expect(page).toHaveScreenshot('home-screen.png', {
+    maxDiffPixelRatio: 0.01, // 1% threshold
+  })
+})
+
+test('EpisodeRow variants visual regression', async ({ page }) => {
+  await page.goto('/test-harness/episode-row-variants')
+  await expect(page).toHaveScreenshot('episode-row-variants.png', {
+    maxDiffPixelRatio: 0.01,
+  })
+})
+```
+
+### When to update baselines
+
+```bash
+# After intentional visual changes
+npx playwright test --update-snapshots
+```
+
+### What to capture
+
+| Screen | Why |
+|--------|-----|
+| HomeScreen (with episodes) | Row height consistency, artwork alignment, sparkles badge |
+| SearchScreen (results) | Collection variant layout, context menu presence |
+| PodcastScreen (show page) | Show-page variant, date/duration formatting |
+| EpisodeDetailScreen | Metadata display, action buttons, edge states |
+
+**Note:** Screenshot regression catches visual issues that are hard to describe in assertions (spacing, alignment, height consistency) but misses interaction bugs. Combine with navigation tests for full coverage.
+
+**Post-mortem reference:** `docs/post-mortem/2026-02-19-iteration-waste-sprint-010.md`
+
+---
+
 ## Common Testing Pitfalls
 
 ### 1. Writing E2E Tests for Everything

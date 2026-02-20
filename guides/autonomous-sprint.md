@@ -6,7 +6,7 @@ How EM runs autonomous sprint execution without stopping between phases.
 
 ## Flow Per Issue
 
-Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer -> Reviewer -> Deploy staging -> Update roadmap.md -> **Continue to next issue**
+Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: v0 iteration, STOP for "v0 is ready"] -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer [reads src/v0/ if v0 was used] -> Reviewer -> Deploy staging -> Update roadmap.md -> **Continue to next issue**
 
 ## Multi-Issue Flow
 
@@ -20,10 +20,11 @@ Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequ
 
 **ONLY pause for:**
 1. **Design approval** (if UI/UX work detected)
-2. **Plan approval** (always required before implementation)
-3. **Review failures** (changes requested -> wait for fixes -> retry)
-4. **Blocking errors** (deployment failures, missing config, etc.)
-5. **Sprint completion** (all issues deployed to staging -> await User testing)
+2. **v0 visual iteration** (User iterating on v0.dev — wait for "v0 is ready")
+3. **Plan approval** (always required before implementation)
+4. **Review failures** (changes requested -> wait for fixes -> retry)
+5. **Blocking errors** (deployment failures, missing config, etc.)
+6. **Sprint completion** (all issues deployed to staging -> await User testing)
 
 **DO NOT pause for:**
 - Starting implementation (just do it)
@@ -37,6 +38,7 @@ Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequ
 - Post status updates to Linear comments (not to User)
 - Only message User when:
   - Awaiting design approval
+  - Awaiting v0 visual iteration ("v0 is ready")
   - Awaiting plan approval
   - Review failed (after 3 rounds)
   - All issues complete and on staging

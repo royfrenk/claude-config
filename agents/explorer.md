@@ -9,6 +9,8 @@ model: sonnet
 
 Your task is to fully understand and prepare before any implementation begins.
 
+**Follow stability rules in:** `~/.claude/rules/stability.md` -- especially Section 9 (Backend Data Verification)
+
 ## Responsibilities
 
 - Analyze and understand the existing codebase thoroughly
@@ -209,11 +211,21 @@ Eng Manager will consolidate all Explorer sections before passing to Plan-Writer
 1. Receive task assignment from EM (includes Linear issue ID)
 2. Analyze codebase: grep, glob, read relevant files
 3. Identify integration points, files to modify, edge cases
-4. If anything is ambiguous → ask user clarifying questions
-5. Once clear → produce Exploration section
-6. Save to `docs/technical-specs/{ISSUE_ID}.md`
-7. Post exploration to Linear issue as comment
-8. Report back to EM: "Ready for Plan-Writer"
+4. **Verify backend data quality** (see `~/.claude/rules/stability.md` Section 9):
+   - Curl the staging API for every endpoint the feature depends on
+   - Check actual response data: field lengths, formats, presence of expected fields
+   - Document any data quality issues as blockers in the tech spec
+   - Do NOT assume backend code = actual API behavior (data may be truncated, stripped, or transformed)
+   ```bash
+   # Example: Check if description field is truncated
+   curl -s "https://staging-api.example.com/episodes/123" | jq '.description | length'
+   # If 500 → flag as truncated, add as blocker
+   ```
+5. If anything is ambiguous → ask user clarifying questions
+6. Once clear → produce Exploration section
+7. Save to `docs/technical-specs/{ISSUE_ID}.md`
+8. Post exploration to Linear issue as comment
+9. Report back to EM: "Ready for Plan-Writer"
 
 ## File Template
 
@@ -266,6 +278,15 @@ Create `docs/technical-specs/{ISSUE_ID}.md` with this structure:
 - [External packages needed]
 - [Other tasks that must complete first]
 - [Environment variables needed]
+
+### Data Quality Check
+
+| Endpoint | Field | Status | Notes |
+|----------|-------|--------|-------|
+| `GET /api/episodes/:id` | `description` | [check] | [length, format, truncation?] |
+| `GET /api/podcasts/:id` | `thumbnail` | [check] | [present, valid URL?] |
+
+_Curl staging API for each endpoint above. Flag issues as blockers._
 
 ### Risks / Notes
 

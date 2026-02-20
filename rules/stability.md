@@ -45,6 +45,7 @@ Using framework/library APIs incorrectly due to:
 | **Prisma vs Sequelize** | `findUnique()` vs `findOne()` | Check official API reference |
 | **passport vs passport-google-oauth20** | Config structure differs | Test with real OAuth flow |
 | **Tesseract.js v2 vs v4** | API completely changed | Check migration guide |
+| **Playwright WebKit vs Capacitor WKWebView** | Same engine, different behavior | Test on physical device — see Section 8 |
 
 ### Pattern: API Validation Layer
 
@@ -587,6 +588,123 @@ Run `/sync-roadmap` to reconcile Linear with roadmap.md
 
 ---
 
+## 8. Capacitor WKWebView Layout (iOS)
+
+### Problem
+
+Capacitor's WKWebView has unique layout behaviors that differ from desktop Safari and Playwright WebKit. CSS that works in browser testing can break on physical devices, and automated diagnostics give false positives.
+
+**Post-mortem:** `docs/post-mortem/2026-02-18-wkwebview-layout-testing-RAB-58.md` (12 iterations, Sprint 009)
+
+### Known Constraints
+
+| Constraint | Impact | Workaround |
+|-----------|--------|------------|
+| `position: fixed` is broken | Bottom bars don't pin | Use flex column layout (`h-screen flex flex-col`) |
+| Tab bar content must be exactly `h-[49px]` | `h-[56px]` causes bar to scroll with content | Use padding within 49px for optical adjustments |
+| `env(safe-area-inset-bottom)` returns ~34px on notched iPhones | Safe area shares background with content → icons appear off-center | Use `pt-5` (20px) top padding for optical centering |
+| `bg-card`/`bg-background` split creates grey line | Card white (#fff) vs background near-white (#fafafa) visible seam | Keep single background on parent `<nav>` element |
+| Playwright WebKit ≠ WKWebView | Safe areas, viewport-fit:cover, flex behavior all differ | Don't trust Playwright for native shell components |
+
+### Nav Scrolling: The #1 WKWebView Layout Bug
+
+If a bottom bar (TabBar, MiniPlayer) starts scrolling with page content, check:
+
+1. **Is it using `position: fixed`?** → Broken in WKWebView. Switch to flex column layout.
+2. **Is the content row height > 49px?** → Revert to `h-[49px]`. Use padding instead of height for optical adjustments.
+3. **Is `flex-shrink-0` on the bottom bar?** → Required to prevent flex from collapsing it.
+4. **Is `min-h-0` on the scroll container?** → Required to override flex `min-height: auto`.
+
+**Critical:** Both `position: fixed` breakage and height-threshold scrolling are WKWebView-only. They work fine in browser and Playwright — you will only catch them on a physical device.
+
+### Rules
+
+**For native shell components (TabBar, MiniPlayer, NowPlayingView):**
+
+1. **Never use `position: fixed`** — use flex column with `flex-shrink-0`
+2. **Never exceed `h-[49px]`** on tab bar content row — 56px causes scrolling in WKWebView
+3. **Test on physical device EARLY** — before committing layout changes
+4. **Budget for manual iteration** — each cycle is ~5 min (edit → build → cap sync → Xcode → device)
+5. **Don't use Playwright diagnostics** for layout issues in native shell — they will mislead you
+6. **When 3+ CSS attempts fail** — stop and measure on device before trying more
+
+### Working Layout Pattern
+
+```tsx
+// AppLayout.tsx — the only proven layout for Capacitor WKWebView
+<div className="h-screen flex flex-col bg-background">
+  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+    {/* Scrollable content */}
+  </div>
+  <MiniPlayer />  {/* flex-shrink-0 */}
+  <TabBar />      {/* flex-shrink-0, 49px content + safe-bottom spacer */}
+</div>
+```
+
+### What CAN Be Automated vs What CANNOT
+
+| Component | Playwright WebKit | Physical Device |
+|-----------|:-:|:-:|
+| Web content (episode cards, search, forms) | Yes | Optional |
+| Logic (formatRelativeTime, data transforms) | Yes (unit test) | N/A |
+| Native shell layout (TabBar, MiniPlayer) | No — gives false positives | Required |
+| Safe area behavior | No — env() returns 0px | Required |
+| Scroll behavior in flex layout | Unreliable | Required |
+
+---
+
+## 9. Backend Data Verification
+
+### Problem
+
+Frontend features are built against assumptions about backend data that turn out to be wrong. The Explorer reads backend code but doesn't verify actual API responses. This causes iteration waste when the frontend ships but the data is truncated, missing fields, or in the wrong format.
+
+**Post-mortem:** `docs/post-mortem/2026-02-19-sprint-011-iteration-and-deploy.md` (Sprint 011 — descriptions truncated at 500 chars)
+
+### Rules
+
+**During exploration (Explorer agent):**
+
+1. **Curl the staging API** for every endpoint the feature depends on
+2. **Check actual response data** — field lengths, formats, presence of expected fields
+3. **Document data quality issues** in the tech spec as blockers
+4. **Don't assume code = behavior** — backend may transform, truncate, or strip data
+
+**During implementation (Developer agent):**
+
+1. **When changing backend data format**, check ALL frontend consumers of that field
+2. **HTML vs plain text** — if backend starts returning HTML, every renderer needs review
+3. **Test with real data** from staging, not just hardcoded mock data
+
+### Pattern: Explorer Data Verification
+
+```bash
+# During exploration, curl the actual staging API
+curl -s "https://staging-api.example.com/episodes/123" | jq '.description | length'
+# Returns: 500  <-- truncated! Flag this in tech spec
+
+curl -s "https://staging-api.example.com/episodes/123" | jq '.description[:100]'
+# Returns: plain text, no HTML tags  <-- note: backend strips HTML
+```
+
+**Add to tech spec:**
+```markdown
+## Data Quality Check
+- `description` field: ⚠️ Truncated at 500 chars, HTML stripped — backend fix required
+- `thumbnail` field: ✅ Present, valid URL
+- `chapters` field: ❌ Missing — backend doesn't parse RSS chapters yet
+```
+
+### Checklist
+
+- [ ] Have we curled the staging API for the endpoints this feature uses?
+- [ ] Do response field lengths match what the frontend expects?
+- [ ] Is the data format correct (HTML vs plain text, dates, nested objects)?
+- [ ] Are all expected fields present (not null/undefined)?
+- [ ] When changing backend data format, have we checked all frontend consumers?
+
+---
+
 ## Quick Reference
 
 | Issue Type | First Check | Prevention |
@@ -597,3 +715,5 @@ Run `/sync-roadmap` to reconcile Linear with roadmap.md
 | **Configuration** | Validate at startup | No silent fallbacks |
 | **Over-Engineering** | Count conditions/nesting | Simplify when > 3 levels |
 | **External Service Failures** | Check timeout settings | 30s timeout + fallback + tracking |
+| **WKWebView Layout** | Test on physical device | Flex column layout, 49px tab bar, no position:fixed |
+| **Backend Data Mismatch** | Curl staging API during exploration | Verify actual response data, not just code |

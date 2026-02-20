@@ -40,9 +40,20 @@ Continue working on the current sprint after user testing reveals bugs or issues
      - Which spec file it belongs to (or "unclear")
      - Is it a bug (failed AC) or new AC?
 
-3. **Update sprint file:**
-   - Add new batch to Iteration Log
-   - Mark each item as [ ] (open)
+3. **Update sprint file (BLOCKING GATE -- must complete before fixing):**
+   - Add new batch to Iteration Log with batch number and timestamp
+   - List each reported bug as `- [ ] [description]`
+   - **Verify the update:** Read back the sprint file to confirm the batch appears
+   - If sprint file was NOT updated: STOP. Do not proceed to step 4.
+   - This ensures the sprint file serves as "external memory" even if the session is interrupted
+
+   Example:
+   ```markdown
+   ### Batch 3 — 2026-02-19 14:30
+
+   - [ ] Links not tappable in episode descriptions
+   - [ ] Summary section should be always-expanded
+   ```
 
 4. **Fix each issue:**
    - Follow full developer protocol (verification loop, commit format)
@@ -192,7 +203,8 @@ Or continue with normal iteration. What would you like to do?
 
 4c. **Deploy after approval:**
    - Push to develop
-   - Mark [x] in sprint file with commit hash
+   - **Immediately update sprint file:** Mark `[x]` with commit hash for each fixed bug
+     - Example: `- [x] Links not tappable in descriptions (a1b2c3d)`
    - Verify deployment succeeded
    - Continue until batch complete
 
@@ -231,6 +243,7 @@ Follow this for EVERY bug fix — don't skip steps:
 - [ ] Read sprint file to understand current state
 - [ ] Read relevant spec file for context
 - [ ] Identify which issue this bug belongs to
+- [ ] **GATE: Verify batch is logged in sprint file** (step 3 must be done before fixing)
 
 ### Fixing
 - [ ] Run verification loop (build, lint, types, tests)
@@ -251,7 +264,7 @@ Follow this for EVERY bug fix — don't skip steps:
   - Log analysis
   - Relevant E2E tests
   - Only proceed after checks pass
-- [ ] Update sprint file: mark bug as [x] fixed with commit hash
+- [ ] **Update sprint file immediately:** mark bug as [x] fixed with commit hash (do NOT defer this)
 - [ ] Post comment to Linear issue: "Fixed [description] in [commit]" with verification results
 
 ### After Each Batch
@@ -279,9 +292,13 @@ Follow this for EVERY bug fix — don't skip steps:
 
 ## Rules
 
-- **Track everything:** Every bug goes in the iteration log
+- **Sprint file is your external memory -- update it FIRST, not last:**
+  - Log bugs BEFORE fixing them (Step 3 is a blocking gate)
+  - Mark bugs done IMMEDIATELY after deploying (Step 4c)
+  - If the session is interrupted mid-sprint, the sprint file must reflect the current state
+  - An empty iteration log after 8 fix batches is a process failure
 - **New ACs go to spec file:** If user discovers a new requirement, add it to the spec file (with approval)
-- **Don't lose context:** Sprint file is your external memory — read it when unsure
+- **Don't lose context:** Read the sprint file when unsure about current state
 - **Don't skip deployment verification:** Every push must be verified before marking fixed
 
 ## When to Use

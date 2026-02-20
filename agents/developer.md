@@ -57,10 +57,13 @@ Acceptance criteria: [how to know it's done]
 
 If the design spec has a `## v0 Reference` section with a component path:
 
-1. **Read the v0 component file** at the specified path
+1. **Read the v0 component files** from `src/v0/{feature}/` (the staging area where v0.dev writes output)
 2. **Copy visual code verbatim:** Tailwind classes, layout structure, component hierarchy, spacing, and colors must match the v0 component exactly
 3. **Adapt code conventions only:** File names to kebab-case, component names to project convention, import paths to project structure, add TypeScript types
 4. **Do NOT redesign or "improve" the visual output** — the v0 component is the visual source of truth
+5. **Place adapted components** in the correct project location (e.g., `src/components/content/`, `src/screens/`)
+
+**NEVER use v0 MCP tools (`v0_generate_ui`, `v0_chat_complete`) to generate UI code.** Always read from the `src/v0/` staging area that the User iterated on visually.
 
 ## Updating the Spec File
 
@@ -120,6 +123,68 @@ Before submitting to Reviewer, verify functional completeness:
 5. Include the self-check table in your review submission (see `review-submission.md` format)
 
 The Reviewer will verify your assessment. This catches functional gaps before review, reducing review rounds.
+
+### Phase 3.6: Interaction Self-Verification Gate
+
+**After acceptance criteria pass but BEFORE submitting to Reviewer**, verify that the feature actually works as a user would interact with it. This catches the class of bugs where "code exists" but "user interactions are broken."
+
+#### Checklist A: UI Component Verification
+
+**For every UI component you changed or created, complete ALL items:**
+
+- [ ] **List all screens** that render this component (grep for imports)
+- [ ] **Verify prop parity:** Every screen passes all required props (especially new ones)
+- [ ] **Verify all variants:** If the component has variants (e.g., `showArtwork` vs `!showArtwork`), verify EACH variant has the feature
+- [ ] **Verify click handlers:** Every clickable element does the right thing:
+  - Navigation elements -> navigate to correct route (not trigger playback/processing)
+  - Action buttons -> trigger correct action
+  - Stop propagation where needed (nested click targets)
+- [ ] **Verify edge states:** What happens when data is missing, episode is unprocessed, or API returns empty?
+- [ ] **Compare against design spec:** Open the design spec and verify each screen matches the mockup (section ordering, expand/collapse behavior, visibility rules)
+- [ ] **Test with real staging data:** Curl the staging API, use actual response data, not hardcoded mocks
+
+#### Checklist B: Data Format Impact Check
+
+**When you change how data is produced, stored, or returned (backend format change, new field, field removal):**
+
+- [ ] **Grep for ALL consumers** of the changed field across the entire frontend codebase
+  ```bash
+  grep -r "fieldName" src/ --include="*.tsx" --include="*.ts" -l
+  ```
+- [ ] **Verify each consumer handles the new format:** If backend now returns HTML instead of plain text, every component rendering that field needs review (detail views AND list views AND search results)
+- [ ] **Check for assumptions:** Does any consumer call `.substring()`, `.length`, or render raw text that would break with HTML/markdown?
+
+**Why this matters:** In Sprint 011, backend changed `description` from plain text to HTML. The detail screen was updated but EpisodeRow (list views) was not -- resulting in raw HTML tags visible to users. One grep for `description` across all `.tsx` files would have caught this.
+
+#### Run Tests
+
+```bash
+npm test -- --grep "ComponentName"
+```
+
+If tests don't exist for the changed component, **write them first** covering:
+- All variants render correctly
+- Click handlers fire with correct arguments
+- Edge states don't show error UI
+- New props are passed in all parent contexts
+
+#### Self-Verification Output
+
+Before submitting to Reviewer, include in your submission:
+
+```markdown
+## Self-Verification Report
+
+### UI Components Checked
+| Component | Screens | Variants | Edge States | Design Match |
+|-----------|---------|----------|-------------|--------------|
+| [name]    | [count] | [count]  | [tested]    | [yes/no]     |
+
+### Data Format Impact
+| Field Changed | Consumers Found | All Updated |
+|---------------|-----------------|-------------|
+| [field]       | [count files]   | [yes/no]    |
+```
 
 ### Phase 4: Submit to Reviewer (BLOCKING -- CANNOT BYPASS)
 
