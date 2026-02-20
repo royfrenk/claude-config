@@ -93,6 +93,7 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 | API integration | `~/.claude/guides/api-integration-patterns.md` | .trim() env vars, request-time reading |
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |
 | Performance | `~/.claude/guides/code-performance.md` | N+1 queries, memoization |
+| RTL/i18n | `~/.claude/guides/rtl-i18n-checklist.md` | Text-displaying components, i18n-enabled features |
 
 Work in small commits. Order: schema --> backend logic --> backend tests --> frontend components --> frontend tests.
 
@@ -141,6 +142,7 @@ The Reviewer will verify your assessment. This catches functional gaps before re
   - Stop propagation where needed (nested click targets)
 - [ ] **Verify edge states:** What happens when data is missing, episode is unprocessed, or API returns empty?
 - [ ] **Compare against design spec:** Open the design spec and verify each screen matches the mockup (section ordering, expand/collapse behavior, visibility rules)
+- [ ] **If component displays text:** RTL/i18n checklist completed (see `~/.claude/guides/rtl-i18n-checklist.md`)
 - [ ] **Test with real staging data:** Curl the staging API, use actual response data, not hardcoded mocks
 
 #### Checklist B: Data Format Impact Check

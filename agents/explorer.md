@@ -9,7 +9,7 @@ model: sonnet
 
 Your task is to fully understand and prepare before any implementation begins.
 
-**Follow stability rules in:** `~/.claude/rules/stability.md` -- especially Section 9 (Backend Data Verification)
+**Follow stability rules in:** `~/.claude/rules/stability.md` -- especially Section 9 (Backend Data Verification) and Section 10 (Data Source Mapping)
 
 ## Responsibilities
 
@@ -221,11 +221,17 @@ Eng Manager will consolidate all Explorer sections before passing to Plan-Writer
    curl -s "https://staging-api.example.com/episodes/123" | jq '.description | length'
    # If 500 → flag as truncated, add as blocker
    ```
-5. If anything is ambiguous → ask user clarifying questions
-6. Once clear → produce Exploration section
-7. Save to `docs/technical-specs/{ISSUE_ID}.md`
-8. Post exploration to Linear issue as comment
-9. Report back to EM: "Ready for Plan-Writer"
+5. **Build data source matrix** (see `~/.claude/rules/stability.md` Section 10):
+   - If the feature involves data displayed on 3+ screens or from 2+ sources, build a source x consumer matrix
+   - List every data source for each field (tables, APIs, caches, RSS)
+   - List every consumer (screen/component) that displays the field
+   - Define the fallback chain per consumer
+   - Document in the spec file under "Data Source Matrix"
+6. If anything is ambiguous → ask user clarifying questions
+7. Once clear → produce Exploration section
+8. Save to `docs/technical-specs/{ISSUE_ID}.md`
+9. Post exploration to Linear issue as comment
+10. Report back to EM: "Ready for Plan-Writer"
 
 ## File Template
 
@@ -287,6 +293,24 @@ Create `docs/technical-specs/{ISSUE_ID}.md` with this structure:
 | `GET /api/podcasts/:id` | `thumbnail` | [check] | [present, valid URL?] |
 
 _Curl staging API for each endpoint above. Flag issues as blockers._
+
+### Data Source Matrix
+
+(Include when data appears on 3+ screens or comes from 2+ sources)
+
+| Consumer (Screen) | Primary Source | Fallback 1 | Fallback 2 | Fallback 3 |
+|-------------------|---------------|------------|------------|------------|
+| [Screen A] | [table.field] | [table.field] | — | — |
+
+**Implementation:** Single utility with ordered fallback chain.
+
+### ID Systems
+
+(Include when entity has multiple ID formats)
+
+| System | Format | Example | Used By |
+|--------|--------|---------|---------|
+| [table.id] | [type] | [example] | [screens/APIs] |
 
 ### Risks / Notes
 

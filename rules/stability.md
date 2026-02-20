@@ -46,6 +46,7 @@ Using framework/library APIs incorrectly due to:
 | **passport vs passport-google-oauth20** | Config structure differs | Test with real OAuth flow |
 | **Tesseract.js v2 vs v4** | API completely changed | Check migration guide |
 | **Playwright WebKit vs Capacitor WKWebView** | Same engine, different behavior | Test on physical device — see Section 8 |
+| **DOMParser.textContent vs innerText** | `textContent` strips block elements (`<p>`, `<br>`, `<div>`) without adding `\n` — creates one giant string | Insert `\n` at block boundaries before extracting text — see Sprint 012 post-mortem |
 
 ### Pattern: API Validation Layer
 
@@ -705,6 +706,54 @@ curl -s "https://staging-api.example.com/episodes/123" | jq '.description[:100]'
 
 ---
 
+## 10. Data Source Mapping (Shared Data Fields)
+
+### Problem
+
+When a data field (artwork, description, title) appears on multiple screens and comes from multiple sources, fixing it one screen at a time creates a "waterfall" of iteration batches — each batch discovers one more missing fallback.
+
+**Post-mortem:** `docs/post-mortem/2026-02-20-artwork-waterfall-rtl-sprint-012.md` (6 batches for artwork alone)
+
+### Rules
+
+**During exploration, when a feature involves shared data:**
+
+1. **List every data source** for the field (tables, APIs, caches, RSS)
+2. **List every consumer** (screens, components) that displays the field
+3. **Build a fallback chain** — ordered priority of sources per consumer
+4. **Document in tech spec** as a data-source matrix
+
+### Pattern: Data Source Matrix
+
+```markdown
+## Data Source Matrix: [field name]
+
+| Consumer | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
+|----------|---------|------------|------------|------------|
+| Screen A | table_a.field | table_b.field | API cache | default |
+| Screen B | table_a.field | table_b.field | — | — |
+
+Implementation: Single utility function with ordered COALESCE/fallback chain.
+```
+
+**The developer implements the COMPLETE chain in one pass, not incrementally.**
+
+### When to Build This Matrix
+
+- Data displayed on 3+ screens
+- Data comes from 2+ tables/APIs
+- Data has known gaps (some records have it, some don't)
+- Previous sprints had "still missing" iteration patterns
+
+### Checklist
+
+- [ ] Have we identified ALL sources for this data field?
+- [ ] Have we identified ALL screens that display it?
+- [ ] Is there a single utility/query that implements the complete fallback chain?
+- [ ] Are all consumers using that utility (not direct field access)?
+
+---
+
 ## Quick Reference
 
 | Issue Type | First Check | Prevention |
@@ -717,3 +766,4 @@ curl -s "https://staging-api.example.com/episodes/123" | jq '.description[:100]'
 | **External Service Failures** | Check timeout settings | 30s timeout + fallback + tracking |
 | **WKWebView Layout** | Test on physical device | Flex column layout, 49px tab bar, no position:fixed |
 | **Backend Data Mismatch** | Curl staging API during exploration | Verify actual response data, not just code |
+| **Data Source Waterfall** | Build source × consumer matrix during exploration | Single utility with complete fallback chain |

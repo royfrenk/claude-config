@@ -1,213 +1,205 @@
-# v0 Design Workflow for Claude Code
+# v0 Design Workflow
 
-A guide for using Vercel's v0 as a visual design tool with Claude Code's agent workflow. Iterate on designs visually in v0.dev, then get pixel-perfect copies in your codebase.
-
----
-
-## Why This Exists
-
-When building UI features, you want to **see and interact with designs before committing to code**. v0.dev lets you iterate visually using natural language prompts. Claude Code then copies the approved design into your project verbatim.
-
-**The problem it solves:** Without this, Claude generates UI from text descriptions — you don't see it until it's built. With v0, you preview and refine first.
+Integration between Claude Code agents and Vercel v0 for visual UI iteration.
 
 ---
 
-## Prerequisites
+## Overview
 
-1. **v0 Premium or Team plan** — API access requires a paid plan ([v0.app/chat/settings/billing](https://v0.app/chat/settings/billing))
-2. **Claude Code** — with MCP support
-3. **v0 MCP server** — connects Claude Code to v0's API
-4. **A v0 design repo** — GitHub repo connected to v0.dev for version control
+This workflow lets you design UI components visually in v0.dev with your project's design system as context, then pull the result back into your codebase.
+
+**Key principle:** v0 is the visual design tool. Claude Code is the integration tool. You iterate in v0's UI, not in the terminal.
 
 ---
 
-## Setup
-
-### 1. Create a v0 Design Repo
-
-Create a GitHub repo for v0 to commit designs to:
-
-```bash
-# Create repo on GitHub (private recommended)
-gh repo create your-project-v0 --private
-
-# Clone locally
-git clone git@github.com:your-org/your-project-v0.git ~/Documents/repos/your-project-v0
-```
-
-Connect this repo to v0.dev in your v0 project settings. v0 will auto-commit to branches (one branch per chat).
-
-### 2. Install the v0 MCP Server
-
-```bash
-# Clone the MCP server
-git clone https://github.com/hellolucky/v0-mcp.git ~/v0-mcp
-cd ~/v0-mcp
-npm install
-npm run build
-```
-
-### 3. Get Your v0 API Key
-
-1. Go to [v0.dev](https://v0.dev) and sign in
-2. Navigate to Settings > API
-3. Generate an API key
-
-### 4. Configure Claude Code
-
-Add the MCP server to your Claude Code config. In `~/.claude.json` (or your project's `.claude.json`), add:
-
-```json
-{
-  "mcpServers": {
-    "v0-mcp": {
-      "command": "node",
-      "args": ["/absolute/path/to/v0-mcp/dist/main.js"],
-      "env": {
-        "V0_API_KEY": "your-v0-api-key-here"
-      }
-    }
-  }
-}
-```
-
-### 5. Verify Setup
-
-Restart Claude Code, then ask Claude to run `v0_setup_check`. You should see:
+## Flow
 
 ```
-v0 API Setup Check Passed
-Status: Connected
+DESIGN PLANNER                    YOU                     DEVELOPER
+     |                             |                          |
+     |  1. Generate v0 prompt      |                          |
+     |     from design spec        |                          |
+     |                             |                          |
+     |  2. Call v0_start_design    |                          |
+     |     (prompt + projectId)    |                          |
+     |                             |                          |
+     |  3. Return v0.dev link  --> |                          |
+     |     in the design spec      |                          |
+     |                             |                          |
+     |                       4. Click link                    |
+     |                          Iterate in v0 UI              |
+     |                          "make text bigger"            |
+     |                          "add RTL support"             |
+     |                          Until happy                   |
+     |                             |                          |
+     |                       5. "pull from v0"                |
+     |                             |                          |
+     |                             |   6. v0_pull_files   --> |
+     |                             |      Save to staging     |
+     |                             |      Integrate into app  |
+     |                             |      Deploy to staging   |
+     |                             |                          |
+     |                             |   7. "Here's staging" <--|
+     |                             |      [staging URL]       |
+     |                             |                          |
+     |                       8. Verify on staging             |
 ```
 
 ---
 
-## How It Works
+## MCP Tools
 
-### The Workflow
+### `v0_start_design`
 
+Creates a v0 chat linked to the project. Returns a clickable v0.dev URL.
+
+**Called by:** Design Planner (as final step of design spec creation)
+
+**Parameters:**
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `prompt` | string | Yes | — | The design prompt (generated from the design spec) |
+| `projectId` | string | No | `prj_ACyvfB3acSo5hZxVyTRuOzPKH858` | v0 project ID |
+| `name` | string | No | — | Chat name for identification |
+
+**Returns:**
+- `webUrl` — Link to v0.dev chat (the main deliverable)
+- `chatId` — Chat identifier (needed for `v0_pull_files`)
+- `apiUrl` — API endpoint for the chat
+
+**Example output:**
 ```
-Design-Planner creates design spec (goals, states, layout)
-    |
-    v
-[Optional] You iterate on v0.dev
-    |  - Prompt v0 with your design vision
-    |  - Refine until it looks right
-    |  - v0 auto-commits to your v0 repo
-    |
-    v
-You say "v0 is done" + provide the component path
-    |
-    v
-Explorer + Plan-Writer plan the technical implementation
-    |
-    v
-Developer copies v0 visual code verbatim into your project
-    |
-    v
-Reviewer verifies v0 fidelity (visual code matches source)
+v0 Design Session Created
+
+Link: https://v0.dev/chat/b/abc123
+Chat ID: abc123
+Project: prj_ACyvfB3acSo5hZxVyTRuOzPKH858
+
+Open the link to preview and iterate on the design.
+When done, tell me "pull from v0" to integrate the result.
 ```
 
-### The "Exact Copy" Rule
+### `v0_pull_files`
 
-This is the core principle. When Developer implements a v0-approved design:
+Fetches the latest generated files from a v0 chat and saves them to the staging folder.
 
-**Copied verbatim (never changed):**
-- Tailwind classes
-- Layout structure (flex, grid, positioning)
-- Component hierarchy (nesting, order)
-- Spacing values
-- Colors
+**Called by:** Developer (when user says "pull from v0")
 
-**Adapted to project conventions:**
-- File names (e.g., `ProfilePage.tsx` -> `profile-page.tsx`)
-- Component names (to match project patterns)
-- Import paths (to match project structure)
-- TypeScript types (v0 may skip these)
-- Framework imports (e.g., `next/image` -> `<img>`, `next/link` -> your router's `<Link>`)
+**Parameters:**
 
-**Why?** v0 generates Next.js + React. Your project may use a different framework (Vite, Remix, etc.). The ~5% of framework-specific code must change, but the visual design — which is what you iterated on — transfers 1:1.
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `chatId` | string | Yes | — | The chat ID from `v0_start_design` |
+| `outputDir` | string | No | `src/components/v0/` | Where to save pulled files |
 
-### When to Use v0
+**Returns:**
+- List of files saved with paths
+- File contents summary
 
-v0 iteration is **optional and user-driven**. Use it for:
+**Behavior:**
+1. Calls `GET /v1/chats/:id/messages` to get the latest version
+2. Extracts file contents from the response
+3. Saves each file to `outputDir`
+4. Returns the file list so Developer can integrate
 
-- New screens or major layout changes
-- Features where visual design matters and you want to preview first
-- When you want to explore multiple design directions quickly
+### `v0_list_chats`
 
-Skip it for:
-- Small tweaks (adding a badge, changing a color)
-- Backend-only work
-- Bug fixes
+Lists recent v0 chats for the project. Useful when Developer needs to find which chat to pull from.
 
-**Trigger:** You explicitly tell Claude "let's go through v0 for this one." It's always your call.
+**Called by:** Any agent
+
+**Parameters:**
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `projectId` | string | No | `prj_ACyvfB3acSo5hZxVyTRuOzPKH858` | v0 project ID |
+
+**Returns:**
+- List of chats with: name, chatId, webUrl, last updated
 
 ---
 
-## Two-Way Communication
+## Sprint Process Integration
 
-| Direction | Method | When |
-|-----------|--------|------|
-| **Claude -> v0** | MCP tools (`v0_generate_ui`, `v0_chat_complete`) | Claude generates initial designs from descriptions |
-| **v0 -> Claude** | Git repo (pull + read components) | You iterate on v0.dev, Claude reads the approved result |
+### Design Planner — New Final Step
 
-**Typical flow:** You drive v0.dev manually. Claude reads the result and copies it.
+After creating the design spec, Design Planner:
 
-**Alternative:** Ask Claude to generate a first pass via MCP, then refine on v0.dev yourself.
-
----
-
-## Design Spec Integration
-
-When v0 is used, the design spec gets a reference section:
+1. Generates a v0 prompt from the spec (component description, colors, props interface, constraints)
+2. Calls `v0_start_design` with the prompt
+3. Adds the v0 link and chat ID to the design spec:
 
 ```markdown
-## v0 Reference (Optional)
+## v0 Design Session
 
-**v0 Component Path:** your-project-v0/components/feature/my-component.tsx
-**v0.dev URL (optional):** https://v0.dev/chat/...
+**Link:** https://v0.dev/chat/b/abc123
+**Chat ID:** abc123
 
-**"Exact Copy" Rule:** The Developer MUST copy visual code verbatim from
-the v0 component. Code conventions adapt to project standards.
+Iterate on the design in v0, then tell Claude "pull from v0" when ready.
 ```
 
-This tells every downstream agent (Explorer, Plan-Writer, Developer, Reviewer) that v0 is the visual source of truth.
+### Developer — New Pre-Implementation Step
+
+When the design spec contains a v0 link and the user says "pull from v0":
+
+1. Read the chat ID from the design spec
+2. Call `v0_pull_files` with the chat ID
+3. Files are saved to `src/components/v0/`
+4. Adapt the pulled component to project conventions (imports, naming, file location)
+5. Integrate into the app
+6. Deploy to staging
 
 ---
 
-## Agent Responsibilities
+## Configuration
 
-| Agent | v0 Role |
-|-------|---------|
-| **Design-Planner** | Creates design spec, pauses for v0 if requested, records v0 reference |
-| **Explorer** | Reads design spec (naturally picks up v0 reference) |
-| **Plan-Writer** | Plans implementation (naturally reads v0 reference from spec) |
-| **Developer** | Copies v0 visual code verbatim, adapts only code conventions |
-| **Reviewer** | Verifies v0 fidelity — flags any visual code that was changed |
-| **Design-Reviewer** | Uses v0 component as visual source of truth for screenshot comparison |
+### v0 Project
 
----
+| Setting | Value |
+|---------|-------|
+| Project ID | `prj_ACyvfB3acSo5hZxVyTRuOzPKH858` |
+| Repo | `royfrenk/recap-rabbit` |
 
-## MCP Tools Reference
+### MCP Server
 
-| Tool | Purpose |
-|------|---------|
-| `v0_generate_ui` | Generate components from text descriptions |
-| `v0_generate_from_image` | Generate components from screenshots/images |
-| `v0_chat_complete` | Iterative back-and-forth refinement |
-| `v0_setup_check` | Verify API connectivity |
+| Setting | Value |
+|---------|-------|
+| Location | `~/.claude/v0-mcp/` |
+| Entry | `node ~/.claude/v0-mcp/dist/main.js` |
+| Env | `V0_API_KEY` (in ~/.zshrc) |
 
----
+### API Endpoints (v0 Platform API)
 
-## Tips
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/v1/chats` | POST | Create chat (v0_start_design) |
+| `/v1/chats/:id/messages` | POST | Send follow-up message |
+| `/v1/chats/:id/messages` | GET | Get chat messages/files (v0_pull_files) |
 
-- **Iterate in v0 until you're happy** — the whole point is to get the design right before building
-- **Merge your v0 branch to main** before telling Claude "v0 is done" so the component path is stable
-- **One component per v0 chat** keeps things clean — v0 creates one branch per chat
-- **v0 uses shadcn/ui** — if your project also uses shadcn/ui, the Tailwind classes transfer perfectly
-- **Save the v0.dev URL** in the design spec for future reference, even though the repo path is the source of truth
+**Base URL:** `https://api.v0.dev`
+
+**Auth:** `Bearer {V0_API_KEY}` header
 
 ---
 
-*Guide version: 2026-02-19*
+## Staging Folder Convention
+
+Pulled v0 files go to: `src/components/v0/`
+
+This folder is:
+- A temporary staging area, not a permanent home
+- Files here are waiting to be integrated by the Developer
+- After integration, the original files in `v0/` can be deleted
+- Not committed to git (add to .gitignore if desired)
+
+---
+
+## What This Replaces
+
+| Before (broken) | After (this workflow) |
+|---|---|
+| MCP generates code as text, no preview | MCP creates v0 chat, you get a live preview link |
+| No repo context, generic components | Chat linked to project, uses your design system |
+| No iteration — take it or leave it | Full v0 UI for visual iteration |
+| User copy-pastes between v0 and Claude | "pull from v0" automates the handoff |

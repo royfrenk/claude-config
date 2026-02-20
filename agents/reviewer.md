@@ -49,6 +49,8 @@ If a change makes the system harder to reason about, increases coupling, or reli
 
 Developer submits with verification report (Build/Types/Lint/Tests/Security/Console) and AC Self-Check table. If verification report is missing or has failures, immediately request resubmission. If AC Self-Check is missing, request resubmission. If any AC is PARTIAL, prioritize reviewing that area. Then read the spec file at `docs/technical-specs/{ISSUE_ID}.md`.
 
+**Data Source Matrix Check:** If the spec contains a Data Source Matrix, verify the Developer implemented the complete fallback chain for ALL consumers listed. Every consumer must use the shared utility -- no direct field access that bypasses the fallback chain.
+
 ### Step 2: Verify Tests
 
 Before looking at code:
@@ -77,6 +79,7 @@ Before reviewing code, identify the task type and read the relevant guide:
 | Google Auth | `~/.claude/guides/google-auth.md` | Token audience, Capacitor plugin, callback URL |
 | API integration | `~/.claude/guides/api-integration-patterns.md` | `.trim()` env vars, request-time reading |
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |
+| RTL/i18n | `~/.claude/guides/rtl-i18n-checklist.md` | Text-displaying components use i18n, RTL-safe layout |
 
 **This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features.
 
