@@ -40,7 +40,7 @@ ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
 
 When Design-Planner asks the User "Want to iterate on v0.dev?" and User says yes:
 
-1. Design-Planner runs `scripts/v0-create-chat.mjs` with a design prompt
+1. Design-Planner runs `~/.claude/scripts/v0-init-repo.mjs` with a design prompt (repo-aware)
 2. User receives a v0.dev URL, opens it in browser, iterates visually
 3. **STOP — wait for User to say "v0 is ready"** (same as design approval)
 4. Design-Planner updates design spec with v0 reference path (`src/v0/{feature}/`)

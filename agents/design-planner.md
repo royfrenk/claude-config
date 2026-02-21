@@ -455,7 +455,13 @@ If the User says "let's go through v0 for this one" (or similar), pause here:
 
 2. **Create a v0.dev chat** by running the script:
    ```bash
-   V0_API_KEY=$V0_API_KEY node scripts/v0-create-chat.mjs "Your detailed design prompt here"
+   REPO_URL=$(git remote get-url origin | sed 's/git@github.com:/https:\/\/github.com\//' | sed 's/\.git$//')
+   BRANCH=$(git branch --show-current)
+
+   V0_API_KEY=$V0_API_KEY node ~/.claude/scripts/v0-init-repo.mjs \
+     --repo "$REPO_URL" \
+     --branch "$BRANCH" \
+     "Your detailed design prompt here"
    ```
    The script prints a `webUrl` to stdout. Present it to the User:
    ```
