@@ -448,12 +448,25 @@ Please answer these questions so I can finalize the design specification.
 
 If the User says "let's go through v0 for this one" (or similar), pause here:
 
-1. **Prepare a design prompt** from the design spec you just created. Include:
+1. **Gather real project content for the v0 prompt:**
+
+   **CRITICAL: v0 produces generic placeholder content ("Chapter 1", "Lorem ipsum") unless you give it real data.** Before writing the prompt, extract real content from the project:
+
+   - Read `CLAUDE.md`, `README.md`, `docs/PROJECT_STATE.md` for project context
+   - Read source files relevant to the feature (data models, content files, seed data)
+   - Extract real names, titles, descriptions, field names, feature lists
+   - Note the project's existing UI patterns, color scheme, component library
+
+   **You must include this real content verbatim in the v0 prompt. Never use placeholders.**
+
+2. **Prepare a design prompt** from the design spec you just created AND the real content. Include:
    - Feature description and key user flows
    - Component specifications (states, interactions, layout)
    - Reference to existing components that should be matched in style
+   - **Real content:** actual titles, names, descriptions, field values from the project
+   - Keep the total prompt under 4000 characters
 
-2. **Create a v0.dev chat** by running the script:
+4. **Create a v0.dev chat** by running the script:
    ```bash
    REPO_URL=$(git remote get-url origin | sed 's/git@github.com:/https:\/\/github.com\//' | sed 's/\.git$//')
    BRANCH=$(git branch --show-current)
@@ -461,7 +474,7 @@ If the User says "let's go through v0 for this one" (or similar), pause here:
    V0_API_KEY=$V0_API_KEY node ~/.claude/scripts/v0-init-repo.mjs \
      --repo "$REPO_URL" \
      --branch "$BRANCH" \
-     "Your detailed design prompt here"
+     "Your enriched design prompt with real content here"
    ```
    The script prints a `webUrl` to stdout. Present it to the User:
    ```
@@ -477,9 +490,9 @@ If the User says "let's go through v0 for this one" (or similar), pause here:
    When you're happy with the result, tell me "v0 is ready".
    ```
 
-3. **STOP and wait.** The User iterates on v0.dev visually.
+5. **STOP and wait.** The User iterates on v0.dev visually.
 
-4. **When User returns with "v0 is ready":**
+6. **When User returns with "v0 is ready":**
    - Fill in the `## v0 Reference` section of the design spec:
      - Set component path to `src/v0/{feature}/{component}.tsx`
      - Add the v0.dev chat URL for reference
