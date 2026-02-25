@@ -272,6 +272,7 @@ Only after the User confirms:
    cp -R ~/.claude/commands ~/Documents/repos/claude-config/
    cp -R ~/.claude/rules ~/Documents/repos/claude-config/
    cp -R ~/.claude/guides ~/Documents/repos/claude-config/
+   cp -R ~/.claude/scripts ~/Documents/repos/claude-config/
    cp ~/.claude/README.md ~/Documents/repos/claude-config/
    cp ~/.claude/settings.json ~/Documents/repos/claude-config/
 
@@ -285,6 +286,7 @@ Only after the User confirms:
 - `commands/` - Slash commands
 - `rules/` - Coding standards
 - `guides/` - Reference guides
+- `scripts/` - Utility scripts (sync, review, etc.)
 - `README.md` - Overview
 - `settings.json` - Hooks and MCP config
 
@@ -292,6 +294,38 @@ Only after the User confirms:
 - `.credentials.json` - OAuth tokens
 - `settings.local.json` - Local overrides
 - `history.jsonl`, `todos/`, `projects/`, etc. - Session state
+
+## Phase 7: Sync to Gemini and Codex
+
+After Phase 6 completes (changes made to `~/.claude/` and synced to claude-config repo), propagate the changes to Gemini CLI and Codex CLI.
+
+1. **Read the cross-tool sync guide:**
+   Read `~/.claude/guides/cross-tool-sync.md` for platform differences and adaptation rules.
+
+2. **Run the sync script:**
+   ```bash
+   ~/.claude/scripts/sync-ai-tools.sh
+   ```
+
+3. **Verify output:**
+   - Check that `~/.gemini/GEMINI.md` has correct `@imports`
+   - Check that `~/.codex/AGENTS.md` was regenerated
+   - If new commands were added: verify TOML and SKILL.md were generated
+   - If rules were modified: verify adaptations are correct (spot-check one file)
+
+4. **Report sync status:**
+   ```
+   ## Cross-Tool Sync Complete
+
+   | Target | Files Synced | Status |
+   |--------|-------------|--------|
+   | Gemini (~/.gemini/) | [N] rules, [M] guides, [K] commands | OK |
+   | Codex (~/.codex/) | AGENTS.md regenerated, [K] skills | OK |
+
+   Changes propagated to all three platforms.
+   ```
+
+**If sync script is not found:** Warn the user and skip. This is non-blocking -- the user can run the script manually later.
 
 ## Rules
 
