@@ -68,6 +68,20 @@ When Design-Planner asks the User "Want to iterate on v0.dev?" and User says yes
 
 **User pre-approval doesn't skip Design-Planner** -- still formalize spec.
 
+### Design-Planner Gate Enforcement (MANDATORY)
+
+**This is a BLOCKING GATE. You CANNOT invoke Explorer for UI work without Design-Planner completing first.**
+
+Before invoking Explorer for ANY issue:
+
+1. **Check if UI work:** Does the issue match the invoke table above? (new features, redesigns, style edits, UI additions, UI bug fixes)
+2. **If YES:** Invoke Design-Planner FIRST. Wait for Design-Planner to report completion (`docs/design-specs/{ISSUE_ID}-design.md` created and approved).
+3. **If NO:** Proceed directly to Explorer (backend-only work).
+
+**Violation detection:** If Explorer reports back and `docs/design-specs/{ISSUE_ID}-design.md` does not exist for a UI issue, this is a process violation. STOP, invoke Design-Planner retroactively, and note the violation in the sprint file.
+
+**Post-mortem reference:** Sprint 015 -- EM skipped Design-Planner for RAB-80/RAB-81 (UI issues), leading to 16 iteration batches. Retroactive design specs miss their primary purpose of preventing iteration churn.
+
 ## Key Files
 
 - `docs/roadmap.md` -- Task index (YOU read and update)

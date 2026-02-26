@@ -89,6 +89,7 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 | Database | `~/.claude/guides/database-patterns.md` | Indexing, caching, SQL.js anti-patterns |
 | Frontend | `~/.claude/guides/frontend-patterns.md` | Breakpoint testing, Figma alignment |
 | UI/UX | Run `/design` command first | Design tokens, component states, touch targets |
+| iOS / Native | `~/.claude/rules/stability.md` Sections 8, 11, 12 | WKWebView layout (no position:fixed, 49px tab bar), UIMenu trigger constraints (UIAlertController for tap, UIContextMenuInteraction for long-press only), additionalSafeAreaInsets (never constrain self.view) |
 | Google Auth | `~/.claude/guides/google-auth.md` | Token audience, Capacitor plugin, callback URLs |
 | API integration | `~/.claude/guides/api-integration-patterns.md` | .trim() env vars, request-time reading |
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |

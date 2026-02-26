@@ -62,7 +62,9 @@ fi
 ```
 
 **If no design spec exists:**
-- Proceed with standard exploration (backend-only or no design phase)
+- **Check if this issue involves UI work:** Look for keywords in the issue title/description (UI, UX, layout, design, style, component, screen, button, modal, menu, animation) or changed file patterns (`src/components/`, `src/screens/`, `*.tsx`, `*.css`)
+- **If UI work detected without design spec:** Flag to EM in your handoff: "WARNING: This issue appears to involve UI changes but no design spec exists at `docs/design-specs/{ISSUE_ID}-design.md`. EM should verify Design-Planner was invoked before proceeding to Plan-Writer."
+- **If backend-only:** Proceed with standard exploration
 
 ## Linear Comment Check
 
