@@ -252,30 +252,44 @@ Linear Config:
   - Issue Prefix: [prefix]
 
 Instructions:
-1. For each issue in sprint:
-   - Check if this involves UI/UX work (lines 57-110 in em.md)
-   - If YES: Spawn Design-Planner before Explorer
-   - If NO: Skip directly to Explorer
-2. Spawn Explorer(s) to analyze scope (skip for trivial fixes)
+
+PHASE 0 — Design-Planner Gate (BEFORE any exploration):
+1. For EACH issue, classify: UI work or backend-only?
+   - UI indicators: issue mentions UI/UX/layout/design/style/component/screen/button/modal/menu/page/form/card/navigation/header/drawer/sheet/dialog/toast
+   - UI indicators: files to modify include src/components/, src/screens/, *.css, *.swift (native shell)
+   - UI indicators: issue labels include UI, UX, design, frontend, Improvement (with UI scope)
+2. Log classification to sprint file for EVERY issue:
+   | Issue | Classification | Design Spec Required | Design Spec Status |
+3. For ALL UI-classified issues: Spawn Design-Planner agents (can be parallel)
+4. WAIT for ALL Design-Planner agents to complete
+5. VERIFY: docs/design-specs/{ISSUE_ID}-design.md exists for every UI-classified issue
+6. Only after ALL design specs confirmed → proceed to Phase 1
+
+PHASE 1 — Exploration & Planning:
+1. Spawn Explorer(s) to analyze scope (skip for trivial fixes)
    - Can spawn multiple Explorers in parallel for complex issues
-3. Spawn Plan-Writer to create implementation plan
-4. Present plan to User for approval ← CHECKPOINT
-5. Once approved: Execute ALL issues CONTINUOUSLY without stopping:
+   - Explorers will independently verify design specs exist (hard block)
+2. Spawn Plan-Writer to create implementation plan
+   - Plan-Writer will independently verify design specs exist (safety net)
+3. Present plan to User for approval ← CHECKPOINT
+
+PHASE 2 — Execution:
+4. Once approved: Execute ALL issues CONTINUOUSLY without stopping:
    - Spawn Developer(s) for execution (parallel when possible)
    - Spawn Design-Reviewer (if UI work) and Code Reviewer
    - Deploy each issue to staging immediately after review passes
    - Continue to next issue without pausing
-6. ONLY stop execution when:
+5. ONLY stop execution when:
    - Design approval needed (UI work)
    - v0 visual iteration in progress (User iterating on v0.dev — wait for "v0 is ready")
    - Plan approval needed (always)
    - Review fails after 3 rounds (escalate)
    - All issues deployed to staging (present wrap-up)
    - Blocking error occurs
-7. Update sprint file with checkpoints throughout (NOT User messages)
-8. Use linear-sync agent for all Linear operations (non-blocking)
-9. Update roadmap.md as work progresses
-10. After all issues complete: Present sprint wrap-up with staging URLs
+6. Update sprint file with checkpoints throughout (NOT User messages)
+7. Use linear-sync agent for all Linear operations (non-blocking)
+8. Update roadmap.md as work progresses
+9. After all issues complete: Present sprint wrap-up with staging URLs
 
 Sprint file is your shared memory. Update it with:
 - Checkpoints after each phase

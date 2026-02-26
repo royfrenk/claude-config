@@ -82,6 +82,15 @@ Before invoking Explorer for ANY issue:
 
 **Post-mortem reference:** Sprint 015 -- EM skipped Design-Planner for RAB-80/RAB-81 (UI issues), leading to 16 iteration batches. Retroactive design specs miss their primary purpose of preventing iteration churn.
 
+### Why Downstream Enforcement Exists
+
+Explorer and Plan-Writer now independently verify design specs exist before proceeding.
+If you skip Design-Planner, Explorer will REFUSE to analyze UI issues and Plan-Writer
+will REFUSE to create plans. This is intentional -- it's a safety net for this gate.
+
+The sprint file classification log (Phase 0) creates a paper trail. If Explorer blocks
+an issue you classified as "backend-only", re-classify it and invoke Design-Planner.
+
 ## Key Files
 
 - `docs/roadmap.md` -- Task index (YOU read and update)

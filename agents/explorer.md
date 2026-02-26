@@ -61,10 +61,38 @@ fi
 **Implementation must match mockups within ~10px tolerance.**
 ```
 
-**If no design spec exists:**
-- **Check if this issue involves UI work:** Look for keywords in the issue title/description (UI, UX, layout, design, style, component, screen, button, modal, menu, animation) or changed file patterns (`src/components/`, `src/screens/`, `*.tsx`, `*.css`)
-- **If UI work detected without design spec:** Flag to EM in your handoff: "WARNING: This issue appears to involve UI changes but no design spec exists at `docs/design-specs/{ISSUE_ID}-design.md`. EM should verify Design-Planner was invoked before proceeding to Plan-Writer."
-- **If backend-only:** Proceed with standard exploration
+**If no design spec exists — HARD BLOCK CHECK:**
+
+Before proceeding with ANY exploration, determine if this issue involves UI work:
+
+**UI work indicators (ANY of these triggers the block):**
+- Issue title/description mentions: UI, UX, layout, design, style, component, screen, button, modal, menu, animation, page, form, card, navigation, header, drawer, sheet, dialog, toast
+- Files to modify include: `src/components/`, `src/screens/`, `*.css`, `*.swift` (native shell)
+- Issue labels include: UI, UX, design, frontend, Improvement (with UI scope)
+
+**If UI work detected AND no design spec at `docs/design-specs/{ISSUE_ID}-design.md`:**
+
+**STOP IMMEDIATELY. Do NOT explore. Do NOT read codebase files. Do NOT create a tech spec.**
+
+Return this error to the caller and exit:
+
+```
+BLOCKED: {ISSUE_ID} requires Design-Planner first.
+No design spec found at docs/design-specs/{ISSUE_ID}-design.md.
+Invoke Design-Planner and wait for it to complete before re-invoking Explorer for this issue.
+```
+
+**Override mechanism:** If the caller explicitly passes context containing `skip-design-check: [reason]`, Explorer proceeds with exploration but logs the override in the tech spec:
+
+```markdown
+## Design Spec Override
+
+**Design spec missing.** Exploration proceeded with override.
+**Reason:** [reason from caller]
+**Risk:** UI implementation may require iteration without design guidance.
+```
+
+**If NO UI work detected:** Proceed with standard exploration (backend-only)
 
 ## Linear Comment Check
 

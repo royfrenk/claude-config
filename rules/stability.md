@@ -47,6 +47,8 @@ Using framework/library APIs incorrectly due to:
 | **Tesseract.js v2 vs v4** | API completely changed | Check migration guide |
 | **Playwright WebKit vs Capacitor WKWebView** | Same engine, different behavior | Test on physical device — see Section 8 |
 | **DOMParser.textContent vs innerText** | `textContent` strips block elements (`<p>`, `<br>`, `<div>`) without adding `\n` — creates one giant string | Insert `\n` at block boundaries before extracting text — see Sprint 012 post-mortem |
+| **aiosqlite vs asyncpg** | aiosqlite accepts ISO date strings; asyncpg requires `datetime` objects for TIMESTAMPTZ columns | After migration: curl staging API, verify response data types — see Sprint 015 post-mortem |
+| **UIButton.sendActions vs UIMenu** | `sendActions(for: .menuActionTriggered)` does NOT programmatically present a UIMenu — requires real touch input through responder chain | Use `UIAlertController(.actionSheet)` for tap-triggered menus; `UIContextMenuInteraction` for long-press only — see Section 11 |
 
 ### Pattern: API Validation Layer
 
@@ -606,6 +608,11 @@ Capacitor's WKWebView has unique layout behaviors that differ from desktop Safar
 | `env(safe-area-inset-bottom)` returns ~34px on notched iPhones | Safe area shares background with content → icons appear off-center | Use `pt-5` (20px) top padding for optical centering |
 | `bg-card`/`bg-background` split creates grey line | Card white (#fff) vs background near-white (#fafafa) visible seam | Keep single background on parent `<nav>` element |
 | Playwright WebKit ≠ WKWebView | Safe areas, viewport-fit:cover, flex behavior all differ | Don't trust Playwright for native shell components |
+| `self.view` IS the WKWebView | Frame constraints on `self.view` are self-referential | Use `additionalSafeAreaInsets` to push web content, never constrain `self.view.frame` |
+
+**Critical architecture fact:** In Capacitor's `MyViewController`, `self.view` is the WKWebView itself — not a container holding the WKWebView. Any Auto Layout constraint that references `self.view` as both source and target is self-referential and will silently fail or cause unpredictable layout. Use `additionalSafeAreaInsets` to reserve space for native shell components (TabBar, MiniPlayer) overlaid on top of the webview.
+
+**Post-mortem:** `docs/post-mortem/2026-02-25-sprint-014-native-shell.md` (8 layout iterations, Sprint 014)
 
 ### Nav Scrolling: The #1 WKWebView Layout Bug
 
@@ -624,10 +631,12 @@ If a bottom bar (TabBar, MiniPlayer) starts scrolling with page content, check:
 
 1. **Never use `position: fixed`** — use flex column with `flex-shrink-0`
 2. **Never exceed `h-[49px]`** on tab bar content row — 56px causes scrolling in WKWebView
-3. **Test on physical device EARLY** — before committing layout changes
-4. **Budget for manual iteration** — each cycle is ~5 min (edit → build → cap sync → Xcode → device)
-5. **Don't use Playwright diagnostics** for layout issues in native shell — they will mislead you
-6. **When 3+ CSS attempts fail** — stop and measure on device before trying more
+3. **Never constrain `self.view.frame`** — it IS the WKWebView. Use `additionalSafeAreaInsets` instead.
+4. **Test on physical device EARLY** — before committing layout changes
+5. **Budget for manual iteration** — each cycle is ~5 min (edit → build → cap sync → Xcode → device)
+6. **Don't use Playwright diagnostics** for layout issues in native shell — they will mislead you
+7. **When 3+ CSS attempts fail** — stop and measure on device before trying more
+8. **One change at a time, verify on device** — never stack multiple unverified CSS/layout changes. Make ONE change → `cap sync` → Xcode rebuild → verify on device → then next change. Stacking unverified changes wastes batches (Sprint 014: 4 batches wasted on stacked CSS fixes).
 
 ### Working Layout Pattern
 
@@ -754,6 +763,109 @@ Implementation: Single utility function with ordered COALESCE/fallback chain.
 
 ---
 
+## 11. External Model Output Management
+
+### Problem
+
+External model output (Codex, Gemini) can produce large code changes (10+ files, hundreds of lines) that sit uncommitted in the working tree. Subsequent iteration batches stack on top, making it impossible to bisect bugs or recover if the working tree is reset.
+
+**Post-mortem:** `docs/post-mortem/2026-02-25-sprint-014-native-shell.md` (748 lines across 12 files uncommitted for 7 batches)
+
+### Rules
+
+1. **Commit external model output immediately** — If output touches 5+ files or 200+ lines, commit it as a discrete commit before continuing iteration. Use message format: `feat: [description] (Codex/Gemini-assisted)`
+2. **Treat external output as a deliverable** — not work-in-progress. It's a discrete unit of change that should be reviewable independently.
+3. **Don't iterate on top of uncommitted external output** — commit first, then iterate. This enables `git bisect` and safe rollback.
+
+---
+
+## 12. Sprint Issue Coverage Check
+
+### Problem
+
+In frontend-heavy sprints, backend issues get neglected. The agent focuses on the active iteration loop and never circles back to independent work items in the same sprint.
+
+**Post-mortem:** `docs/post-mortem/2026-02-25-sprint-014-native-shell.md` (RAB-78 received 0 attention across 21 batches)
+
+### Rules
+
+1. **At every 5th iteration batch**, check ALL sprint issues. For each issue with status != Done: are there unblocked sub-items that haven't been started?
+2. **If yes, flag to user:** "RAB-XX has unblocked work that hasn't been started. Should I address it now or continue with current iteration?"
+3. **Never close a sprint** without at least investigating all in-scope issues, even if the fix is "won't fix" or "deferred."
+
+---
+
+## 12. Native iOS Menu Presentation
+
+### Problem
+
+iOS provides multiple menu presentation APIs with different trigger requirements. Using the wrong one causes silent failures — the menu never appears but no error is thrown.
+
+**Post-mortem:** `docs/post-mortem/2026-02-26-sprint-015-iteration-churn.md` (5 implementations, Sprint 015)
+
+### Key Constraints
+
+| API | Trigger | Programmatic? | Use Case |
+|-----|---------|:---:|-----------|
+| `UIContextMenuInteraction` | Long-press gesture | No — requires real touch | Preview + menu on long-press |
+| `UIButton.menu` + `showsMenuAsPrimaryAction` | Tap gesture | No — `sendActions(for:)` does NOT work | Button with built-in menu |
+| `UIAlertController(.actionSheet)` | Any (programmatic OK) | Yes | Tap-triggered action list with SF Symbol icons |
+| `UIEditMenuInteraction` (iOS 16+) | Programmatic | Yes | Cut/copy/paste style menus |
+
+### Rules
+
+1. **Never use `sendActions(for: .menuActionTriggered)`** to programmatically show a UIMenu — it silently fails
+2. **For tap-triggered menus from web (Capacitor):** Use `UIAlertController(.actionSheet)` — it's the only reliable approach that works programmatically and supports SF Symbol icons via KVC
+3. **For long-press menus:** Use `UIContextMenuInteraction` with a delegate
+4. **Stop after 2 failed approaches** — research the platform constraints before trying a third implementation
+
+### Pattern: Capacitor Context Menu Plugin
+
+```swift
+// Working approach: UIAlertController with SF Symbol icons
+let alert = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
+
+let action = UIAlertAction(title: "Share", style: .default) { _ in
+    call.resolve(["selectedActionId": "share"])
+}
+// Attach SF Symbol via KVC (stable private API)
+if let image = UIImage(systemName: "square.and.arrow.up")?.withRenderingMode(.alwaysTemplate) {
+    action.setValue(image, forKey: "image")
+}
+alert.addAction(action)
+
+viewController.present(alert, animated: true)
+```
+
+---
+
+## 13. Database Driver Migration Verification
+
+### Problem
+
+Migrating between database drivers (e.g., aiosqlite → asyncpg) can pass syntax checks (`py_compile`, build) but fail at runtime due to type strictness differences. aiosqlite accepts ISO date strings for datetime columns; asyncpg requires actual Python `datetime` objects.
+
+**Post-mortem:** `docs/post-mortem/2026-02-26-sprint-015-iteration-churn.md` (Sprint 015)
+
+### Rules
+
+1. **After any database driver migration, curl the staging API** before marking the task complete
+2. **Test write operations** (INSERT, UPDATE), not just reads — type mismatches often surface on writes
+3. **Check datetime, JSON, and array columns specifically** — these are the most common type strictness differences
+4. **`py_compile` is necessary but NOT sufficient** — it catches syntax errors, not runtime type mismatches
+
+### Checklist
+
+After deploying a database driver migration:
+
+- [ ] `curl` the health endpoint — does the server start?
+- [ ] `curl` a read endpoint — do queries return data?
+- [ ] `curl` a write endpoint (or trigger a write via the app) — do inserts/updates succeed?
+- [ ] Check datetime fields specifically — are they actual `datetime` objects or strings?
+- [ ] Check the Railway/server logs for type errors
+
+---
+
 ## Quick Reference
 
 | Issue Type | First Check | Prevention |
@@ -764,6 +876,10 @@ Implementation: Single utility function with ordered COALESCE/fallback chain.
 | **Configuration** | Validate at startup | No silent fallbacks |
 | **Over-Engineering** | Count conditions/nesting | Simplify when > 3 levels |
 | **External Service Failures** | Check timeout settings | 30s timeout + fallback + tracking |
-| **WKWebView Layout** | Test on physical device | Flex column layout, 49px tab bar, no position:fixed |
+| **WKWebView Layout** | Test on physical device | Flex column layout, 49px tab bar, no position:fixed, no self.view constraints |
 | **Backend Data Mismatch** | Curl staging API during exploration | Verify actual response data, not just code |
 | **Data Source Waterfall** | Build source × consumer matrix during exploration | Single utility with complete fallback chain |
+| **External Model Output** | Is it committed? | Commit immediately if 5+ files or 200+ lines |
+| **Sprint Issue Neglect** | Check all issues at batch 5/10/15/20 | Flag unblocked items that haven't been started |
+| **Native iOS Menus** | Which trigger? (tap vs long-press) | `UIAlertController` for tap, `UIContextMenuInteraction` for long-press only |
+| **DB Driver Migration** | Curl staging API after deploy | Test writes + datetime types specifically |

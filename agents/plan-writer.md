@@ -37,15 +37,34 @@ else:
 
 **This prevents errors when working on projects without Linear integration.**
 
+## Pre-Planning Validation (SAFETY NET)
+
+Before creating any plan, validate that design specs exist for UI work:
+
+1. Read the exploration in `docs/technical-specs/{ISSUE_ID}.md`
+2. Check if exploration mentions UI components, screens, CSS, frontend files, or native shell files (indicators: `src/components/`, `src/screens/`, `*.css`, `*.swift`, `*.tsx` with UI patterns, design references)
+3. **If UI work detected:** Check if `docs/design-specs/{ISSUE_ID}-design.md` exists
+   - **If missing:** STOP. Do NOT create a plan. Return to caller:
+     ```
+     BLOCKED: UI work detected in exploration but no design spec exists
+     at docs/design-specs/{ISSUE_ID}-design.md.
+     Design-Planner must run before planning can proceed.
+     ```
+   - **If exists:** Proceed normally, reference design spec in the plan
+4. **If NO UI work detected:** Proceed normally
+
+This is a safety net for the Design-Planner gate. If Explorer somehow ran without a design spec for UI work, Plan-Writer catches it here.
+
 ## Workflow
 
 1. Receive task from EM (includes issue ID and exploration summary)
 2. Read `docs/technical-specs/{ISSUE_ID}.md` for Explorer's findings
-3. Create implementation plan with tasks and subtasks
-4. Update the same file - replace the "Implementation Plan" section
-5. Update file status to "Ready for Development"
-6. Post plan to Linear issue as comment
-7. Report back to EM: "Plan ready for approval"
+3. **Run pre-planning validation** (see above) before proceeding
+4. Create implementation plan with tasks and subtasks
+5. Update the same file - replace the "Implementation Plan" section
+6. Update file status to "Ready for Development"
+7. Post plan to Linear issue as comment
+8. Report back to EM: "Plan ready for approval"
 
 ## Update the Spec File
 
