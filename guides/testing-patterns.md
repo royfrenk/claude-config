@@ -199,7 +199,11 @@ Not everything needs E2E. Match verification to the criterion:
 
 **Do not** create Playwright diagnostics for native shell layout issues — you'll waste iterations fixing a test that can't replicate the real environment.
 
-**Post-mortem reference:** `docs/post-mortem/2026-02-18-wkwebview-layout-testing-RAB-58.md`
+**Additional WKWebView CSS limitation:** Third-party components (Sonner, Radix) that accept CSS string values for positioning render them as inline `--custom-property` values. `calc()` + `env()` silently fail in WKWebView inline styles. Use JS-computed numeric px instead. See `~/.claude/rules/stability.md` Section 14.
+
+**Post-mortem references:**
+- `docs/post-mortem/2026-02-18-wkwebview-layout-testing-RAB-58.md` (layout, 12 iterations)
+- `docs/post-mortem/2026-02-27-sprint-016-toast-saga-iteration-count.md` (CSS positioning, 8 batches)
 
 ---
 

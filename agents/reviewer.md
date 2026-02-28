@@ -75,13 +75,14 @@ Before reviewing code, identify the task type and read the relevant guide:
 | Task Type | Guide to Read | Key Checks |
 |-----------|---------------|------------|
 | Database | `~/.claude/guides/database-patterns.md` | Indexing, caching, not using SQL.js |
-| Frontend | `~/.claude/guides/frontend-patterns.md` | Breakpoint testing, Figma alignment |
+| Frontend | `~/.claude/guides/frontend-patterns.md` | Breakpoint testing, Figma alignment, WKWebView CSS gotchas |
+| iOS / Native | `~/.claude/rules/stability.md` Sections 8, 11, 12, 14 | Physical device tested? No `position:fixed`, no `calc()`+`env()` as inline styles, polling loops have timeouts |
 | Google Auth | `~/.claude/guides/google-auth.md` | Token audience, Capacitor plugin, callback URL |
 | API integration | `~/.claude/guides/api-integration-patterns.md` | `.trim()` env vars, request-time reading |
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |
 | RTL/i18n | `~/.claude/guides/rtl-i18n-checklist.md` | Text-displaying components use i18n, RTL-safe layout |
 
-**This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features.
+**This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features, `while True` polling without timeout, third-party CSS positioning assumptions in WKWebView.
 
 **A2. v0 Fidelity Check (When Applicable)**
 

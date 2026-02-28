@@ -49,6 +49,9 @@ Using framework/library APIs incorrectly due to:
 | **DOMParser.textContent vs innerText** | `textContent` strips block elements (`<p>`, `<br>`, `<div>`) without adding `\n` — creates one giant string | Insert `\n` at block boundaries before extracting text — see Sprint 012 post-mortem |
 | **aiosqlite vs asyncpg** | aiosqlite accepts ISO date strings; asyncpg requires `datetime` objects for TIMESTAMPTZ columns | After migration: curl staging API, verify response data types — see Sprint 015 post-mortem |
 | **UIButton.sendActions vs UIMenu** | `sendActions(for: .menuActionTriggered)` does NOT programmatically present a UIMenu — requires real touch input through responder chain | Use `UIAlertController(.actionSheet)` for tap-triggered menus; `UIContextMenuInteraction` for long-press only — see Section 11 |
+| **Sonner `offset` prop in WKWebView** | `calc(env(safe-area-inset-top) + Npx)` silently fails as inline `--offset` custom property | Compute numeric px via `getComputedStyle()`, or disable on native — see Section 14 |
+| **`while True` polling loops** | No timeout = blocks worker thread indefinitely when external service stalls | Always add `max_poll_seconds` timeout — see Section 7 |
+| **Prompt updates vs cached LLM output** | Prompt improved, but stale cached JSON is restored and bypasses new behavior | Version cached payloads (`prompt_version`) and reject stale contracts on restore — see Section 15 |
 
 ### Pattern: API Validation Layer
 
@@ -509,6 +512,33 @@ async function softRetry(operation, timeoutMs = 30000) {
 - Permission errors (structural issue)
 - After 2 failed attempts (give up, use fallback)
 
+### Anti-Pattern: Polling Loops Without Timeout
+
+**Every `while True` or `while not done` loop that polls an external service MUST have a `max_seconds` timeout.** A stuck external service (transcript processing, file conversion, webhook callback) will block the worker thread indefinitely, making the entire backend unresponsive.
+
+```python
+# WRONG - No timeout, blocks forever if service gets stuck
+while True:
+    status = await check_status(job_id)
+    if status == "completed":
+        break
+    await asyncio.sleep(3)
+
+# CORRECT - Timeout guard
+max_poll_seconds = max(estimated_seconds * 3, 1800)  # 3x estimate or 30 min minimum
+start_time = time.time()
+while True:
+    status = await check_status(job_id)
+    if status == "completed":
+        break
+    elapsed = time.time() - start_time
+    if elapsed > max_poll_seconds:
+        raise RuntimeError(f"Job {job_id} timed out after {int(elapsed)}s")
+    await asyncio.sleep(3)
+```
+
+**Post-mortem:** `docs/post-mortem/2026-02-27-sprint-016-toast-saga-iteration-count.md` (AssemblyAI polling blocked Railway backend 10+ min)
+
 ### Integration Tests Required
 
 Test timeout behavior:
@@ -609,6 +639,7 @@ Capacitor's WKWebView has unique layout behaviors that differ from desktop Safar
 | `bg-card`/`bg-background` split creates grey line | Card white (#fff) vs background near-white (#fafafa) visible seam | Keep single background on parent `<nav>` element |
 | Playwright WebKit ≠ WKWebView | Safe areas, viewport-fit:cover, flex behavior all differ | Don't trust Playwright for native shell components |
 | `self.view` IS the WKWebView | Frame constraints on `self.view` are self-referential | Use `additionalSafeAreaInsets` to push web content, never constrain `self.view.frame` |
+| Third-party CSS `offset`/`position` props use inline styles | `calc()` + `env()` don't resolve in WKWebView inline `--custom-property` values | Compute numeric px via JS (`getComputedStyle`), or disable feature on native — see Section 14 |
 
 **Critical architecture fact:** In Capacitor's `MyViewController`, `self.view` is the WKWebView itself — not a container holding the WKWebView. Any Auto Layout constraint that references `self.view` as both source and target is self-referential and will silently fail or cause unpredictable layout. Use `additionalSafeAreaInsets` to reserve space for native shell components (TabBar, MiniPlayer) overlaid on top of the webview.
 
@@ -866,6 +897,96 @@ After deploying a database driver migration:
 
 ---
 
+## 14. Third-Party Component CSS in WKWebView
+
+### Problem
+
+Third-party UI components (Sonner, Radix, etc.) often accept CSS string values for positioning (`offset`, `sideOffset`, `align`). These strings are rendered as **inline CSS custom properties** (e.g., `--offset: calc(env(...) + 8px)`). In WKWebView, `calc()` expressions containing `env()` don't resolve when set as inline style values — the property is silently ignored or treated as `0`.
+
+**Post-mortem:** `docs/post-mortem/2026-02-27-sprint-016-toast-saga-iteration-count.md` (8 batches, Sprint 016)
+
+### Known Failures
+
+| Component | Prop | What Breaks | Workaround |
+|-----------|------|-------------|------------|
+| Sonner `<Toaster>` | `offset` | `calc(env(safe-area-inset-top) + Npx)` renders as inline `--offset` → WKWebView ignores it | Compute numeric px via `getComputedStyle()`, or disable on native |
+| Any component using inline `calc()` + `env()` | Various | Same root cause — inline styles can't resolve `env()` in WKWebView | Always use JS-computed numeric values |
+
+### Rules
+
+1. **Never pass `calc()` + `env()` as string props** to third-party components on native — they will silently fail in WKWebView
+2. **When a CSS positioning approach fails on device**, check: does the component render the value as an inline style or a stylesheet rule? Inline styles with `env()` are broken.
+3. **Test third-party component positioning on device BEFORE iterating** — if the first approach fails, research how the component renders the CSS value internally
+4. **Stop after 2 failed CSS approaches** — switch to a JS-computed numeric value, or disable the feature on native
+5. **Design specs for WKWebView features** should note: "Verify CSS approach works on device before committing to this pattern"
+
+### Pattern: JS-Computed Positioning (When CSS Fails)
+
+```typescript
+// Read CSS custom property value via JS, pass as numeric px
+function readSafeTop(): number {
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue('--native-safe-top').trim()
+  return parseInt(raw, 10) || 54  // fallback for missing value
+}
+
+// Pass numeric value to component, not CSS string
+<ThirdPartyComponent offset={readSafeTop() + 80} />
+```
+
+### When to Disable on Native
+
+If positioning a third-party component on native requires >2 iteration batches and the feature is non-critical (e.g., toast notifications), consider returning `null` on native rather than continuing to iterate. The cost of 3+ device testing batches (~15 min) often exceeds the value of the feature.
+
+---
+
+## 15. LLM Cache Contract Versioning
+
+### Problem
+
+Systems that cache LLM output (summaries, topics, classifications, generated metadata) can silently serve stale payloads after prompt/schema changes. The feature appears "unchanged" even though the prompt was updated, because cache restore bypasses regeneration.
+
+**Post-mortem:** `docs/post-mortem/2026-02-28-sprint-017-summary-cache-drift-RAB-94.md` (Sprint 017)
+
+### Rules
+
+1. **Every persisted LLM payload must include a contract version** (e.g., `summary_prompt_version`).
+2. **Cache restore must validate contract version and required fields** before trusting cached payloads.
+3. **If cache is stale or invalid, skip restore and regenerate** from source transcript/data.
+4. **Prompt/schema changes must bump the contract version** in code and tests.
+5. **Add tests for stale cache rejection** (missing version, older version, missing required keys).
+
+### Pattern: Contract Gate on Cache Restore
+
+```python
+CURRENT_PROMPT_VERSION = 2
+
+def is_current_summary(payload: dict | None) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    version = payload.get("summary_prompt_version")
+    if not isinstance(version, int) or version < CURRENT_PROMPT_VERSION:
+        return False
+    topics = payload.get("topics")
+    return isinstance(topics, list) and len(topics) > 0
+
+# Restore only if contract passes
+if cached_payload and is_current_summary(cached_payload):
+    restore_from_cache(cached_payload)
+else:
+    regenerate_summary()
+```
+
+### Checklist
+
+- [ ] Does the cached payload include `*_prompt_version`?
+- [ ] Is restore guarded by version + required field checks?
+- [ ] Does stale cache trigger regeneration instead of restore?
+- [ ] Were tests added for stale/missing/invalid cache payloads?
+- [ ] Was the version bumped with the prompt/schema change?
+
+---
+
 ## Quick Reference
 
 | Issue Type | First Check | Prevention |
@@ -876,10 +997,13 @@ After deploying a database driver migration:
 | **Configuration** | Validate at startup | No silent fallbacks |
 | **Over-Engineering** | Count conditions/nesting | Simplify when > 3 levels |
 | **External Service Failures** | Check timeout settings | 30s timeout + fallback + tracking |
+| **Polling Loops** | Does it have a timeout? | `max_seconds` on every `while True` that polls external services |
 | **WKWebView Layout** | Test on physical device | Flex column layout, 49px tab bar, no position:fixed, no self.view constraints |
+| **WKWebView 3rd-Party CSS** | Inline style or stylesheet? | Numeric px via JS, never `calc()`+`env()` as inline strings |
 | **Backend Data Mismatch** | Curl staging API during exploration | Verify actual response data, not just code |
 | **Data Source Waterfall** | Build source × consumer matrix during exploration | Single utility with complete fallback chain |
 | **External Model Output** | Is it committed? | Commit immediately if 5+ files or 200+ lines |
 | **Sprint Issue Neglect** | Check all issues at batch 5/10/15/20 | Flag unblocked items that haven't been started |
 | **Native iOS Menus** | Which trigger? (tap vs long-press) | `UIAlertController` for tap, `UIContextMenuInteraction` for long-press only |
 | **DB Driver Migration** | Curl staging API after deploy | Test writes + datetime types specifically |
+| **LLM Cache Contract Drift** | Is cached payload versioned and validated? | Add `*_prompt_version` + contract gate + stale-cache regeneration |

@@ -86,31 +86,53 @@ Create `docs/post-mortem/YYYY-MM-DD-[slug]-[ISSUE-ID].md`:
 - [Key takeaway 2]
 ```
 
-### 5. Propose Harness Changes
+### 5. Propose Harness Changes — Multi-File Impact Scan
 
-Based on the root cause, propose specific file updates:
+**MANDATORY:** Evaluate EVERY file type below. Do NOT stop after the first match. Most failures affect multiple files (a rule, an agent, and a guide).
 
-**For Missing Knowledge:**
-- Add a checklist or section to the relevant guide file
-- Example: Add "iOS OAuth Checklist" to `~/.claude/guides/google-auth.md`
+For each row, answer: "Would updating this file have prevented or caught this failure earlier?"
 
-**For Process Gaps:**
-- Add a check to the relevant agent or command
-- Example: Add "Verify platform-specific requirements" to reviewer.md
+| File Type | When to Update | Example Change |
+|-----------|---------------|----------------|
+| `~/.claude/rules/stability.md` | API misuse, platform constraint, race condition, external service issue, data verification gap | Add pattern to relevant section or Quick Reference table |
+| `~/.claude/rules/testing.md` | Missing test type, testing gap, verification step that would have caught the bug | Add testing requirement or checklist item |
+| `~/.claude/rules/coding-style.md` | Code pattern, file organization, naming, or structural issue | Add or update the relevant pattern |
+| `~/.claude/rules/security.md` | Auth, input validation, secrets, config validation gap | Add security check or validation requirement |
+| `~/.claude/agents/developer.md` | Developer should have known about this before implementing | Add guide reference to Phase 2 table or Critical Patterns |
+| `~/.claude/agents/reviewer.md` | Reviewer should have caught this during code review | Add check to Step 4 Guide Compliance or common issues list |
+| `~/.claude/agents/explorer.md` | Explorer should have flagged this during exploration | Add to exploration workflow or data verification steps |
+| `~/.claude/agents/plan-writer.md` | Plan-Writer should have accounted for this in the plan | Add planning note or task dependency consideration |
+| `~/.claude/agents/em.md` | Coordination gap, missing gate, or escalation failure | Add gate check or escalation rule |
+| `~/.claude/guides/*.md` | Existing guide needs updating, or new guide section needed | Update the relevant guide with the pattern |
+| `~/.claude/commands/*.md` | Command needs a new step or check | Update the command file |
 
-**For API Misuse:**
-- Add the correct pattern to `~/.claude/rules/stability.md` API Misuse table
-- Add integration test requirement to `~/.claude/rules/testing.md`
+**Output your scan as a table — one row per file type, with explicit Yes/No:**
 
-**For Stale Documentation:**
-- Update the stale document
-- Add a cross-reference check to `~/.claude/commands/audit.md`
+```markdown
+## Multi-File Impact Scan
 
-**For Agent Mistakes:**
-- Encode the correct behavior into a guide or rule
-- Consider if a hook could mechanically enforce it
+| File | Affected? | What to Change |
+|------|-----------|----------------|
+| `rules/stability.md` | Yes / No | [specific change or "---"] |
+| `rules/testing.md` | Yes / No | [specific change or "---"] |
+| `rules/coding-style.md` | Yes / No | [specific change or "---"] |
+| `rules/security.md` | Yes / No | [specific change or "---"] |
+| `agents/developer.md` | Yes / No | [specific change or "---"] |
+| `agents/reviewer.md` | Yes / No | [specific change or "---"] |
+| `agents/explorer.md` | Yes / No | [specific change or "---"] |
+| `agents/plan-writer.md` | Yes / No | [specific change or "---"] |
+| `agents/em.md` | Yes / No | [specific change or "---"] |
+| `guides/*.md` | Yes / No | [which guide, specific change or "---"] |
+| `commands/*.md` | Yes / No | [which command, specific change or "---"] |
+```
 
-Present changes to User:
+**Rules for this scan:**
+- At least 1 file must be affected (if nothing, the root cause analysis is incomplete)
+- If only `stability.md` is affected, you MUST explain why no agent, guide, or command file needs updating
+- Think about the full chain: who writes the code (developer), who reviews it (reviewer), who plans it (plan-writer), who explores it (explorer), who coordinates it (em) -- could any of them have caught this?
+
+**After completing the scan, present proposed changes to User:**
+
 ```markdown
 ## Proposed Harness Changes
 
@@ -155,5 +177,5 @@ Apply these changes? (yes/no/modify)
 
 - Post-mortems feed into `/audit` (stale docs check)
 - Post-mortems feed into `/change-process` (systematic updates)
-- Post-mortem patterns feed into `~/.claude/rules/stability.md`
+- Post-mortem learnings are distributed across rules, agents, guides, and commands via the Multi-File Impact Scan (Step 5)
 - Recurring patterns (3+ similar post-mortems) should become mechanical enforcement (hooks)

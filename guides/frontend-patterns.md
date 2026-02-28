@@ -418,8 +418,34 @@ function ImageGallery({ images }) {
 **Check with browser dev tools:**
 - Chrome DevTools → Elements → Accessibility → Contrast
 
+## Capacitor WKWebView — CSS Gotchas
+
+Beyond layout issues (see `~/.claude/rules/stability.md` Section 8), WKWebView breaks CSS in ways that browser testing cannot catch:
+
+### Third-Party Component Positioning
+
+Components like Sonner, Radix, and Floating UI accept CSS string values (`offset`, `sideOffset`) and render them as **inline CSS custom properties**. In WKWebView, `calc()` + `env()` expressions silently fail when set as inline styles.
+
+```tsx
+// BROKEN in WKWebView — calc(env()) as inline --offset
+<Toaster offset="calc(env(safe-area-inset-top) + 8px)" />
+
+// WORKS — JS-computed numeric px
+const safeTop = parseInt(getComputedStyle(document.documentElement)
+  .getPropertyValue('--native-safe-top').trim(), 10) || 54
+<Toaster offset={safeTop + 80} />
+```
+
+**Rule:** When a third-party component accepts CSS positioning values, test on physical device before iterating. If it fails, compute numeric px via JS. Stop after 2 failed CSS approaches — see `stability.md` Section 14.
+
+### Polling Loops (Backend)
+
+Any `while True` polling loop that calls an external service (AssemblyAI, OpenAI, etc.) MUST have a `max_seconds` timeout. A stuck external service blocks the entire backend worker thread. See `stability.md` Section 7 (Anti-Pattern: Polling Loops Without Timeout).
+
 ## See Also
 
 - Responsive design testing checklist: This file (Testing Checklist section)
 - Component organization: `~/.claude/rules/coding-style.md`
 - Design systems (CSS vs Tailwind): This file (Design Systems section)
+- Capacitor WKWebView layout: `~/.claude/rules/stability.md` Sections 8, 14
+- iOS native shell patterns: `~/.claude/rules/stability.md` Sections 11, 12

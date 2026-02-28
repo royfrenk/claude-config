@@ -89,7 +89,7 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 | Database | `~/.claude/guides/database-patterns.md` | Indexing, caching, SQL.js anti-patterns |
 | Frontend | `~/.claude/guides/frontend-patterns.md` | Breakpoint testing, Figma alignment |
 | UI/UX | Run `/design` command first | Design tokens, component states, touch targets |
-| iOS / Native | `~/.claude/rules/stability.md` Sections 8, 11, 12 | WKWebView layout (no position:fixed, 49px tab bar), UIMenu trigger constraints (UIAlertController for tap, UIContextMenuInteraction for long-press only), additionalSafeAreaInsets (never constrain self.view) |
+| iOS / Native | `~/.claude/rules/stability.md` Sections 8, 11, 12, 14 | WKWebView layout (no position:fixed, 49px tab bar), UIMenu trigger constraints (UIAlertController for tap, UIContextMenuInteraction for long-press only), additionalSafeAreaInsets (never constrain self.view), third-party CSS positioning (no `calc()`+`env()` as inline styles — use JS-computed numeric px) |
 | Google Auth | `~/.claude/guides/google-auth.md` | Token audience, Capacitor plugin, callback URLs |
 | API integration | `~/.claude/guides/api-integration-patterns.md` | .trim() env vars, request-time reading |
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |
@@ -98,7 +98,7 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 
 Work in small commits. Order: schema --> backend logic --> backend tests --> frontend components --> frontend tests.
 
-**Critical patterns:** Always `.trim()` env vars. Read at request time, not module load. Test at exact breakpoint boundaries. Use single primary + simple fallback for APIs.
+**Critical patterns:** Always `.trim()` env vars. Read at request time, not module load. Test at exact breakpoint boundaries. Use single primary + simple fallback for APIs. Every `while True` polling loop MUST have a `max_seconds` timeout (`stability.md` Section 7).
 
 ### Phase 3: Verification Loop
 

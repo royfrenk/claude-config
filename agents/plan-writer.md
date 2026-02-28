@@ -100,6 +100,8 @@ Read `docs/technical-specs/{ISSUE_ID}.md` and replace the "Implementation Plan" 
 - Sequential: 5 tasks × avg time = [X] hours
 - Parallel: 3 levels × avg time = [Y] hours (40% faster)
 
+**iOS / Native Shell Note:** Tasks that modify native shell components (TabBar, MiniPlayer, NowPlayingView) or WKWebView CSS positioning require physical device testing (~5 min/cycle). Budget 3-5 iteration cycles per task. Note this in the task dependency table as: "Requires device verification (see `stability.md` Sections 8, 14)". For sprints with 5+ native shell tasks, recommend implementing in waves with device testing between waves to limit accumulated bugs.
+
 ### Tasks
 
 - [ ] 🟥 **Task 1: Add database schema** (Level 0 - no dependencies)
