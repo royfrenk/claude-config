@@ -44,9 +44,18 @@ Before executing ANY deployment commands:
    - If only Reviewer approved: STOP, request User approval
 
 5. **Log verification and deploy:**
+
+   **During a sprint (push to sprint branch):**
+   ```bash
+   # Read sprint branch name from sprint file
+   git push origin sprint/sprint-XXX-topic
+   ```
+   Vercel generates a preview URL from the sprint branch.
+
+   **At sprint end (merge to develop):**
    ```bash
    git checkout develop
-   git merge <feature-branch>
+   git merge sprint/sprint-XXX-topic
    git push origin develop
    ```
 
@@ -62,14 +71,15 @@ Before executing ANY deployment commands:
        echo "========================================"
        echo ""
        echo "Summary:"
-       git diff --stat main...develop
+       git diff --stat main...HEAD
        echo ""
        echo "Full Diff:"
-       git diff main...develop
+       git diff main...HEAD
      } > "$DIFF_FILE"
      git add "$DIFF_FILE"
      git commit -m "chore: Update sprint ${SPRINT_NUM} diff file" --no-verify
-     git push origin develop
+     CURRENT_BRANCH=$(git branch --show-current)
+     git push origin "$CURRENT_BRANCH"
    fi
    ```
 
@@ -77,7 +87,7 @@ Before executing ANY deployment commands:
 
 ## Phase 5.5: Verify Backend and Frontend Ready
 
-After pushing to develop, verify BOTH are operational before user testing.
+After pushing to the sprint branch (or develop at sprint end), verify BOTH are operational before user testing.
 
 ### Backend Checks
 
@@ -250,5 +260,6 @@ which vercel || which railway || which netlify
 
 **Circuit breaker:** Max 3 attempts, then revert:
 ```bash
-git revert HEAD && git push origin develop
+CURRENT_BRANCH=$(git branch --show-current)
+git revert HEAD && git push origin "$CURRENT_BRANCH"
 ```

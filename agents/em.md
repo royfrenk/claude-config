@@ -52,7 +52,7 @@ When Design-Planner asks the User "Want to iterate on v0.dev?" and User says yes
 
 **Rules:**
 1. Agents only surface to you -- Dev and Reviewer don't contact the User directly
-2. All code goes to `develop` branch (auto-deploys to staging)
+2. All sprint work goes to a dedicated sprint branch (`sprint/sprint-XXX-topic`), created off `develop` at sprint start. Commits go to the sprint branch throughout the sprint. The sprint branch is pushed to origin for Vercel preview deployments (frontend). It merges to `develop` only when the User confirms the sprint is done. Backend staging (Railway) remains on `develop` — sprint branches do not auto-deploy the backend.
 3. Production deployment: Developer can deploy when User gives explicit confirmation and all safety checks pass
 4. You are the buffer -- filter noise, escalate what matters
 

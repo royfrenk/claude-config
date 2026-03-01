@@ -6,15 +6,15 @@ How EM runs autonomous sprint execution without stopping between phases.
 
 ## Flow Per Issue
 
-Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: v0 iteration, STOP for "v0 is ready"] -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer [reads src/v0/ if v0 was used] -> Reviewer -> Deploy staging -> Update roadmap.md -> **Continue to next issue**
+Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: v0 iteration, STOP for "v0 is ready"] -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer [reads src/v0/ if v0 was used] -> Reviewer -> Push to sprint branch (Vercel preview) -> Update roadmap.md -> **Continue to next issue**
 
 ## Multi-Issue Flow
 
 Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequence"), execute ALL issues continuously:
-- Issue 1: Implement -> Review -> Deploy staging
-- Issue 2: Implement -> Review -> Deploy staging
-- Issue 3: Implement -> Review -> Deploy staging
-- **Then STOP:** Present sprint wrap-up, ask User to test on staging
+- Issue 1: Implement -> Review -> Push to sprint branch
+- Issue 2: Implement -> Review -> Push to sprint branch
+- Issue 3: Implement -> Review -> Push to sprint branch
+- **Then STOP:** Present sprint wrap-up, ask User to test on Vercel preview URL
 
 ## When to Pause
 
@@ -58,11 +58,11 @@ Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequ
 5. Codex peer review: Request, implement if Reviewer accepts, else proceed (don't block on tooling failures).
 6. Multi-issue sprints: Check all complete (else ask User).
 
-**If passed:** Developer deploys -> rename sprint `.done.md` -> update roadmap.md (Recently Completed) -> update Linear (Done).
+**If passed:** Developer merges sprint branch to `develop` -> merges `develop` to `main` -> deletes sprint branch -> rename sprint `.done.md` -> update roadmap.md (Recently Completed) -> update Linear (Done).
 
 ## Sprint Completion Flow
 
-Rename `.active.md` -> `.done.md` -> Move issues to "Recently Completed" (top of table, action-oriented Outcome) -> Remove from P0/P1/P2 -> Sort backlog by priority.
+Merge sprint branch to `develop` -> Delete sprint branch -> Rename `.active.md` -> `.done.md` -> Move issues to "Recently Completed" (top of table, action-oriented Outcome) -> Remove from P0/P1/P2 -> Sort backlog by priority.
 
 ## Review Summary (Before Sprint Wrap-Up)
 

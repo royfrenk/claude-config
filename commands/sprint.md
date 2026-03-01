@@ -105,23 +105,17 @@ find docs/sprints/ -name "*.active.md" 2>/dev/null
 
 #### If multiple active sprints found
 
+Multiple active sprints are supported — each sprint has its own branch (`sprint/sprint-XXX-topic`), so parallel work is isolated.
+
 ```
-❌ BLOCKING ERROR
+Found [N] active sprints:
+[list files with their branches]
 
-Found multiple active sprint files:
-[list files]
-
-Only ONE active sprint should exist at a time.
-
-Please resolve manually:
-1. Rename completed sprint to .done.md
-2. Or delete the old sprint file
-3. Then run /sprint again
-
-CANNOT PROCEED until resolved.
+Starting new sprint alongside existing ones.
+Parallel sprint validation will check for issue overlap (no duplicate issues across sprints).
 ```
 
-**EXIT - Do not proceed**
+**CONTINUE** - Proceed to sprint creation with issue overlap check (existing parallel sprint validation handles this).
 
 #### If one active sprint found
 
@@ -183,6 +177,7 @@ Status: [status from sprint file]
 
 **Status:** 🔵 Starting
 **Started:** [date]
+**Branch:** `sprint/sprint-###-[name]`
 **Issues:** [Will be populated by EM]
 
 ## Issues in Sprint
@@ -212,6 +207,29 @@ Status: [status from sprint file]
 
 **Linear Sync Status:**
 - Sprint start: [pending EM]
+```
+
+**Create sprint branch:**
+
+After creating the sprint file, create the sprint branch:
+
+```bash
+# Ensure we're on develop and up to date
+git checkout develop
+git pull origin develop
+
+# Create sprint branch
+SPRINT_BRANCH="sprint/sprint-###-[name]"
+git checkout -b "$SPRINT_BRANCH"
+git push -u origin "$SPRINT_BRANCH"
+```
+
+The sprint branch name must match the sprint file name (e.g., `sprint-019-admin-tabs` becomes branch `sprint/sprint-019-admin-tabs`).
+
+**Resuming a sprint:** When resuming an existing sprint (one active sprint found), check out the sprint branch:
+```bash
+# Read branch name from sprint file **Branch:** field
+git checkout sprint/sprint-###-[name]
 ```
 
 **Example sprint number calculation:**
@@ -245,6 +263,7 @@ Spawn EM agent (EM has Task tool and will coordinate all subagents):
 ```
 Role: Engineering Manager
 Sprint: [sprint file path]
+Sprint Branch: [sprint branch name, e.g., sprint/sprint-019-admin-tabs]
 Issues: [issue IDs from step 2b]
 Linear Config:
   - Enabled: [true/false]
@@ -331,7 +350,10 @@ When EM completes all issues:
    - Reviewer approval exists for all issues
    - Infrastructure changes have User approval
    - OpenAI Codex peer review complete (optional)
-5. If all checks pass: EM invokes Developer to deploy to production
+5. If all checks pass: EM invokes Developer to merge sprint branch to `develop` and deploy to production
+   - Developer merges sprint branch to `develop`: `git checkout develop && git merge sprint/sprint-###-[name] && git push origin develop`
+   - Developer merges `develop` to `main`: `git checkout main && git merge develop && git push origin main`
+   - Developer deletes sprint branch: `git branch -d sprint/sprint-###-[name] && git push origin --delete sprint/sprint-###-[name]`
 6. EM renames sprint file: `.active.md` → `.done.md`
 7. EM updates roadmap.md: Move to "Recently Completed"
 8. EM uses linear-sync for final status sync (non-blocking)
@@ -355,6 +377,8 @@ When sprint starts:
 
 **Issues in sprint:** [issue IDs]
 **Sprint file:** docs/sprints/sprint-###-[name].active.md
+**Sprint branch:** sprint/sprint-###-[name]
+**Staging preview:** [Vercel preview URL from sprint branch push]
 **Linear sync:** [success / unavailable - using roadmap.md fallback]
 
 **Delegated to EM agent:**

@@ -32,7 +32,8 @@ Before posting comments to Linear:
 
 | Environment | Branch | Who Can Push | Who Approves |
 |-------------|--------|--------------|--------------|
-| Staging | `develop` | Developer | You |
+| Sprint work | `sprint/sprint-XXX-topic` | Developer | You |
+| Staging | `develop` | Developer (merge at sprint end) | User confirms sprint done |
 | Production | `main` | User only | User only |
 
 **This is non-negotiable.** If anyone asks you to approve pushing to `main`, refuse.

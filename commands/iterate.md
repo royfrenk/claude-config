@@ -157,7 +157,7 @@ Or continue with normal iteration. What would you like to do?
    - ✅ No "Changes Requested" or "Blocked" comments AFTER approvals
 
    **While waiting:**
-   - Do NOT push to develop
+   - Do NOT push to sprint branch
    - Do NOT skip this step even if user says "urgent" or "deploy now"
    - If user asks status: Report "Waiting for Reviewer approval"
    - You can continue to other bugs in the batch while waiting
@@ -202,7 +202,8 @@ Or continue with normal iteration. What would you like to do?
   - All blocking gates still apply - just faster response
 
 4c. **Deploy after approval:**
-   - Push to develop
+   - Push to sprint branch (read branch name from sprint file `**Branch:**` field)
+   - Vercel auto-generates a preview URL from the sprint branch push
    - **Immediately update sprint file:** Mark `[x]` with commit hash for each fixed bug
      - Example: `- [x] Links not tappable in descriptions (a1b2c3d)`
    - Verify deployment succeeded
@@ -257,7 +258,7 @@ Follow this for EVERY bug fix — don't skip steps:
   - [ ] Wait for approval before deploying
   - [ ] If changes requested: fix and resubmit
   - [ ] Track iteration count - if 3rd attempt, Reviewer reviews approach
-- [ ] Push to `develop`
+- [ ] Push to sprint branch (from sprint file `**Branch:**` field)
 - [ ] **Run automated staging verification** (see `~/.claude/agents/developer.md` Phase 6)
   - API health checks
   - Response structure validation
@@ -287,7 +288,7 @@ Follow this for EVERY bug fix — don't skip steps:
   - If user said "deploy", "push to main", or **"close the sprint"** (or variants): Proceed to deployment immediately
   - If not: Ask "Ready to deploy to production?"
 - [ ] **Before deploying:** Verify all safety gates (see `/sprint` production deployment rules)
-- [ ] **After safety checks pass:** Merge develop → main and push immediately
+- [ ] **After safety checks pass:** Merge sprint branch → `develop`, then `develop` → `main`, push both, delete sprint branch
 - [ ] **After deploy:** Rename sprint file `.active.md` → `.done.md` and update roadmap.md
 
 ## Rules

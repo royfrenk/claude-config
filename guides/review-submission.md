@@ -143,7 +143,7 @@ If task involves UI/UX:
 ## Blocking State Rules
 
 While waiting for reviewer approval:
-- Do NOT push to develop
+- Do NOT push to sprint branch (or develop)
 - Do NOT skip even if "urgent"
 - If user asks status: "Waiting for Reviewer approval"
 - You can work on other tasks while waiting

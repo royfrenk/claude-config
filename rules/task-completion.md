@@ -4,7 +4,15 @@ Standard output formats for commits and task completion. Follow these formats in
 
 ## After Every Commit
 
-When pushing to `develop`, always output:
+When pushing during a sprint, output with the sprint branch name:
+
+```
+✓ Commit: [short-hash] → sprint/sprint-XXX-topic
+  Preview: [Vercel preview URL from push output]
+  Changes: [1-line summary of what changed]
+```
+
+When pushing to `develop` (sprint end merge or non-sprint work), output:
 
 ```
 ✓ Commit: [short-hash] → develop
@@ -12,10 +20,10 @@ When pushing to `develop`, always output:
   Changes: [1-line summary of what changed]
 ```
 
-Example:
+Example (during sprint):
 ```
-✓ Commit: 363f31d → develop
-  Staging: https://quo-2-git-develop-roy-frenkiels-projects.vercel.app
+✓ Commit: 363f31d → sprint/sprint-019-admin-tabs
+  Preview: https://recap-rabbit-git-sprint-sprint-019-admin-tabs-roy-frenkiels-projects.vercel.app
   Changes: Added Favorites and Searches links to header nav
 ```
 

@@ -439,7 +439,7 @@ That's why we write everything important to files.
 ### How do I roll back a bad deployment?
 
 1. Revert the commit: `git revert HEAD`
-2. Push to develop: `git push origin develop`
+2. Push to current branch: `git push origin $(git branch --show-current)`
 3. Verify staging is fixed
 4. (If already in prod) Cherry-pick the revert to main
 
