@@ -52,6 +52,8 @@ Using framework/library APIs incorrectly due to:
 | **Sonner `offset` prop in WKWebView** | `calc(env(safe-area-inset-top) + Npx)` silently fails as inline `--offset` custom property | Compute numeric px via `getComputedStyle()`, or disable on native — see Section 14 |
 | **`while True` polling loops** | No timeout = blocks worker thread indefinitely when external service stalls | Always add `max_poll_seconds` timeout — see Section 7 |
 | **Prompt updates vs cached LLM output** | Prompt improved, but stale cached JSON is restored and bypasses new behavior | Version cached payloads (`prompt_version`) and reject stale contracts on restore — see Section 15 |
+| **CTE `columns` vs explicit SELECT** | Adding column to `columns` variable doesn't add it to hardcoded SELECT after `WHERE rn = 1` | Verify ALL query paths include the new column — see Section 17 |
+| **Client-side persisted objects** | New field added, but old persisted objects lack it → UI conditionally degrades | Async fallback or migration for stale persisted data — see Section 18 |
 
 ### Pattern: API Validation Layer
 
@@ -785,12 +787,33 @@ Implementation: Single utility function with ordered COALESCE/fallback chain.
 - Data has known gaps (some records have it, some don't)
 - Previous sprints had "still missing" iteration patterns
 
+### Data Existence Gate (Before Adding Fallbacks)
+
+**This rule applies during ALL workflows — full sprint, lightweight iteration, and ad-hoc fixes.**
+
+When data is missing/null and you're about to add a SQL COALESCE or code fallback:
+
+1. **STOP. Run a diagnostic query first:**
+   ```sql
+   -- "Does the data exist at all for these records?"
+   SELECT DISTINCT entity_name FROM source_table WHERE field IS NOT NULL;
+   ```
+2. **Compare against the records that are missing data.** If a record has NO rows in ANY table with that field → the data doesn't exist → no amount of SQL fallbacks will fix it.
+3. **If data doesn't exist:** Use a UI placeholder (initials, icon, default image) instead of more SQL.
+4. **If data exists but isn't reached:** Then add the fallback query, but implement the COMPLETE chain in one pass.
+
+**Anti-pattern (artwork waterfall):** Adding COALESCE fallbacks one at a time across multiple iteration batches. Each batch discovers one more table to try. This wastes 3-6 batches on what a single diagnostic query would resolve.
+
+**Post-mortems:** Sprint 012 (6 batches), Sprint 020 (3 batches) — same pattern, same root cause.
+
 ### Checklist
 
 - [ ] Have we identified ALL sources for this data field?
+- [ ] **Have we verified the data EXISTS in those sources for the affected records?** (diagnostic query)
 - [ ] Have we identified ALL screens that display it?
 - [ ] Is there a single utility/query that implements the complete fallback chain?
 - [ ] Are all consumers using that utility (not direct field access)?
+- [ ] If data doesn't exist for some records, is there a UI placeholder?
 
 ---
 
@@ -987,6 +1010,237 @@ else:
 
 ---
 
+## 16. CSS Grid Table Consistency
+
+### Problem
+
+Admin tables built with CSS Grid use separate `div` elements for the header row and each data row. When adding or removing columns, the agent updates `grid-cols-[...]` but misses other grid-related classes (`gap-*`, `items-center`, `px-*`, `py-*`). This causes visible header/data misalignment that requires a follow-up iteration batch.
+
+**Post-mortem:** `docs/post-mortem/2026-02-28-sprint-019-admin-tabs.md` (Sprint 019)
+
+### Rules
+
+1. **When modifying a CSS Grid table column**, diff the FULL class list of the header row against data rows — not just `grid-cols-[...]`
+2. **Classes that must match** between header and data rows: `grid-cols-[...]`, `gap-*`, `items-center`, `px-*`
+3. **When removing a column**, also check: edit mode `col-span-*` values, `min-w-[...]` on the scrollable container
+
+### Checklist
+
+After any CSS Grid table column change:
+
+- [ ] `grid-cols-[...]` matches between header and ALL data rows?
+- [ ] `gap-*` matches between header and data rows?
+- [ ] `items-center` present on both header and data rows?
+- [ ] `px-*` padding matches between header and data rows?
+- [ ] Edit mode `col-span-*` updated to reflect new column count?
+- [ ] Container `min-w-[...]` still appropriate for new column count?
+
+---
+
+## 17. CTE and Multi-Path Query Column Consistency
+
+### Problem
+
+SQL queries with CTEs (Common Table Expressions) often have multiple execution paths: a CTE path for deduplication/ranking and direct paths for filtered queries. When a new column is added to the shared `columns` variable, the direct paths (`SELECT {columns}`) automatically include it, but the CTE path's **explicit final SELECT** (after `WHERE rn = 1`) has a hardcoded column list that must be updated separately.
+
+**Post-mortem:** `docs/post-mortem/2026-03-02-podcast-id-three-layer-bug-sprint-021.md` (Sprint 021, Batch 11)
+
+### Known Failure
+
+```python
+# columns variable includes podcast_id (correct)
+columns = """e.id, e.title, ..., (subquery) as podcast_id"""
+
+# Direct paths use {columns} — correct, gets podcast_id
+rows = await conn.fetch(f"SELECT {columns} FROM episodes e WHERE ...")
+
+# CTE path — columns variable used INSIDE CTE, but explicit SELECT after CTE
+# hand-lists columns and OMITS podcast_id
+rows = await conn.fetch(f"""
+    WITH ranked AS (
+        SELECT {columns}, ROW_NUMBER() OVER (...) AS rn
+        FROM episodes e WHERE ...
+    )
+    SELECT id, title, ...  -- podcast_id MISSING HERE
+    FROM ranked WHERE rn = 1
+""")
+```
+
+### Rules
+
+1. **When adding a column to a SQL query**, identify ALL execution paths that return results
+2. **For CTE queries**, check: does the final SELECT use `{columns}` or a hardcoded list? If hardcoded, update it.
+3. **For `e.*` queries**, remember that `e.*` does NOT include computed subqueries — add them explicitly
+4. **After adding a column, grep the function** for all `SELECT` statements to verify coverage
+
+### Checklist
+
+After adding a column to a SQL query:
+
+- [ ] Listed ALL execution paths in the function (CTE, direct, filtered, unfiltered)?
+- [ ] Each path's SELECT includes the new column?
+- [ ] CTE's explicit final SELECT (if hardcoded) updated?
+- [ ] Functions using `e.*` have the computed subquery added if needed?
+
+---
+
+## 18. Stale Client-Side Persisted Data
+
+### Problem
+
+When a new field is added to a data object and the UI conditionally depends on it (e.g., `field ? handler : undefined`), locally-persisted objects from before the change lack the field. The UI silently degrades — rendering non-interactive elements instead of showing an error.
+
+**Post-mortem:** `docs/post-mortem/2026-03-02-podcast-id-three-layer-bug-sprint-021.md` (Sprint 021, Batch 11)
+
+### Known Failure
+
+```typescript
+// Episode objects persisted in Capacitor Preferences before podcast_id was added
+// Hydrated episode has: { id, title, audio_url, ... } — no podcast_id
+
+// UI conditionally renders clickable show name:
+onGoToShow={currentEpisode?.podcast_id ? handleGoToShow : undefined}
+// → podcast_id is undefined on stale episodes → plain text, not clickable
+```
+
+### Rules
+
+1. **When adding a field the UI conditionally depends on**, check: is this object persisted client-side?
+2. **Persistence locations to check:** `localStorage`, `sessionStorage`, Capacitor `Preferences`, IndexedDB, React Query cache
+3. **If persisted**, choose one:
+   - **(a) Async fallback:** Fetch the field from the backend on demand when missing
+   - **(b) Migration:** Add a version check in the hydration path and re-fetch if stale
+   - **(c) Graceful UI:** Don't gate interactivity on the field — always show clickable, handle missing field on click
+4. **Never use `field ? handler : undefined`** for persisted objects without a fallback for when `field` is missing
+
+### Checklist
+
+After adding a new field that affects UI interactivity:
+
+- [ ] Is the parent object persisted client-side?
+- [ ] If yes, what happens when the field is missing on old persisted objects?
+- [ ] Is there a fallback (async fetch, migration, or graceful degradation)?
+- [ ] Does the UI still work for users who haven't cleared their storage?
+
+---
+
+## 19. SQL-Derived Status Fields
+
+### Problem
+
+When a table has a `status` or badge that is **computed** in SQL via a `CASE WHEN` expression (not stored as a column), write operations must set the columns that the `CASE WHEN` evaluates — not just the column the user is editing. If you only write to `field_a` but status is derived from `field_b IS NOT NULL`, the status won't change.
+
+**Post-mortem:** `docs/post-mortem/2026-03-02-sprint-022-four-ui-backend-gaps.md` (Sprint 022, Batch 5)
+
+### Known Failure
+
+```sql
+-- Status derived from youtube_channel_url, NOT youtube_playlist_url
+CASE
+  WHEN ycm.youtube_channel_url IS NOT NULL THEN 'matched'
+  WHEN ycm.searched_at IS NOT NULL THEN 'no_match'
+  WHEN ycm.id IS NOT NULL THEN 'pending'
+  ELSE NULL
+END AS youtube_mapping_status
+```
+
+```typescript
+// WRONG — only writes playlist URL, status stays "no_match"
+await api.updateYoutubeMapping(id, { youtube_playlist_url: url })
+
+// CORRECT — also writes the column the CASE WHEN evaluates
+await api.updateYoutubeMapping(id, {
+  youtube_playlist_url: url,
+  youtube_channel_url: url,  // This is what flips status to "matched"
+})
+```
+
+### Rules
+
+1. **Before implementing a write that should change a derived status**, read the SQL query that computes the status
+2. **Identify which columns** the `CASE WHEN` evaluates — write to those columns, not just the user-facing field
+3. **If status depends on a different column** than what the user is editing, document the coupling in a code comment
+
+### Checklist
+
+Before implementing a save/update that should change a status badge:
+
+- [ ] Found the SQL `CASE WHEN` that computes the status?
+- [ ] Identified which columns the expression evaluates?
+- [ ] Write operation sets ALL columns the status depends on?
+- [ ] If status column differs from edited column, added a comment explaining why?
+
+---
+
+## 20. Cross-Layer Schema Sync (SQL ↔ Pydantic ↔ TypeScript)
+
+### Problem
+
+Full-stack endpoints have three schema definitions that must stay in sync: the SQL query's column list, the Pydantic response model, and the TypeScript interface. When backends use raw `row._mapping` or `dict(row)` instead of `response_model` validation, Pydantic schema mismatches don't error at runtime — they silently drop fields or allow extra fields through, creating a contract drift risk.
+
+**Post-mortem:** `docs/post-mortem/2026-03-02-sprint-022-four-ui-backend-gaps.md` (Sprint 022, Batch 5)
+
+### Rules
+
+1. **When modifying a SQL query**, check the Pydantic model AND TypeScript interface include all returned fields
+2. **When adding fields to a Pydantic model**, verify the SQL query actually returns them
+3. **When adding fields to a TypeScript interface**, verify the backend sends them
+4. **If the backend doesn't use `response_model`**, the Pydantic model is documentation-only — still keep it in sync
+
+### Checklist
+
+After modifying a SQL query that feeds an API response:
+
+- [ ] SQL SELECT columns match the Pydantic model fields?
+- [ ] Pydantic model fields match the TypeScript interface?
+- [ ] Any new SQL columns also added to Pydantic + TypeScript?
+- [ ] Any removed SQL columns also removed from Pydantic + TypeScript?
+
+---
+
+## 21. Conditional Rendering Alignment
+
+### Problem
+
+When a row of action icons (edit, search, delete, link) is conditionally rendered based on data state, rows that skip some icons cause remaining icons to shift position. This creates a visual "jump" where the same icon appears in different horizontal positions across rows.
+
+**Post-mortem:** `docs/post-mortem/2026-03-02-sprint-022-four-ui-backend-gaps.md` (Sprint 022, Batch 5)
+
+### Rules
+
+1. **When rendering conditional action icons in a list/table**, always reserve space for missing icons
+2. **Use invisible spacers** (`<span className="inline-block w-[size]" />`) matching the icon dimensions
+3. **Or use fixed-width containers** for the action column so all rows have the same width regardless of icon count
+
+### Pattern
+
+```tsx
+// WRONG — icons shift when some are missing
+<div className="flex items-center gap-1">
+  {hasMapping && <button><Pencil /></button>}
+  {hasMapping && <button><Search /></button>}
+  <button><ExternalLink /></button>
+</div>
+
+// CORRECT — spacers maintain alignment
+<div className="flex items-center gap-1">
+  {hasMapping ? (
+    <>
+      <button><Pencil className="h-3.5 w-3.5" /></button>
+      <button><Search className="h-3.5 w-3.5" /></button>
+    </>
+  ) : (
+    <>
+      <span className="inline-block w-3.5" />
+      <span className="inline-block w-3.5" />
+    </>
+  )}
+  <button><ExternalLink className="h-3.5 w-3.5" /></button>
+</div>
+```
+
+---
+
 ## Quick Reference
 
 | Issue Type | First Check | Prevention |
@@ -1002,8 +1256,15 @@ else:
 | **WKWebView 3rd-Party CSS** | Inline style or stylesheet? | Numeric px via JS, never `calc()`+`env()` as inline strings |
 | **Backend Data Mismatch** | Curl staging API during exploration | Verify actual response data, not just code |
 | **Data Source Waterfall** | Build source × consumer matrix during exploration | Single utility with complete fallback chain |
+| **Missing Data in Iteration** | Verify data EXISTS before adding SQL fallbacks | Diagnostic query first; if data doesn't exist → UI placeholder, not more SQL |
 | **External Model Output** | Is it committed? | Commit immediately if 5+ files or 200+ lines |
 | **Sprint Issue Neglect** | Check all issues at batch 5/10/15/20 | Flag unblocked items that haven't been started |
 | **Native iOS Menus** | Which trigger? (tap vs long-press) | `UIAlertController` for tap, `UIContextMenuInteraction` for long-press only |
 | **DB Driver Migration** | Curl staging API after deploy | Test writes + datetime types specifically |
 | **LLM Cache Contract Drift** | Is cached payload versioned and validated? | Add `*_prompt_version` + contract gate + stale-cache regeneration |
+| **CSS Grid Table Alignment** | Do header and data rows have matching classes? | Diff full class list: `grid-cols`, `gap`, `items-center`, `px` |
+| **CTE Column Mismatch** | Does the explicit SELECT after the CTE include the new column? | Verify ALL query paths, not just the `columns` variable |
+| **Stale Persisted Data** | Is this object stored in client-side persistence? | Async fallback or migration for missing fields on old persisted objects |
+| **SQL-Derived Status** | Which columns does the `CASE WHEN` evaluate? | Write to the status-driving columns, not just the user-facing field |
+| **Cross-Layer Schema Sync** | SQL ↔ Pydantic ↔ TypeScript all in sync? | When modifying SQL query, update Pydantic model + TypeScript interface |
+| **Conditional Icon Alignment** | Do all rows reserve same space for action icons? | Invisible spacers or fixed-width containers for missing icons |

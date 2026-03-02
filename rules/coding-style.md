@@ -143,6 +143,7 @@ Before marking work complete:
 - [ ] Names are descriptive (no `x`, `tmp`, `data`)
 - [ ] No silent failures (validate after risky operations)
 - [ ] API usage verified against documentation
+- [ ] CSS Grid tables: header and data rows have matching classes (`grid-cols`, `gap`, `items-center`, `px`)
 
 ## Automated Checks
 

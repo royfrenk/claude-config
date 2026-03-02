@@ -83,7 +83,7 @@ Before reviewing code, identify the task type and read the relevant guide:
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |
 | RTL/i18n | `~/.claude/guides/rtl-i18n-checklist.md` | Text-displaying components use i18n, RTL-safe layout |
 
-**This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features, `while True` polling without timeout, third-party CSS positioning assumptions in WKWebView.
+**This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features, `while True` polling without timeout, third-party CSS positioning assumptions in WKWebView, CSS Grid table header/data row class mismatch (see `stability.md` Section 16), SQL queries with CTEs: verify new columns appear in ALL SELECT paths — both the `columns` variable and explicit SELECT lists after the CTE (see `stability.md` Section 17), new fields with conditional UI: check if the object is client-side persisted and add fallback for stale objects (see `stability.md` Section 18), cross-layer schema sync: when SQL query is modified, verify Pydantic model AND TypeScript interface include all returned fields (see `stability.md` Section 20), SQL-derived status: when a write should change a status badge, verify the write sets the columns the `CASE WHEN` evaluates — not just the user-facing field (see `stability.md` Section 19).
 
 **A2. v0 Fidelity Check (When Applicable)**
 

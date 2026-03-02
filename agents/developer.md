@@ -99,7 +99,7 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 
 Work in small commits. Order: schema --> backend logic --> backend tests --> frontend components --> frontend tests.
 
-**Critical patterns:** Always `.trim()` env vars. Read at request time, not module load. Test at exact breakpoint boundaries. Use single primary + simple fallback for APIs. Every `while True` polling loop MUST have a `max_seconds` timeout (`stability.md` Section 7).
+**Critical patterns:** Always `.trim()` env vars. Read at request time, not module load. Test at exact breakpoint boundaries. Use single primary + simple fallback for APIs. Every `while True` polling loop MUST have a `max_seconds` timeout (`stability.md` Section 7). When fixing null/missing data fields, verify data EXISTS before adding SQL fallbacks — run a diagnostic query first (`stability.md` Section 10, Data Existence Gate). When adding columns to SQL queries with CTEs, verify ALL query paths include the new column — the `columns` variable AND any explicit SELECT lists after `WHERE rn = 1` (`stability.md` Section 17). When adding a field the UI conditionally depends on, check if the object is persisted client-side (localStorage, Capacitor Preferences); if so, add an async fallback for stale objects missing the field (`stability.md` Section 18). When modifying a SQL query, verify Pydantic model AND TypeScript interface include all returned fields — three-layer sync (`stability.md` Section 20). Before implementing a write that should change a derived status, read the SQL `CASE WHEN` to identify which columns the status depends on (`stability.md` Section 19).
 
 ### Phase 3: Verification Loop
 
@@ -146,6 +146,8 @@ The Reviewer will verify your assessment. This catches functional gaps before re
 - [ ] **Compare against design spec:** Open the design spec and verify each screen matches the mockup (section ordering, expand/collapse behavior, visibility rules)
 - [ ] **If component displays text:** RTL/i18n checklist completed (see `~/.claude/guides/rtl-i18n-checklist.md`)
 - [ ] **Test with real staging data:** Curl the staging API, use actual response data, not hardcoded mocks
+- [ ] **Edit forms — auto-populated fields:** For each field in an edit form, verify it's user-editable (not auto-populated by a backend process). If a backend service auto-fills fields from a primary input (e.g., research API populates channel name from playlist URL), only show the primary input in the form.
+- [ ] **Conditional action icons:** If rows render different numbers of action icons based on data state, use invisible spacers or fixed-width containers to prevent layout shifts (see `stability.md` Section 21)
 
 #### Checklist B: Data Format Impact Check
 
