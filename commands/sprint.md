@@ -307,8 +307,9 @@ PHASE 2 — Execution:
    - Blocking error occurs
 6. Update sprint file with checkpoints throughout (NOT User messages)
 7. Use linear-sync agent for all Linear operations (non-blocking)
-8. Update roadmap.md as work progresses
-9. After all issues complete: Present sprint wrap-up with staging URLs
+8. Apply sprint label `S###` to all sprint issues when first updating their status in Linear (see linear-sync agent Section 4)
+9. Update roadmap.md as work progresses
+10. After all issues complete: Present sprint wrap-up with staging URLs
 
 Sprint file is your shared memory. Update it with:
 - Checkpoints after each phase

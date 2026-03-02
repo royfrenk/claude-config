@@ -48,6 +48,7 @@ Assign multiple small tasks to Dev simultaneously. One large task at a time.
 
 - **"agent"** -- Add to ALL issues created by agents (not humans)
 - **"technical"** -- Add IN ADDITION for backend/infrastructure/tech-debt issues that agent inferred or initiated
+- **"S###"** (e.g., `S022`) -- Sprint label. Applied to all issues in a sprint at sprint start. Created automatically by `linear-sync label` if it doesn't exist. One label per sprint.
 
 ---
 

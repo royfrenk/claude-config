@@ -108,6 +108,9 @@ an issue you classified as "backend-only", re-classify it and invoke Design-Plan
 - Linear integration check pattern (linear_enabled, Team ID)
 - Soft retry logic and fallback to roadmap.md
 - Reconciliation protocol (sprint start or when Linear restored)
+- Sprint label convention (`S###`)
+
+**Sprint labels:** At sprint start, after issues are confirmed, use `linear-sync label <sprint-number> <issue-ids...>` to apply a sprint label (e.g., `S022`) to all issues in the sprint. This is a one-time operation per sprint. See `linear-sync` agent Section 4.
 
 ## Review Gate Enforcement (MANDATORY)
 

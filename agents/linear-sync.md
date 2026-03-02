@@ -97,6 +97,46 @@ Isolate Linear MCP operations to prevent:
 - Action: Retry now? (yes/no)
 ```
 
+### 4. Apply Sprint Label (sprint start)
+
+**Usage:** `linear-sync label <sprint-number> <issue-ids...>`
+
+**Process:**
+1. Format label name: `S` + zero-padded sprint number (e.g., `S022`)
+2. Check if label exists: `mcp__linear__list_issue_labels` filtered by name
+3. If label does not exist: `mcp__linear__create_issue_label` with name `S022`, color `#95A2B3`
+4. For each issue: `mcp__linear__save_issue` with `labels: ["S022"]` (additive — preserves existing labels)
+5. Timeout: 30 seconds for label creation, 30 seconds per issue
+6. If timeout/error: Log to sprint file "Pending Manual Sync", continue (non-blocking)
+
+**When called:** EM calls this once at sprint start, when issues first move to "In Progress."
+
+**Output format:**
+```json
+{
+  "success": true,
+  "label": "S022",
+  "label_created": true,
+  "issues_labeled": 3,
+  "issues_failed": 0
+}
+```
+
+**Partial failure:**
+```json
+{
+  "success": false,
+  "label": "S022",
+  "label_created": true,
+  "issues_labeled": 1,
+  "issues_failed": 2,
+  "failures": ["RAB-38 timeout", "RAB-39 timeout"],
+  "action": "logged to sprint file - manual sync needed"
+}
+```
+
+---
+
 ## Timeout Handling
 
 All Linear operations use timeout wrapper:
@@ -149,6 +189,14 @@ Status: In Review
 Status UUID: 9d905152-8dba-49bd-becf-6069b949de21
 Command: linear-sync push RAB-37 9d905152-8dba-49bd-becf-6069b949de21
 Expected: success/failure status
+```
+
+**When applying sprint label (at sprint start):**
+```markdown
+Sprint Number: 022
+Issues: RAB-125 RAB-126 RAB-127
+Command: linear-sync label 022 RAB-125 RAB-126 RAB-127
+Expected: Label S022 created (if new) and applied to all issues
 ```
 
 ### Called by Sprint Closure
