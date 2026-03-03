@@ -18,7 +18,7 @@ Load the project context for: $ARGUMENTS
      - What issues are in progress
      - What's pending (e.g., "awaiting device testing")
      - Resume instructions from the file
-   - If multiple active sprints exist, list them all
+   - If multiple active sprints exist, warn: "Only one active sprint should exist at a time. Resolve before starting new work."
    - If no active sprints but spec files show "In Progress", warn: "Orphaned spec files detected - no sprint file exists"
    - **If active sprint found, check for incomplete work:**
      - Read sprint file check-ins (look for "Check-in:" sections)

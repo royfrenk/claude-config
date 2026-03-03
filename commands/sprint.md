@@ -105,17 +105,25 @@ find docs/sprints/ -name "*.active.md" 2>/dev/null
 
 #### If multiple active sprints found
 
-Multiple active sprints are supported — each sprint has its own branch (`sprint/sprint-XXX-topic`), so parallel work is isolated.
+Only one active sprint is allowed at a time. Multiple active sprint files indicate a process error.
 
 ```
+❌ BLOCKING ERROR
+
 Found [N] active sprints:
 [list files with their branches]
 
-Starting new sprint alongside existing ones.
-Parallel sprint validation will check for issue overlap (no duplicate issues across sprints).
+Only one active sprint is allowed at a time.
+
+Options:
+1. Resume existing sprint: /sprint (will pick up the active sprint)
+2. Close existing sprint first: rename .active.md → .done.md
+3. Rename if mislabeled: fix the filename to .done.md
+
+CANNOT PROCEED until only one (or zero) active sprints remain.
 ```
 
-**CONTINUE** - Proceed to sprint creation with issue overlap check (existing parallel sprint validation handles this).
+**EXIT** - Do not proceed. User must resolve before starting a new sprint.
 
 #### If one active sprint found
 
@@ -137,31 +145,6 @@ Status: [status from sprint file]
 - Parse numbers handling suffixes (e.g., sprint-004a → 004)
 - Use highest number + 1 (or 001 if no sprints exist)
 - Example: If sprint-003.done.md, sprint-004a.done.md, sprint-004b.done.md exist, use 005
-
-**Parallel sprint validation (only check issue overlap, skip file overlap):**
-- Get list of issues for new sprint (from step 2b)
-- For each existing `*.active.md` sprint file:
-  - Read the "Issues in Sprint" table
-  - Extract issue IDs
-  - **If overlap detected (same issue ID in both sprints):**
-    ```
-    ❌ BLOCKING ERROR
-
-    Issue [ISSUE-ID] is already in an active sprint:
-    - Active sprint: [filename]
-
-    Cannot run parallel sprints on the same issue.
-
-    Options:
-    1. Resume existing sprint with /sprint [ISSUE-ID]
-    2. Wait for existing sprint to complete
-    3. Remove [ISSUE-ID] from the active sprint first
-
-    CANNOT PROCEED.
-    ```
-    **EXIT - Do not proceed**
-
-**Note:** File overlap calculation is expensive and rarely useful. Skipping it during initialization saves ~2K context tokens. EM agent will handle merge conflict resolution if parallel sprints touch overlapping files.
 
 **Create new sprint file:**
 - Path: `docs/sprints/sprint-###-[name].active.md`
@@ -238,21 +221,16 @@ git checkout sprint/sprint-###-[name]
 sprint-001-auth.done.md
 sprint-002-payments.done.md
 sprint-003-search.done.md
-sprint-004a-rag-memory.done.md    # Parallel sprint (finished)
-sprint-004b-email-fix.done.md     # Parallel sprint (finished)
-sprint-005-calendar.active.md     # Currently running
+sprint-004-rag-memory.done.md
 
 # New sprint starting:
-# Scan finds: 001, 002, 003, 004a, 004b, 005
-# Parse numbers: 1, 2, 3, 4, 4, 5
-# Highest = 005
-# New sprint gets: 006
+# Scan finds: 001, 002, 003, 004
+# Highest = 004
+# New sprint gets: 005
 
 # Result:
-docs/sprints/sprint-006-notifications.active.md
+docs/sprints/sprint-005-notifications.active.md
 ```
-
-This ensures unique sprint numbers even when multiple sprints run in parallel. If duplicates exist with suffixes (004a, 004b), the next sprint uses the next base number (005).
 
 ### 3. Delegate to EM Agent
 
@@ -367,7 +345,7 @@ When EM completes all issues:
 - **Sprint file = shared memory:** Both sprint command and EM update it with checkpoints
 - **Resume support:** Can read sprint file to resume interrupted work
 - **No PROJECT_STATE.md read here:** EM or Explorer will read it when needed (saves ~500 tokens)
-- **Lazy validation:** Only check issue overlap, skip expensive file overlap calculation
+- **Single sprint:** Only one active sprint at a time. Block new sprints if one is active.
 
 ## Output
 
