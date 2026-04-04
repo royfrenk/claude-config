@@ -30,7 +30,7 @@ project/
 **Contains:**
 - Quick start (points to PROJECT_STATE.md)
 - Running commands (dev server, tests)
-- Working with agents (EM + /sprint workflow)
+- Working with agents (/sprint workflow)
 - Linear integration (team, issue prefix)
 - Before you commit checklist
 
@@ -121,19 +121,19 @@ cd /path/to/project/frontend
 
 ## Working with Agents
 
-Use the **EM agent** for task coordination and the `/sprint` command for autonomous execution.
+Use `/sprint` for autonomous execution. It handles all orchestration directly in the main conversation.
 
 ### Workflow
 \`\`\`
-ROY (request/issue)
+USER (request/issue)
     ↓
-ENG MANAGER — prioritizes, coordinates
+/sprint — orchestrates the full workflow inline
     ↓
 EXPLORER — analyzes → creates docs/technical-specs/{ISSUE_ID}.md
     ↓
 PLAN-WRITER — plans → updates docs/technical-specs/{ISSUE_ID}.md
     ↓
-ROY (approves plan) ← CHECKPOINT
+USER (approves plan) ← CHECKPOINT
     ↓
 DEVELOPER — implements → reads spec file
     ↓
@@ -141,8 +141,8 @@ REVIEWER — validates
 \`\`\`
 
 ### Key Commands
-- **EM agent**: Task assignment, status updates, roadmap management
-- **`/sprint`**: Autonomous execution of Priority 1 tasks from Linear
+- **`/sprint`**: Autonomous execution — orchestrates all agents inline
+- **`/iterate`**: Continue fixing bugs after testing on staging
 
 ---
 
@@ -509,11 +509,12 @@ These agents are configured globally in `~/.claude/agents/`:
 
 | Agent | File | Purpose |
 |-------|------|---------|
-| EM | `em.md` | Task coordination, roadmap management |
 | Explorer | `explorer.md` | Codebase analysis → creates spec file |
 | Plan-Writer | `plan-writer.md` | Implementation plans → updates spec file |
 | Developer | `developer.md` | Code implementation → reads/updates spec file |
 | Reviewer | `reviewer.md` | Code review |
+
+> **Note:** The EM protocol (`~/.claude/guides/em-protocol.md`) runs inline in the main conversation via `/sprint`, not as a separate agent.
 
 **Do not create project-specific agent files.** Use the global agents.
 

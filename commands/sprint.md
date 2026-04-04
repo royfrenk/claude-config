@@ -232,119 +232,88 @@ sprint-004-rag-memory.done.md
 docs/sprints/sprint-005-notifications.active.md
 ```
 
-### 3. Delegate to EM Agent
+### 3. Execute EM Protocol (Inline)
 
-**Now that sprint file exists and issues are selected, delegate everything else to EM:**
+**Now that sprint file exists and issues are selected, follow the EM protocol directly in this conversation.**
 
-Spawn EM agent (EM has Task tool and will coordinate all subagents):
+Read `~/.claude/guides/em-protocol.md` and execute it. You ARE the engineering manager for this sprint — all orchestration happens here, visible to the User.
 
-```
-Role: Engineering Manager
-Sprint: [sprint file path]
-Sprint Branch: [sprint branch name, e.g., sprint/sprint-019-admin-tabs]
-Issues: [issue IDs from step 2b]
-Linear Config:
-  - Enabled: [true/false]
-  - Team ID: [team-id]
-  - Issue Prefix: [prefix]
+**Sprint context to carry forward:**
+- Sprint file: [sprint file path]
+- Sprint branch: [sprint branch name, e.g., sprint/sprint-019-admin-tabs]
+- Issues: [issue IDs from step 2b]
+- Linear enabled: [true/false]
+- Team ID: [team-id]
+- Issue prefix: [prefix]
 
-Instructions:
+**Execute these phases (details in em-protocol.md):**
 
-PHASE 0 — Design-Planner Gate (BEFORE any exploration):
+**PHASE 0 — Design-Planner Gate (BEFORE any exploration):**
 1. For EACH issue, classify: UI work or backend-only?
    - UI indicators: issue mentions UI/UX/layout/design/style/component/screen/button/modal/menu/page/form/card/navigation/header/drawer/sheet/dialog/toast
    - UI indicators: files to modify include src/components/, src/screens/, *.css, *.swift (native shell)
    - UI indicators: issue labels include UI, UX, design, frontend, Improvement (with UI scope)
-2. Log classification to sprint file for EVERY issue:
-   | Issue | Classification | Design Spec Required | Design Spec Status |
+2. Log classification to sprint file for EVERY issue
 3. For ALL UI-classified issues: Spawn Design-Planner agents (can be parallel)
 4. WAIT for ALL Design-Planner agents to complete
 5. VERIFY: docs/design-specs/{ISSUE_ID}-design.md exists for every UI-classified issue
 6. Only after ALL design specs confirmed → proceed to Phase 1
 
-PHASE 1 — Exploration & Planning:
+**PHASE 1 — Exploration & Planning:**
 1. Spawn Explorer(s) to analyze scope (skip for trivial fixes)
-   - Can spawn multiple Explorers in parallel for complex issues
-   - Explorers will independently verify design specs exist (hard block)
 2. Spawn Plan-Writer to create implementation plan
-   - Plan-Writer will independently verify design specs exist (safety net)
 3. Present plan to User for approval ← CHECKPOINT
 
-PHASE 2 — Execution:
-4. Once approved: Execute ALL issues CONTINUOUSLY without stopping:
+**PHASE 2 — Execution:**
+4. Once approved: Execute ALL issues CONTINUOUSLY without stopping
+   - If issues depend on existing pipelines: Developer should verify pipeline health early (stability.md Section 24)
    - Spawn Developer(s) for execution (parallel when possible)
    - Spawn Design-Reviewer (if UI work) and Code Reviewer
    - Deploy each issue to staging immediately after review passes
-   - Continue to next issue without pausing
 5. ONLY stop execution when:
    - Design approval needed (UI work)
-   - v0 visual iteration in progress (User iterating on v0.dev — wait for "v0 is ready")
+   - v0 visual iteration in progress (wait for "v0 is ready")
    - Plan approval needed (always)
    - Review fails after 3 rounds (escalate)
    - All issues deployed to staging (present wrap-up)
    - Blocking error occurs
-6. Update sprint file with checkpoints throughout (NOT User messages)
+6. Update sprint file with checkpoints throughout
 7. Use linear-sync agent for all Linear operations (non-blocking)
-8. Apply sprint label `S###` to all sprint issues when first updating their status in Linear (see linear-sync agent Section 4)
+8. Apply sprint label `S###` to all sprint issues (see linear-sync agent Section 4)
 9. Update roadmap.md as work progresses
 10. After all issues complete: Present sprint wrap-up with staging URLs
 
-Sprint file is your shared memory. Update it with:
-- Checkpoints after each phase
-- Linear sync status (success/failure)
-- Issue progress (spec status, review status)
-- Pending manual syncs
-
-Refer to em.md for full coordination protocol.
-```
-
-**EM agent handles:**
-- UX detection and Design-Planner invocation
-- Explorer spawning (single or parallel)
-- Plan-Writer coordination
-- User approval checkpoint
-- Developer coordination (sequential or parallel waves)
-- Design-Reviewer gate (for UI work)
-- Code Reviewer gate (mandatory)
-- Linear syncs via linear-sync agent
-- Sprint file updates with checkpoints
-- Roadmap.md updates
-- Escalation to User when blocked
-
-**Sprint command tracks progress:**
-- Read sprint file periodically for status
-- EM updates sprint file with checkpoints
-- Sprint command can resume if interrupted
+**Sprint file is your shared memory.** Update it with checkpoints after each phase, Linear sync status, issue progress, and pending manual syncs.
 
 ### 4. Sprint Completion
 
-When EM completes all issues:
+When all issues are complete:
 
-1. EM presents sprint wrap-up (see em.md lines 422-514)
+1. Present sprint wrap-up (see em-protocol.md Autonomous Mode & Sprint Closure)
 2. User tests on staging
 3. User says "close the sprint" or "deploy to production"
-4. EM validates all safety checks (see em.md lines 218-365):
+4. Validate all safety checks:
    - All acceptance criteria met
    - Automated verification passed
    - Reviewer approval exists for all issues
    - Infrastructure changes have User approval
    - OpenAI Codex peer review complete (optional)
-5. If all checks pass: EM invokes Developer to merge sprint branch to `develop` and deploy to production
+5. If all checks pass: Invoke Developer to merge sprint branch to `develop` and deploy to production
    - Developer merges sprint branch to `develop`: `git checkout develop && git merge sprint/sprint-###-[name] && git push origin develop`
    - Developer merges `develop` to `main`: `git checkout main && git merge develop && git push origin main`
    - Developer deletes sprint branch: `git branch -d sprint/sprint-###-[name] && git push origin --delete sprint/sprint-###-[name]`
-6. EM renames sprint file: `.active.md` → `.done.md`
-7. EM updates roadmap.md: Move to "Recently Completed"
-8. EM uses linear-sync for final status sync (non-blocking)
+6. Rename sprint file: `.active.md` → `.done.md`
+7. Update roadmap.md: Move to "Recently Completed"
+8. Use linear-sync for final status sync (non-blocking)
 
 ## Rules
 
-- **Thin sprint command:** Only handles config, issue selection, sprint file creation
-- **Delegate early:** EM handles all orchestration (UX detection, exploration, planning, execution)
+- **Setup then orchestrate:** Steps 1-2 handle config, issue selection, sprint file creation. Step 3 switches to EM protocol for orchestration.
+- **EM protocol runs inline:** Read `~/.claude/guides/em-protocol.md` and follow it directly in the main conversation. Do NOT spawn it as a subagent.
 - **Non-blocking Linear:** Use `linear-sync` agent with 30s timeouts, fallback to roadmap.md
-- **Sprint file = shared memory:** Both sprint command and EM update it with checkpoints
+- **Sprint file = shared memory:** Update it with checkpoints throughout
 - **Resume support:** Can read sprint file to resume interrupted work
-- **No PROJECT_STATE.md read here:** EM or Explorer will read it when needed (saves ~500 tokens)
+- **No PROJECT_STATE.md read here:** Explorer will read it when needed (saves ~500 tokens)
 - **Single sprint:** Only one active sprint at a time. Block new sprints if one is active.
 
 ## Output
@@ -360,22 +329,13 @@ When sprint starts:
 **Staging preview:** [Vercel preview URL from sprint branch push]
 **Linear sync:** [success / unavailable - using roadmap.md fallback]
 
-**Delegated to EM agent:**
-- EM will check each issue for UI/UX work
-- Design-Planner invoked before Explorer if UI work detected
+**Now executing EM protocol (inline):**
+- Checking each issue for UI/UX work
 - Full workflow: Design → Explore → Plan → Approve → Execute → Review → Deploy
-
-**Tracking:**
 - Sprint file updated with checkpoints
 - Linear syncs via linear-sync agent (non-blocking)
 - Roadmap.md updated as work progresses
-
-**EM is now coordinating the sprint...**
 ```
-
-When EM completes (or needs input):
-- EM posts updates directly to User
-- Sprint command can be run again to resume if interrupted
 
 ---
 

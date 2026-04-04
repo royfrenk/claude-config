@@ -38,13 +38,13 @@ Specialized agents handle different parts of development:
 ```
 You: "Add user authentication"
     ↓
-Engineering Manager — breaks it down, prioritizes
+/sprint — orchestrates the full workflow inline (no subagent)
     ↓
 Explorer(s) — analyzes codebase (may spawn multiple in parallel)
     ↓
 Plan-Writer — creates implementation plan + dependency analysis
     ↓
-Engineering Manager — creates execution plan (parallelization strategy)
+/sprint — creates execution plan (parallelization strategy)
     ↓
 You — approve the plan ← CHECKPOINT
     ↓
@@ -499,7 +499,6 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 ├── README.md              # This file
 ├── settings.json          # Hooks configuration
 ├── agents/
-│   ├── em.md              # Engineering Manager
 │   ├── design-planner.md  # Design specs & mockups (UX features)
 │   ├── explorer.md        # Codebase analysis
 │   ├── plan-writer.md     # Implementation planning
@@ -519,6 +518,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   └── change-process.md  # /change-process
 ├── guides/
 │   ├── README.md                  # Guide index and usage instructions
+│   ├── em-protocol.md             # EM orchestration protocol (runs inline via /sprint)
 │   ├── agent-teams.md             # Parallel agent team coordination
 │   ├── api-integration-patterns.md # Env vars, fallbacks, error handling
 │   ├── code-performance.md        # N+1 queries, caching, memoization
@@ -710,9 +710,9 @@ project/
 
 ## Agent Roles
 
-| Agent | What It Does | Can Write Code? | Can Spawn Sub-Agents? |
+| Agent / Protocol | What It Does | Can Write Code? | Can Spawn Sub-Agents? |
 |-------|--------------|-----------------|------------------------|
-| **EM** | Coordinates work, manages roadmap, orchestrates parallelization | No | Yes (Explorer, Plan-Writer, Eval-Writer, Developer, Design-Reviewer, Reviewer) |
+| **EM Protocol** (inline) | Coordinates work, manages roadmap, orchestrates parallelization. Runs in the main conversation via `/sprint`, not as a subagent. | No | Yes (Explorer, Plan-Writer, Eval-Writer, Developer, Design-Reviewer, Reviewer) |
 | **Explorer** | Analyzes codebase, creates spec file | No | No (but can run in parallel with other Explorers) |
 | **Plan-Writer** | Adds implementation plan + dependency analysis | No | No |
 | **Eval-Writer** | Writes quality benchmarks for subjective features | No | No |

@@ -1,20 +1,15 @@
----
-name: eng-manager
-description: Engineering coordination and planning. Use proactively for daily updates, task assignment, roadmap management, and when the User needs status or decisions. Orchestrates work between developer and reviewer agents.
-tools: Read, Grep, Glob, Task
-model: sonnet
----
+# EM Protocol — Sprint Orchestration
 
-You are the Engineering Manager for this project. You coordinate engineering work, manage the roadmap, and act as the buffer between agents and the User.
+This is the engineering management protocol. It runs **in the main conversation** (not as a subagent). When `/sprint` completes setup, it tells you to follow this protocol directly.
 
 ## Overview
 
 ```
 USER (provides request/issue)
     |
-ENG MANAGER (you) -- owns prioritization, coordination, approval gates
+YOU (the main conversation) -- follow this protocol for orchestration
     |
-ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
+Check: Does this involve UI/UX changes (new OR existing)?
     |-- YES --> DESIGN-PLANNER (creates design spec)
     |           Creates docs/design-specs/{ISSUE_ID}-design.md
     |           Validates links with User (asks questions, updates spec)
@@ -31,7 +26,7 @@ ENG MANAGER checks: Does this involve UI/UX changes (new OR existing)?
                 DEVELOPER (implements, reads design + technical spec)
                   [If v0 was used: reads src/v0/{feature}/, adapts to project]
                             |
-                [UI work only] EM orchestrates screenshots + DESIGN-REVIEWER
+                [UI work only] Orchestrate screenshots + DESIGN-REVIEWER
                             |
                 REVIEWER (validates code quality, security, testing)
 ```
@@ -51,7 +46,7 @@ When Design-Planner asks the User "Want to iterate on v0.dev?" and User says yes
 **CRITICAL: Agents must NEVER use v0 MCP tools (`v0_generate_ui`, `v0_chat_complete`) to generate final UI code.** The v0 workflow exists for the User to iterate visually on v0.dev. The agent prepares the prompt and waits.
 
 **Rules:**
-1. Agents only surface to you -- Dev and Reviewer don't contact the User directly
+1. Subagents (Dev, Reviewer) report back to you in the main conversation -- you relay to the User
 2. All sprint work goes to a dedicated sprint branch (`sprint/sprint-XXX-topic`), created off `develop` at sprint start. Commits go to the sprint branch throughout the sprint. The sprint branch is pushed to origin for Vercel preview deployments (frontend). It merges to `develop` only when the User confirms the sprint is done. Backend staging (Railway) remains on `develop` — sprint branches do not auto-deploy the backend.
 3. Production deployment: Developer can deploy when User gives explicit confirmation and all safety checks pass
 4. You are the buffer -- filter noise, escalate what matters
@@ -80,7 +75,7 @@ Before invoking Explorer for ANY issue:
 
 **Violation detection:** If Explorer reports back and `docs/design-specs/{ISSUE_ID}-design.md` does not exist for a UI issue, this is a process violation. STOP, invoke Design-Planner retroactively, and note the violation in the sprint file.
 
-**Post-mortem reference:** Sprint 015 -- EM skipped Design-Planner for RAB-80/RAB-81 (UI issues), leading to 16 iteration batches. Retroactive design specs miss their primary purpose of preventing iteration churn.
+**Post-mortem reference:** Sprint 015 -- skipped Design-Planner for RAB-80/RAB-81 (UI issues), leading to 16 iteration batches. Retroactive design specs miss their primary purpose of preventing iteration churn.
 
 ### Why Downstream Enforcement Exists
 
@@ -103,7 +98,7 @@ an issue you classified as "backend-only", re-classify it and invoke Design-Plan
 **Read `~/.claude/guides/roadmap-management.md`** for all roadmap and Linear operations. It contains:
 - Roadmap.md sync rules and timing (5 sync touchpoints)
 - Roadmap structure and status ownership rules
-- EM permissions (what you can/cannot change)
+- Permissions (what you can/cannot change)
 - Task sizing and label conventions
 - Linear integration check pattern (linear_enabled, Team ID)
 - Soft retry logic and fallback to roadmap.md
@@ -135,7 +130,7 @@ After parallel completion: consolidate spec file, pass to Plan-Writer.
 
 ### Step 1: Invoke Explorer
 
-**Simple (1-2 areas, <30 files):** Task tool + single Explorer
+**Simple (1-2 areas, <30 files):** Agent tool + single Explorer
 **Complex (3+ areas, 50+ files):** Agent Teams (80% context savings)
 
 Explorer creates `docs/technical-specs/{ISSUE_ID}.md`, posts to Linear.
@@ -166,7 +161,7 @@ Read Task Dependencies -> Group by level (0=no deps, 1=after 0, etc.) -> Check f
 
 **Parallel waves:** Spawn Developers in ONE message per wave with assigned tasks + file zones + sequence. Monitor via spec emojis + Linear. Coordinate reviews, handle file conflicts (rebase), update Linear per wave.
 
-**EM owns:** Linear status, wave coordination, escalations.
+**You own:** Linear status, wave coordination, escalations.
 **Devs own:** Spec updates (assigned tasks), Linear comments, review submission, deployment.
 
 ## Screenshot Orchestration (UI Work)
@@ -182,11 +177,11 @@ Read Task Dependencies -> Group by level (0=no deps, 1=after 0, etc.) -> Check f
 ## Design Review Integration
 
 When assigning tasks involving UI/UX work:
-1. Developer implements -> reports completion to EM
-2. EM orchestrates screenshots (see guide above)
+1. Developer implements -> reports completion
+2. Orchestrate screenshots (see guide above)
 3. Design-Reviewer reviews against design standards
 4. If approved -> Developer proceeds to Code Reviewer
-5. If changes requested -> Developer fixes, EM re-captures, Design-Reviewer re-reviews
+5. If changes requested -> Developer fixes, re-capture, Design-Reviewer re-reviews
 
 **Design-Reviewer is MANDATORY for:** New UI components, layout/responsive changes, forms, marketing pages, dashboards.
 
