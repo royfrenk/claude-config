@@ -83,7 +83,7 @@ Before reviewing code, identify the task type and read the relevant guide:
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |
 | RTL/i18n | `~/.claude/guides/rtl-i18n-checklist.md` | Text-displaying components use i18n, RTL-safe layout |
 
-**This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features, `while True` polling without timeout, third-party CSS positioning assumptions in WKWebView, CSS Grid table header/data row class mismatch (see `stability.md` Section 16), SQL queries with CTEs: verify new columns appear in ALL SELECT paths — both the `columns` variable and explicit SELECT lists after the CTE (see `stability.md` Section 17), new fields with conditional UI: check if the object is client-side persisted and add fallback for stale objects (see `stability.md` Section 18), cross-layer schema sync: when SQL query is modified, verify Pydantic model AND TypeScript interface include all returned fields (see `stability.md` Section 20), SQL-derived status: when a write should change a status badge, verify the write sets the columns the `CASE WHEN` evaluates — not just the user-facing field (see `stability.md` Section 19).
+**This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features, `while True` polling without timeout, third-party CSS positioning assumptions in WKWebView, CSS Grid table header/data row class mismatch (see `stability.md` Section 16), SQL queries with CTEs: verify new columns appear in ALL SELECT paths — both the `columns` variable and explicit SELECT lists after the CTE (see `stability.md` Section 17), new fields with conditional UI: check if the object is client-side persisted and add fallback for stale objects (see `stability.md` Section 18), cross-layer schema sync: when SQL query is modified, verify Pydantic model AND TypeScript interface include all returned fields (see `stability.md` Section 20), SQL-derived status: when a write should change a status badge, verify the write sets the columns the `CASE WHEN` evaluates — not just the user-facing field (see `stability.md` Section 19), `BackgroundTasks` for long operations: if code uses `background_tasks.add_task()` for operations >60 seconds, flag as architecture risk — use persistent queue instead (see `stability.md` Section 22).
 
 **A2. v0 Fidelity Check (When Applicable)**
 
@@ -99,17 +99,17 @@ If the design spec (`docs/design-specs/{ISSUE_ID}-design.md`) has a `## v0 Refer
 
 **D. Dependencies** -- What calls into/out of this code? How do changes ripple outward?
 
-**E. Security** -- Inputs validated? Auth checks in place? New data exposure? Secrets handled correctly?
+**E. Security** -- Security Reviewer handles this separately (runs after your approval). Skip security checks here — focus on code quality, clarity, and correctness.
 
 **F. Revertibility** -- Can this be safely reverted without data migration?
 
 ### Step 5: Decide
 
-**APPROVED** if: All tests pass, new code has tests, scope is correct, code is clear and simple, security passes.
+**APPROVED** if: All tests pass, new code has tests, scope is correct, code is clear and simple. (Security reviewed separately by Security Reviewer.)
 
 **CHANGES REQUESTED** if: Fixable issues exist that Developer can address without architectural changes.
 
-**BLOCKED** if: Security vulnerability, architectural problem needing EM/User input, scope creep needing task redefinition.
+**BLOCKED** if: Architectural problem needing EM/User input, scope creep needing task redefinition. (Security vulnerabilities are caught by Security Reviewer.)
 
 ## Feedback Format
 
@@ -153,7 +153,7 @@ Post approval to Linear with metadata:
 
 Code review passed. Ready for staging deployment.
 
-**Reviewed:** Tests, Scope, Security, Code quality -- all passed.
+**Reviewed:** Tests, Scope, Code quality -- all passed. (Security reviewed separately.)
 
 <!-- REVIEWER_APPROVAL: {issue_id} | {commit_hash} | {timestamp} -->
 ```

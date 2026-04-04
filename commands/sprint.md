@@ -296,6 +296,8 @@ When all issues are complete:
    - All acceptance criteria met
    - Automated verification passed
    - Reviewer approval exists for all issues
+   - Security Reviewer approval exists for all issues
+   - Security audit completed (if triggered at sprint start — see em-protocol.md)
    - Infrastructure changes have User approval
    - OpenAI Codex peer review complete (optional)
 5. If all checks pass: Invoke Developer to merge sprint branch to `develop` and deploy to production

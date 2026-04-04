@@ -56,7 +56,9 @@ Wave 1: Dev A, Dev B, Dev C (parallel)
 Design-Reviewer(s) — reviews UI/UX against design standards FIRST
     ↓
 [All work]
-Reviewer(s) — reviews code quality, security, testing
+Reviewer(s) — reviews code quality, testing
+    ↓
+Security Reviewer — reviews diff for security issues
     ↓
 Wave 1 deploys to staging
     ↓
@@ -267,6 +269,7 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 | `/create-issue` | Quick issue capture |
 | `/new-project` | Setup guide and templates |
 | `/checkpoint` | Save work state to spec file |
+| `/security-audit` | Full-codebase security scan (also auto-triggered by EM for security-sensitive sprints) |
 | `/v0-new-project` | Init v0.dev chat from current repo (v0 sees all files) |
 | `/v0-feature` | Add feature chat to existing v0 project |
 
@@ -379,7 +382,7 @@ For production apps, add GitHub Actions:
 
 | File | Enforces |
 |------|----------|
-| `security.md` | Input validation, auth, secrets |
+| `security.md` | Input validation, auth, secrets (developer rules) |
 | `coding-style.md` | File organization, immutability |
 | `testing.md` | Test coverage, verification loop |
 | `performance.md` | Context efficiency, selective reads |
@@ -504,6 +507,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── plan-writer.md     # Implementation planning
 │   ├── developer.md       # Code implementation
 │   ├── reviewer.md        # Code review
+│   ├── security-reviewer.md # Security review (PR mode + audit mode)
 │   ├── design-reviewer.md # Design/UX review
 │   └── external-model-delegate.md  # External AI model delegation (Gemini, Codex)
 ├── commands/
@@ -515,6 +519,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── create-issue.md    # /create-issue
 │   ├── new-project.md     # /new-project
 │   ├── checkpoint.md      # /checkpoint
+│   ├── security-audit.md  # /security-audit
 │   └── change-process.md  # /change-process
 ├── guides/
 │   ├── README.md                  # Guide index and usage instructions
@@ -529,6 +534,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── google-auth.md             # Google OAuth setup, tokens, Capacitor
 │   ├── external-model-delegation.md  # External model delegation guide
 │   ├── legal.md                   # Privacy, compliance
+│   ├── security-review-checklist.md  # Security checklist (PR mode + audit mode)
 │   └── testing-patterns.md        # E2E, unit tests, coverage strategy
 ├── skills/
 │   ├── deploy-pi.md              # Pi deployment
@@ -719,6 +725,7 @@ project/
 | **Developer** | Implements code, deploys to staging | Yes | No (but can run in parallel with other Developers) |
 | **Design-Reviewer** | Reviews UI implementations against design standards (runs BEFORE Code Reviewer for UI work) | No | No |
 | **Reviewer** | Reviews code, approves/blocks deploys | No | Yes (sub-Reviewers for parallel review) |
+| **Security Reviewer** | Reviews diffs for security issues (PR mode) and runs full codebase audits (audit mode). Invoked after Code Reviewer approves. | No | No |
 | **External Model Delegate** | Consults external AI models (Gemini, Codex) for stuck bugs, implements their suggestions | Yes | No |
 
 ---

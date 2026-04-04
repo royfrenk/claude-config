@@ -28,7 +28,9 @@ Check: Does this involve UI/UX changes (new OR existing)?
                             |
                 [UI work only] Orchestrate screenshots + DESIGN-REVIEWER
                             |
-                REVIEWER (validates code quality, security, testing)
+                REVIEWER (validates code quality, testing)
+                            |
+                SECURITY-REVIEWER (validates security — reads diff, checks checklist)
 ```
 
 ### v0 Visual Iteration (Opt-In)
@@ -74,6 +76,33 @@ Before invoking Explorer for ANY issue:
 3. **If NO:** Proceed directly to Explorer (backend-only work).
 
 **Violation detection:** If Explorer reports back and `docs/design-specs/{ISSUE_ID}-design.md` does not exist for a UI issue, this is a process violation. STOP, invoke Design-Planner retroactively, and note the violation in the sprint file.
+
+### Security Audit Trigger Check
+
+At sprint start, evaluate whether this sprint needs a security audit at sprint end.
+
+**Event-driven triggers — run `/security-audit` if the sprint touches ANY of:**
+- Auth files: `*/auth*`, `*/login*`, `*/signup*`, password handling
+- Admin files: `*/routers/admin*`, `*/admin/*`, impersonation endpoints
+- Middleware: `*/middleware*`, CORS configuration, rate limiting
+- Server config: `main.py` (startup/lifespan), `vercel.json`, `*.toml` deployment configs
+- Environment: `.env*` templates, env var validation, secrets handling
+- Token/session: JWT creation/validation, token storage, session management
+- New API endpoints or route changes
+- Dependency updates: `requirements.txt`, `package.json` (version changes)
+
+**Backstop trigger — run `/security-audit` if:**
+- `docs/security-audit.md` doesn't exist, OR
+- The `**Date:**` in `docs/security-audit.md` is more than 4 sprints old
+
+**Log the decision** in the sprint file:
+```
+**Security Audit:** [Triggered / Not triggered]
+- Reason: [which trigger matched, or "no security-sensitive changes + audit is recent"]
+- Scheduled: [sprint end, before closure / N/A]
+```
+
+**If triggered:** Run `/security-audit` after all issues complete but before sprint closure. Any CRITICAL findings block the sprint from closing.
 
 **Post-mortem reference:** Sprint 015 -- skipped Design-Planner for RAB-80/RAB-81 (UI issues), leading to 16 iteration batches. Retroactive design specs miss their primary purpose of preventing iteration churn.
 
