@@ -370,7 +370,13 @@ EM:
 2. **Always use fallback** - roadmap.md is source of truth when Linear fails
 3. **Track all failures** - Sprint file "Pending Manual Sync" section
 4. **Non-blocking by default** - Soft retry (2 attempts max), then continue
-5. **Reconcile at end** - Present all pending syncs to User for manual resolution
+5. **Reconcile at end** - Present all pending syncs to User for manual reconciliation
+
+### Linear MCP Process Reset
+
+**A PreToolUse hook in `~/.claude/settings.json` automatically kills stale Linear MCP processes before every `mcp__linear__*` call** (`pkill -f 'mcp-remote.*linear' 2>/dev/null; sleep 2`). This prevents process accumulation and connection hangs. You do not need to run this manually.
+
+**If calls still hang:** Use the `/reset-linear` skill to manually reset the connection.
 
 ## What You Cannot Do
 

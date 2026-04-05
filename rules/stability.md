@@ -621,6 +621,19 @@ Run `/sync-roadmap` to reconcile Linear with roadmap.md
 - Transient network errors (retry once)
 - Sprint end reconciliation (present options, don't block)
 
+### Linear MCP Process Reset (Critical)
+
+**Before every `mcp__linear__*` tool call, kill stale Linear MCP processes.** Linear MCP processes accumulate across calls and cause hanging/timeouts. The reset clears stale connections so the next call gets a fresh process.
+
+**This is automated via a PreToolUse hook in `~/.claude/settings.json`** — the hook runs automatically before every `mcp__linear__*` call. Agents do not need to run it manually.
+
+```bash
+# What the hook runs before every mcp__linear__ call:
+pkill -f 'mcp-remote.*linear' 2>/dev/null; sleep 2
+```
+
+**If Linear calls are still hanging after the hook:** Use the `/reset-linear` skill to manually kill and restart the Linear MCP process, then retry.
+
 ---
 
 ## 8. Capacitor WKWebView Layout (iOS)
@@ -1241,6 +1254,124 @@ When a row of action icons (edit, search, delete, link) is conditionally rendere
 
 ---
 
+## 22. In-Memory Background Tasks for Long-Running Operations
+
+### Problem
+
+Web frameworks (FastAPI `BackgroundTasks`, Express callbacks, Django `async`) run background tasks in the same process as HTTP handlers. When the process restarts (deploy, crash, OOM), all in-flight tasks are silently killed. Episodes, jobs, or processing pipelines are left in intermediate states with no recovery.
+
+**Post-mortem:** `docs/post-mortem/2026-03-03-deploy-kills-background-tasks.md` (12 episodes orphaned by a single deploy)
+
+### Rules
+
+1. **Never use in-memory task queues for operations >60 seconds** — use a persistent queue (DB table, Redis, SQS)
+2. **If using `BackgroundTasks`**, only for fire-and-forget operations under 60 seconds (send email, update cache, log event)
+3. **Long-running pipelines** (transcription, video processing, ML inference) need a separate worker process with a persistent job queue
+4. **Every job must be resumable** — store checkpoint state (e.g., external service job IDs) so a restart doesn't re-incur costs
+5. **Add startup recovery** — on boot, query for jobs stuck in processing states and auto-resume or mark as failed
+
+### Checklist
+
+When implementing background processing:
+
+- [ ] Is the operation under 60 seconds? If not, use a persistent queue
+- [ ] If the process restarts mid-operation, is work lost? If yes, add checkpointing
+- [ ] Is there a way to detect orphaned jobs on startup?
+- [ ] Are external service job IDs (e.g., AssemblyAI transcript ID) persisted before polling starts?
+
+---
+
+## 23. LLM Single-Shot Prompt Overload
+
+### Problem
+
+Asking an LLM to perform 4+ simultaneous objectives in a single prompt degrades output quality. The model optimizes for the easiest objective (find a quotable sentence) at the expense of harder ones (capture a complete argument with proper boundaries). Validation can catch structural errors (missing fields, wrong types) but cannot catch semantic incompleteness.
+
+**Post-mortem:** `docs/post-mortem/2026-03-03-highlight-segment-boundary-cutoff-RAB-100.md` (highlights cut off mid-argument)
+
+### Known Failure
+
+Single-shot highlight prompt asked the LLM to simultaneously:
+1. Identify themes worth highlighting
+2. Pick precise timestamp boundaries
+3. Rank importance across tiers
+4. Extract representative quotes
+
+Result: LLM found quotable sentences and drew boundaries there, producing 49-second segments that captured questions but not answers.
+
+### Rules
+
+1. **When an LLM prompt has 4+ distinct objectives**, decompose into separate focused steps
+2. **Separate "what's important" from "where is it"** — decide content significance first, then locate it in the source
+3. **Genre/context-specific boundary rules** belong in the locating step, not mixed into a general prompt
+4. **Validation only catches structural errors** — if semantic completeness matters (complete arguments, full Q&A exchanges), the pipeline architecture must enforce it, not just prompt instructions
+
+### Pattern: Multi-Step Pipeline
+
+```
+# WRONG — single prompt doing everything
+"Identify highlights, pick timestamps, rank importance, extract quotes"
+
+# CORRECT — focused steps
+Step 1: Extract insights from summary (what's important)
+Step 2: Rank insights by novelty/interest (how important)
+Step 3: Locate each insight in transcript (where is it — genre-aware boundaries)
+Step 4: Clean up the located section (trim filler, tighten)
+```
+
+---
+
+## 24. Instrument Before Building (Pipeline Health)
+
+### Problem
+
+When features depend on an existing pipeline (YouTube captions, transcription, processing), the agent builds on top of it without verifying it's healthy. When the pipeline is silently broken (circuit breaker, blocked service, expired credentials), the agent discovers failures one at a time across many iteration batches instead of diagnosing the root cause upfront.
+
+**Post-mortem:** `docs/post-mortem/2026-03-08-sprint-024-youtube-blind-debugging.md` (13 of 23 batches on YouTube failures)
+
+### Rules
+
+1. **Before building features that depend on a pipeline**, verify the pipeline is healthy — curl the staging API, check logs, or run a test operation
+2. **"All N items failed" is a pipeline health problem, not a UX problem** — when a batch operation fails for all/most items, stop and investigate root cause before improving error messages or moving on
+3. **Add diagnostic logging FIRST** — before iterating on a broken pipeline, add logging so you can see *why* it's failing. Don't iterate blind.
+4. **Silent circuit breakers must log** — any automatic disable/gate mechanism must emit a warning log when it activates. A circuit breaker that silently disables functionality is worse than no circuit breaker.
+
+### Anti-Pattern: Symptom-First Debugging
+
+```
+# WRONG — 13 batches of whack-a-mole
+Batch 6:  "All 10 episodes failed" → improve toast message
+Batch 7:  Add logging → discover circuit breaker
+Batch 8:  Fix retranscribe → still fails
+Batch 15: Fix async subprocess → still fails
+Batch 18: Fix search method → still fails
+Batch 19: Fix circuit breaker gate → still fails for another endpoint
+Batch 21: Fix circuit breaker gate (again) → finally works
+
+# CORRECT — 2-3 batches
+Batch 1:  curl staging API → YouTube returning errors → check logs
+          → circuit breaker auto-disabled → add logging + remove silent disable
+Batch 2:  Fix async subprocess + search method (now visible in logs)
+Batch 3:  Verify all YouTube paths working
+```
+
+### When to Check Pipeline Health
+
+- Sprint includes features that depend on YouTube, transcription, or external APIs
+- Iteration reveals "all items failed" or "everything goes to fallback"
+- A feature that "used to work" is silently not working
+
+### Checklist
+
+Before building on an existing pipeline:
+
+- [ ] Curled staging API or ran a test operation to verify pipeline is healthy?
+- [ ] If unhealthy, added diagnostic logging BEFORE attempting fixes?
+- [ ] Any circuit breakers or auto-disable mechanisms log when they activate?
+- [ ] Root cause identified (not just symptoms patched)?
+
+---
+
 ## Quick Reference
 
 | Issue Type | First Check | Prevention |
@@ -1268,3 +1399,6 @@ When a row of action icons (edit, search, delete, link) is conditionally rendere
 | **SQL-Derived Status** | Which columns does the `CASE WHEN` evaluate? | Write to the status-driving columns, not just the user-facing field |
 | **Cross-Layer Schema Sync** | SQL ↔ Pydantic ↔ TypeScript all in sync? | When modifying SQL query, update Pydantic model + TypeScript interface |
 | **Conditional Icon Alignment** | Do all rows reserve same space for action icons? | Invisible spacers or fixed-width containers for missing icons |
+| **In-Memory Background Tasks** | Is this operation >60 seconds? | Use persistent queue (DB table), not `BackgroundTasks`; add startup recovery for orphaned jobs |
+| **LLM Single-Shot Overload** | Does the prompt have 4+ distinct objectives? | Decompose into focused steps; separate "what's important" from "where is it" |
+| **Pipeline Blind Building** | Does this feature depend on a pipeline? Is it healthy? | Verify pipeline health before building; "all N failed" = root-cause, not UX fix |
