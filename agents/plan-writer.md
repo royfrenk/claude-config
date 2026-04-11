@@ -102,6 +102,8 @@ Read `docs/technical-specs/{ISSUE_ID}.md` and replace the "Implementation Plan" 
 
 **iOS / Native Shell Note:** Tasks that modify native shell components (TabBar, MiniPlayer, NowPlayingView) or WKWebView CSS positioning require physical device testing (~5 min/cycle). Budget 3-5 iteration cycles per task. Note this in the task dependency table as: "Requires device verification (see `stability.md` Sections 8, 14)". For sprints with 5+ native shell tasks, recommend implementing in waves with device testing between waves to limit accumulated bugs.
 
+**LLM Pipeline Note:** When planning features that use LLM prompts with 4+ distinct objectives (e.g., identify themes + pick boundaries + rank importance + extract quotes), decompose into separate focused steps. Each step should have a single objective. This produces better output and makes each step independently testable and cacheable. See `stability.md` Section 23.
+
 ### Tasks
 
 - [ ] 🟥 **Task 1: Add database schema** (Level 0 - no dependencies)
@@ -141,6 +143,32 @@ Read `docs/technical-specs/{ISSUE_ID}.md` and replace the "Implementation Plan" 
 | tests/property-detail.spec.ts | Property detail page rendering | Changed property data structure |
 
 **No relevant E2E tests:** If no existing tests cover this feature, mark as "None - manual verification only" and note that E2E tests should be written if this is a new critical flow (auth, payments, core journey).
+
+### Functional Verification
+
+**Purpose:** Browser-based verification that the feature works on staging as a real user would experience it. Developer spawns the visual-verifier agent (Mode 4) with these flows after deploying to staging. Only include this section when the feature has user-visible behavior that should be verified in a browser.
+
+**When to include:** Feature has user-facing UI, user interactions (clicks, downloads, navigation), or produces user-visible output (PDFs, share pages, emails). Skip for backend-only changes, database migrations, or internal API refactors.
+
+**Target:** [staging URL from CLAUDE.md]
+**Auth:** Test user (visual-verifier handles auth setup)
+
+#### Flow 1: [descriptive name]
+1. Navigate to [starting page]
+2. [Action — click, fill, select, etc.]
+3. Verify: [assertion — what should be true after the action]
+4. [Next action...]
+5. Verify: [next assertion...]
+
+#### Flow 2: [descriptive name]
+1. ...
+
+**Writing good flows:**
+- Each flow tests ONE user journey (not a grab bag of checks)
+- Steps are browser-actionable (click, navigate, fill — not "check the code")
+- Every `Verify:` step has a concrete assertion (URL contains X, element Y is visible, file downloads, text content matches)
+- Include edge cases that broke before (e.g., RTL alignment, incognito access, expired tokens)
+- For public pages: include an incognito flow (new browser context, no auth cookies)
 ```
 
 Also update the file header:
@@ -189,6 +217,7 @@ Ready for User to review and approve.
 4. **Modular** - Each task is independently testable when possible
 5. **No scope creep** - Stick to what Explorer documented
 6. **Dependency analysis** - Always include Task Dependencies table with:
+7. **Functional verification** - If the spec has acceptance criteria involving user-visible behavior on staging (UI interactions, downloads, share links, public pages), translate them into a `## Functional Verification` section with browser-actionable flows. Skip for backend-only or internal changes.
    - What each task depends on
    - Why the dependency exists
    - Files to modify (for conflict detection)

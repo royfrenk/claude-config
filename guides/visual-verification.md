@@ -203,6 +203,187 @@ The verifier reads both images and describes the visual differences.
 
 ---
 
+## Functional Verification Protocol
+
+For Mode 4: verifying features work on staging as a real user would experience them.
+
+### Auth Setup
+
+Generate a test JWT and inject it into the browser context before navigating:
+
+```javascript
+const { chromium } = require('playwright');
+const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
+
+// Read JWT_SECRET from backend/.env
+function getJwtSecret() {
+  const envPath = path.join(process.cwd(), 'backend', '.env');
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  const match = envContent.match(/JWT_SECRET=(.+)/);
+  return match ? match[1].trim() : null;
+}
+
+// Generate test JWT for the test user
+function generateTestToken(secret) {
+  return jwt.sign(
+    {
+      sub: 'test-user-id',
+      email: 'test@recaprabbit.com',
+      role: 'user',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600
+    },
+    secret
+  );
+}
+
+async function createAuthenticatedContext(browser, targetDomain) {
+  const secret = getJwtSecret();
+  const token = generateTestToken(secret);
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  
+  // Inject auth token into localStorage via page script
+  const page = await context.newPage();
+  await page.goto(`https://${targetDomain}`);
+  await page.evaluate((t) => {
+    localStorage.setItem('auth_token', t);
+  }, token);
+  
+  return { context, page };
+}
+```
+
+**For public/incognito flows**, create a separate context with no auth:
+
+```javascript
+async function createPublicContext(browser) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const page = await context.newPage();
+  return { context, page };
+}
+```
+
+### Download Verification
+
+Verify that a file download triggers and the file is valid:
+
+```javascript
+// Listen for download event before triggering it
+const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+await page.click('button:has-text("Export PDF")');
+
+try {
+  const download = await downloadPromise;
+  const filePath = await download.path();
+  const stats = fs.statSync(filePath);
+  
+  results.push({
+    step: N,
+    action: 'Verify: PDF downloads',
+    result: stats.size > 0 ? 'pass' : 'fail',
+    detail: `Downloaded ${stats.size} bytes, type: ${download.suggestedFilename()}`
+  });
+} catch (error) {
+  await page.screenshot({ path: 'OUTPUT_DIR/func-flowN-stepN-fail.png' });
+  results.push({
+    step: N,
+    action: 'Verify: PDF downloads',
+    result: 'fail',
+    detail: `No download event: ${error.message}`
+  });
+}
+```
+
+### Clipboard Verification
+
+Verify that "Copy Link" puts the correct URL in the clipboard:
+
+```javascript
+// Grant clipboard permissions
+const context = await browser.newContext({
+  permissions: ['clipboard-read', 'clipboard-write'],
+  viewport: { width: 1280, height: 720 }
+});
+const page = await context.newPage();
+
+// Click copy button
+await page.click('button:has-text("Copy Link")');
+await page.waitForTimeout(500);
+
+// Read clipboard
+const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+const isValid = clipboardText.startsWith('https://recaprabbit.com/share/');
+
+results.push({
+  step: N,
+  action: 'Verify: clipboard contains share URL',
+  result: isValid ? 'pass' : 'fail',
+  detail: isValid ? clipboardText : `Got: ${clipboardText}`
+});
+```
+
+### Incognito / Public Page Verification
+
+Open a URL in a fresh context (no cookies, no auth) to verify public pages:
+
+```javascript
+// After getting the share URL from clipboard or page
+const publicContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+const publicPage = await publicContext.newPage();
+
+await publicPage.goto(shareUrl);
+await publicPage.waitForLoadState('networkidle');
+
+// Verify page loaded (not a login redirect or 404)
+const title = await publicPage.textContent('h1');
+const isLoaded = title && title.length > 0;
+
+results.push({
+  step: N,
+  action: 'Verify: public share page loads',
+  result: isLoaded ? 'pass' : 'fail',
+  detail: isLoaded ? `Title: ${title}` : 'Page did not load or redirected'
+});
+
+// Capture screenshot for visual checks (RTL, layout)
+await publicPage.screenshot({ path: 'OUTPUT_DIR/func-public-page.png' });
+await publicContext.close();
+```
+
+### Assertion Patterns
+
+Common assertions for `Verify:` steps:
+
+```javascript
+// URL contains
+const urlOk = page.url().includes('/expected-path');
+
+// Element visible
+const visible = await page.locator('.success-message').isVisible();
+
+// Text content matches
+const text = await page.textContent('.heading');
+const matches = text.includes('Expected Text');
+
+// Attribute check (e.g., RTL)
+const dir = await page.getAttribute('[data-testid="content"]', 'dir');
+const isRtl = dir === 'rtl';
+
+// Element count
+const count = await page.locator('.episode-card').count();
+const hasItems = count > 0;
+
+// CSS property check
+const textAlign = await page.locator('.hebrew-text').evaluate(
+  el => getComputedStyle(el).direction
+);
+const isRtlCss = textAlign === 'rtl';
+```
+
+---
+
 ## Screenshot Naming Conventions
 
 | Mode | Pattern | Example |
@@ -210,6 +391,7 @@ The verifier reads both images and describes the visual differences.
 | Static | `[component]-[breakpoint].png` | `login-page-mobile.png` |
 | Interactive | `step-[NN]-[description].png` | `step-01-login-page.png` |
 | Before/After | `[component]-[phase]-[breakpoint].png` | `login-page-before-mobile.png` |
+| Functional | `func-[flow]-[step]-fail.png` | `func-flow1-step4-fail.png` |
 | Error | `error-[description].png` | `error-missing-element.png` |
 
 ---
@@ -224,3 +406,7 @@ The verifier reads both images and describes the visual differences.
 | Bug fix for interaction issue | Before/After + Interactive |
 | Acceptance criteria verification | Interactive |
 | Design review | Static |
+| Feature works on staging (post-deploy) | Functional |
+| PDF/file download works | Functional |
+| Share link produces valid URL | Functional |
+| Public page renders for unauthenticated users | Functional |

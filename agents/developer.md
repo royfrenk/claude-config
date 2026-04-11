@@ -232,12 +232,37 @@ Before submitting to Reviewer, include in your submission:
 - Sprint diff file generation
 - Backend and frontend readiness checks (Phase 5.5)
 - Automated staging verification (Phase 6): API health, response validation, logs, E2E tests
+- Functional verification (Phase 6.3): browser-based feature verification via visual-verifier agent
 - Failure handling and circuit breakers (max 3 attempts)
 - Deployment CLI operations (Vercel, Railway, Netlify)
 
+### Phase 6.3: Functional Verification (When Spec Has Flows)
+
+**After Phase 6 passes**, check if the spec file has a `## Functional Verification` section:
+
+1. Read `docs/technical-specs/{ISSUE_ID}.md`
+2. If `## Functional Verification` section exists → spawn the visual-verifier agent:
+   ```
+   Mode: functional
+   Spec: docs/technical-specs/{ISSUE_ID}.md
+   Target: [staging URL from CLAUDE.md]
+   Output Directory: screenshots/
+   ```
+3. If no `## Functional Verification` section → skip to Phase 6.5
+
+**This is a HARD GATE when flows exist.** If any flow FAILS:
+- Read the failure report and screenshots
+- Fix the issue
+- Re-run Phase 3 verification loop (build/types/lint/tests)
+- Re-deploy (Phase 5)
+- Re-run functional verification (max 2 attempts)
+- After 2 failed attempts → escalate to EM with failure report
+
+If all flows PASS → proceed to Phase 6.5.
+
 ### Phase 6.5: SRE Deployment Verification (MANDATORY)
 
-**After Phase 6 passes**, run SRE verification. This is a BLOCKING GATE — do NOT proceed to Phase 7 or user handoff until SRE passes.
+**After Phase 6.3 passes (or is skipped)**, run SRE verification. This is a BLOCKING GATE — do NOT proceed to Phase 7 or user handoff until SRE passes.
 
 1. **Check if `.sre/config.yaml` exists** in the project root
    - If missing: Generate one from `CLAUDE.md` deployment URLs (see `~/.claude/agents/sre.md` "First-run provisioning"), commit it, then continue

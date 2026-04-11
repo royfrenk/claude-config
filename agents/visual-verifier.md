@@ -2,7 +2,7 @@
 name: visual-verifier
 description: Captures screenshots and performs interactive visual verification using Playwright. Supports static capture (breakpoints) and interactive flows (navigate, click, fill, verify). Invoked by EM for design review and flow verification.
 tools: Bash, Read, Write
-model: haiku
+model: sonnet
 ---
 
 # Visual Verifier Agent
@@ -56,6 +56,17 @@ Output Directory: [where to save screenshots]
 Phase: [before / after]
 ```
 
+### Mode 4: Functional Verification
+
+```
+Mode: functional
+Spec: docs/technical-specs/{ISSUE_ID}.md
+Target: [staging URL, e.g., staging.recaprabbit.com]
+Output Directory: [where to save screenshots]
+```
+
+Reads the `## Functional Verification` section from the spec file and executes each flow as a Playwright script against staging. Captures screenshots on failure. Reports pass/fail per step.
+
 ## Process
 
 ### Step 1: Verify Prerequisites
@@ -77,9 +88,18 @@ If not responding, report and exit.
 
 **Read `~/.claude/guides/visual-verification.md`** for the full protocol for each mode. It contains:
 - Playwright script patterns for all interaction types (click, fill, wait, navigate)
+- Functional verification patterns (auth, downloads, clipboard, incognito contexts)
 - Screenshot naming conventions
 - Error handling for each interaction type
 - Before/after comparison workflow
+
+**For Mode 4 (Functional Verification):**
+1. Read the spec file's `## Functional Verification` section
+2. Set up authenticated browser context (see guide: Functional Verification Protocol)
+3. Execute each flow's steps sequentially as a Playwright script
+4. For each step: execute action, then run any `Verify:` assertions
+5. Capture screenshot only on failure (not every step — this is functional testing, not design review)
+6. If a step fails, capture error screenshot and continue remaining flows
 
 ### Step 3: Verify Output
 
@@ -114,6 +134,30 @@ Flow verification: [flow name]
 
 Overall: [Pass / Fail]
 Failed steps: [list if any]
+```
+
+**Functional verification:**
+```
+Functional Verification: {ISSUE_ID}
+Target: [staging URL]
+
+### Flow 1: [flow name]
+| Step | Action | Result | Details |
+|------|--------|--------|---------|
+| 1 | Navigate to /episodes | Pass | — |
+| 2 | Click first episode | Pass | — |
+| 3 | Click "Export PDF" | Pass | — |
+| 4 | Verify: PDF downloads | Fail | No download event received after 10s |
+
+Screenshot: screenshots/func-flow1-step4-fail.png
+
+### Flow 2: [flow name]
+| Step | Action | Result | Details |
+|------|--------|--------|---------|
+| ... | ... | ... | ... |
+
+Overall: FAIL (1/2 flows passed)
+Failed: Flow 1, Step 4 — PDF download not triggered
 ```
 
 ## Standard Breakpoints

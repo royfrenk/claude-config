@@ -222,13 +222,88 @@ npx playwright test tests/relevant.spec.ts --grep-invert @launch
 2. Sync Linear status to "In Review" (soft retry: 2 attempts)
 3. Post verification results to Linear
 4. Update sprint file with check-in
-5. **Proceed to Phase 6.5 (SRE) — do NOT notify User yet**
+5. **Proceed to Phase 6.3 (Functional Verification) if spec has flows, otherwise Phase 6.5 (SRE) — do NOT notify User yet**
+
+---
+
+## Phase 6.3: Functional Verification
+
+**Prerequisite:** Phase 6 passed. **This phase runs when the spec has a `## Functional Verification` section.**
+
+Functional verification opens a real browser against staging and executes the feature flows defined in the spec file. This catches the class of bugs where "code deploys" but "feature doesn't work as a user would experience it" — broken downloads, invalid share links, missing RTL alignment, etc.
+
+### Step 1: Check Spec for Flows
+
+```bash
+grep -c "## Functional Verification" docs/technical-specs/{ISSUE_ID}.md
+```
+
+- If 0: Skip Phase 6.3 entirely, proceed to Phase 6.5
+- If 1: Continue
+
+### Step 2: Spawn Visual-Verifier
+
+Spawn the visual-verifier agent with:
+
+```
+Mode: functional
+Spec: docs/technical-specs/{ISSUE_ID}.md
+Target: [staging URL from CLAUDE.md]
+Output Directory: screenshots/
+```
+
+The visual-verifier will:
+1. Read the `## Functional Verification` section from the spec
+2. Set up an authenticated browser context (test user JWT)
+3. Execute each flow's steps as a Playwright script
+4. Report pass/fail per step with screenshots on failure
+
+### Step 3: Auth Setup
+
+The visual-verifier handles auth by generating a test JWT and injecting it into the browser context. The test user credentials and JWT generation use the backend's `JWT_SECRET` from `backend/.env`.
+
+**Pattern (handled by visual-verifier, documented here for reference):**
+```javascript
+// Generate test JWT via backend
+// Set as cookie or localStorage in browser context before navigating
+const context = await browser.newContext()
+await context.addCookies([{
+  name: 'auth_token',
+  value: testJwt,
+  domain: 'staging.recaprabbit.com',
+  path: '/'
+}])
+```
+
+For public page flows (share links, public episodes), use a **separate browser context** with no auth — this verifies the page works for unauthenticated visitors.
+
+### Step 4: Handle Results
+
+| Result | Action |
+|--------|--------|
+| **All flows PASS** | Log in sprint file. Proceed to Phase 6.5. |
+| **Any flow FAILS (attempt 1)** | Read failure report. Fix the issue. Re-run verification. |
+| **Any flow FAILS (attempt 2)** | Escalate to EM with failure report + screenshots. |
+
+### Step 5: Verification Report
+
+Append to the Phase 6 verification report:
+
+```
+### Functional Verification
+| Flow | Steps | Passed | Failed | Status |
+|------|-------|--------|--------|--------|
+| PDF Export | 5 | 5 | 0 | ✅ |
+| Share Link | 9 | 9 | 0 | ✅ |
+
+Screenshots: [none — all passed] or [screenshots/func-flow1-step4-fail.png]
+```
 
 ---
 
 ## Phase 6.5: SRE Deployment Verification
 
-**Prerequisite:** Phase 6 passed. **This phase is MANDATORY for every deployment.**
+**Prerequisite:** Phase 6.3 passed (or was skipped). **This phase is MANDATORY for every deployment.**
 
 SRE runs health checks, smoke tests, and log analysis against the live deployment. It gates user handoff — if SRE fails, the User never sees a broken deployment.
 
