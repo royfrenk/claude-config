@@ -32,6 +32,8 @@ Continue working on the current sprint after user testing reveals bugs or issues
    - **If active sprint found:**
      - Read sprint file
      - Read all linked spec files
+     - Check for SRE failure reports in sprint file (look for `## SRE Failure Report` sections)
+     - If SRE failure context exists: Load it as starting context for the iteration
      - Show summary: "Sprint [name] — [X] issues, [Y] open bugs"
 
 2. **Receive bug batch from user:**
@@ -207,6 +209,11 @@ Or continue with normal iteration. What would you like to do?
    - **Immediately update sprint file:** Mark `[x]` with commit hash for each fixed bug
      - Example: `- [x] Links not tappable in descriptions (a1b2c3d)`
    - Verify deployment succeeded
+   - **Run SRE Deploy Verification** (see `~/.claude/agents/developer.md` Phase 6.5):
+     - Read `.sre/config.yaml` for health checks and smoke tests
+     - Spawn SRE (managed or bootstrap mode)
+     - If SRE PASSES: continue to batch check-in
+     - If SRE FAILS: fix the issue and redeploy (loop back to start of 4c). Circuit breaker: max 3 SRE failures, then escalate to User.
    - Continue until batch complete
 
 4d. **Check-in: Batch Complete (Automatic):**
@@ -265,6 +272,9 @@ Follow this for EVERY bug fix — don't skip steps:
   - Log analysis
   - Relevant E2E tests
   - Only proceed after checks pass
+- [ ] **Run SRE Deploy Verification** (see `~/.claude/agents/developer.md` Phase 6.5)
+  - Health checks and smoke tests from `.sre/config.yaml`
+  - If FAIL: fix and redeploy (max 3 SRE failures, then escalate)
 - [ ] **Update sprint file immediately:** mark bug as [x] fixed with commit hash (do NOT defer this)
 - [ ] Post comment to Linear issue: "Fixed [description] in [commit]" with verification results
 

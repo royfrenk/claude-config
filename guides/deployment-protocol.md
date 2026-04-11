@@ -222,7 +222,120 @@ npx playwright test tests/relevant.spec.ts --grep-invert @launch
 2. Sync Linear status to "In Review" (soft retry: 2 attempts)
 3. Post verification results to Linear
 4. Update sprint file with check-in
-5. Notify User with staging URL and testing instructions
+5. **Proceed to Phase 6.5 (SRE) — do NOT notify User yet**
+
+---
+
+## Phase 6.5: SRE Deployment Verification
+
+**Prerequisite:** Phase 6 passed. **This phase is MANDATORY for every deployment.**
+
+SRE runs health checks, smoke tests, and log analysis against the live deployment. It gates user handoff — if SRE fails, the User never sees a broken deployment.
+
+### Step 1: Load SRE Config
+
+```bash
+# Check if SRE is configured for this project
+if [ -f ".sre/config.yaml" ]; then
+  echo "SRE enabled"
+else
+  echo "SRE not configured — generate config from CLAUDE.md"
+  # See sre.md "First-run provisioning"
+fi
+```
+
+### Step 2: Determine Execution Mode
+
+```bash
+# Managed agent mode (target) vs Bootstrap mode (fallback)
+if [ -n "$SRE_AGENT_ID" ]; then
+  echo "Mode: Managed Agent"
+else
+  echo "Mode: Bootstrap (local subagent)"
+fi
+```
+
+### Step 3: Run SRE Checks
+
+**In bootstrap mode**, spawn a subagent (see `~/.claude/agents/sre.md` Bootstrap Mode) that:
+1. Runs all `health_checks` from `.sre/config.yaml` via curl
+2. Runs all `smoke_tests` from `.sre/config.yaml` via curl
+3. Checks deployment logs (Railway logs, Vercel build output)
+4. Reports pass/fail with full context
+
+**In managed mode**, the bridge daemon handles this via Anthropic Sessions API.
+
+### Step 4: SRE Report Format
+
+SRE must output results in this human-readable format:
+
+```
+## SRE Deploy Verification — [Environment]
+
+### Services
+
+| Service | Status | Details |
+|---------|--------|---------|
+| Backend API | ✅ Healthy | /health → 200 (117ms) |
+| Frontend | ✅ Deployed | 200 OK (443ms), latest bundle hash verified |
+| Worker | ✅ Running | No errors in last 50 log lines |
+
+### Checks
+
+| Check | Result |
+|-------|--------|
+| Health endpoint responds | ✅ |
+| Auth required on protected routes | ✅ (401 as expected) |
+| Public endpoints accessible | ✅ |
+| No errors in deployment logs | ✅ |
+| Response times under threshold | ✅ (all < 1000ms) |
+
+### Result: ✅ ALL PASSED
+
+All services healthy. No errors detected. Safe to proceed.
+```
+
+**On failure:**
+
+```
+## SRE Deploy Verification — [Environment]
+
+### Services
+
+| Service | Status | Details |
+|---------|--------|---------|
+| Backend API | ❌ Down | /health → 502 (timeout after 10s) |
+| Frontend | ✅ Deployed | 200 OK |
+| Worker | ⚠️ Unknown | Could not verify (backend down) |
+
+### Failed Checks
+
+| Check | Error |
+|-------|-------|
+| Health endpoint | 502 Bad Gateway — backend not responding |
+
+### Logs (Last 10 Lines)
+\```
+[2026-04-10 14:32:01] ERROR: ModuleNotFoundError: No module named 'app.services.new_module'
+[2026-04-10 14:32:01] ERROR: Worker process exited with code 1
+\```
+
+### Result: ❌ FAILED
+
+Backend is down. Import error in new module. Developer must fix before user handoff.
+```
+
+### Step 5: Handle Results
+
+| Result | Action |
+|--------|--------|
+| **PASS** | Log in sprint file. Proceed to user handoff (notify User with staging URL). |
+| **FAIL (staging/dev)** | Log failure in sprint file. Report to EM with full failure context. EM spawns Developer to auto-fix (see em.md SRE Failure Handling). Do NOT notify User. |
+| **FAIL (production)** | Log failure. Escalate to User IMMEDIATELY. Do NOT auto-iterate on production. |
+
+### Circuit Breaker
+
+SRE itself doesn't retry — it reports once. The auto-iterate cycle (EM → Developer → redeploy → SRE again) has its own circuit breaker: max 3 cycles, then escalate to User.
 
 ---
 

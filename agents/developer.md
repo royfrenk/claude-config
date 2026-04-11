@@ -99,7 +99,7 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 
 Work in small commits. Order: schema --> backend logic --> backend tests --> frontend components --> frontend tests.
 
-**Critical patterns:** Always `.trim()` env vars. Read at request time, not module load. Test at exact breakpoint boundaries. Use single primary + simple fallback for APIs. Every `while True` polling loop MUST have a `max_seconds` timeout (`stability.md` Section 7). When fixing null/missing data fields, verify data EXISTS before adding SQL fallbacks — run a diagnostic query first (`stability.md` Section 10, Data Existence Gate). When adding columns to SQL queries with CTEs, verify ALL query paths include the new column — the `columns` variable AND any explicit SELECT lists after `WHERE rn = 1` (`stability.md` Section 17). When adding a field the UI conditionally depends on, check if the object is persisted client-side (localStorage, Capacitor Preferences); if so, add an async fallback for stale objects missing the field (`stability.md` Section 18). When modifying a SQL query, verify Pydantic model AND TypeScript interface include all returned fields — three-layer sync (`stability.md` Section 20). Before implementing a write that should change a derived status, read the SQL `CASE WHEN` to identify which columns the status depends on (`stability.md` Section 19).
+**Critical patterns:** Always `.trim()` env vars. Read at request time, not module load. Test at exact breakpoint boundaries. Use single primary + simple fallback for APIs. Every `while True` polling loop MUST have a `max_seconds` timeout (`stability.md` Section 7). When fixing null/missing data fields, verify data EXISTS before adding SQL fallbacks — run a diagnostic query first (`stability.md` Section 10, Data Existence Gate). When adding columns to SQL queries with CTEs, verify ALL query paths include the new column — the `columns` variable AND any explicit SELECT lists after `WHERE rn = 1` (`stability.md` Section 17). When adding a field the UI conditionally depends on, check if the object is persisted client-side (localStorage, Capacitor Preferences); if so, add an async fallback for stale objects missing the field (`stability.md` Section 18). When modifying a SQL query, verify Pydantic model AND TypeScript interface include all returned fields — three-layer sync (`stability.md` Section 20). Before implementing a write that should change a derived status, read the SQL `CASE WHEN` to identify which columns the status depends on (`stability.md` Section 19). Never use `BackgroundTasks` for operations >60 seconds — use a persistent job queue with checkpoint/resume (`stability.md` Section 22). When building LLM pipelines with 4+ objectives, decompose into focused single-objective steps (`stability.md` Section 23). Before building features that depend on a pipeline (YouTube, transcription, processing), verify the pipeline is healthy first — curl staging or run a test; when "all N items failed," diagnose root cause before improving error messages (`stability.md` Section 24).
 
 ### Phase 3: Verification Loop
 
@@ -114,6 +114,25 @@ cd frontend && npm test                 # Frontend tests
 ```
 
 Generate verification report (Build/Types/Lint/Tests/Security/Console: PASS/FAIL). Only proceed when Overall = READY.
+
+### Phase 3.1: Pre-Review Self-Check
+
+**After verification passes but BEFORE submitting to Reviewer**, scan changed files against known anti-patterns. This catches basic hygiene issues that waste review rounds.
+
+**Scan each changed file for:**
+
+- [ ] **Immutability (Python):** No `obj["key"] = value` mutations — use `{**obj, "key": value}` spread
+- [ ] **Immutability (TypeScript):** No `.push()`, `.pop()`, direct property assignment on passed objects
+- [ ] **Mutable defaults (Python):** No `list` or `dict` as function parameter defaults — use `None` with `if param is None: param = []`
+- [ ] **Logging:** No `print()` in Python, no `console.log` in TypeScript — use `logger` / remove debug statements
+- [ ] **Imports:** Every function/class/type used is properly imported (no bare function calls like `get_ad_patterns()` — should be `repository.get_ad_patterns()`)
+- [ ] **Tests:** Every new utility/service function has unit tests, especially pure functions
+- [ ] **Accessibility:** Interactive elements (`onClick`) use `<button>` or have `role="button"` + `tabIndex={0}` + `onKeyDown`
+- [ ] **asyncpg context:** DB rows converted to dicts (`[dict(row) for row in rows]`) inside `async with get_db()`, not after it exits
+
+This is a 30-second scan, not a full review. If any item fails, fix before submitting.
+
+**Post-mortem:** `docs/post-mortem/2026-03-02-sprint-024-review-round-hygiene.md` (9 issues caught in review that this checklist would have prevented)
 
 ### Phase 3.5: Acceptance Criteria Self-Check
 
@@ -215,6 +234,39 @@ Before submitting to Reviewer, include in your submission:
 - Automated staging verification (Phase 6): API health, response validation, logs, E2E tests
 - Failure handling and circuit breakers (max 3 attempts)
 - Deployment CLI operations (Vercel, Railway, Netlify)
+
+### Phase 6.5: SRE Deployment Verification (MANDATORY)
+
+**After Phase 6 passes**, run SRE verification. This is a BLOCKING GATE — do NOT proceed to Phase 7 or user handoff until SRE passes.
+
+1. **Check if `.sre/config.yaml` exists** in the project root
+   - If missing: Generate one from `CLAUDE.md` deployment URLs (see `~/.claude/agents/sre.md` "First-run provisioning"), commit it, then continue
+   - If present: Read it for environment URLs and check definitions
+
+2. **Determine SRE execution mode:**
+   - Check for `SRE_AGENT_ID` env var
+   - If present: Invoke managed agent via bridge daemon (see `sre.md` Managed Agent Mode)
+   - If absent: Run bootstrap mode — spawn a subagent with the bootstrap prompt from `sre.md`
+
+3. **Invoke SRE** with:
+   - Environment: `staging` or `production` (match what you just deployed to)
+   - Backend URL: from `.sre/config.yaml`
+   - Frontend URL: from `.sre/config.yaml`
+
+4. **Handle SRE results:**
+
+   | Result | Action |
+   |--------|--------|
+   | **PASS** | Log green check in sprint file. Proceed to Phase 7. |
+   | **FAIL** | Log failure in sprint file. Report failure context back to EM. Do NOT proceed to user handoff. |
+
+   **On failure, your report to EM must include:**
+   - Which checks failed (health, smoke, logs)
+   - Exact error output
+   - Log excerpts if available
+   - The environment that failed
+
+   **EM will handle the auto-iterate cycle.** You do not need to fix it yourself unless EM re-assigns it to you.
 
 ### Phase 7: Update PROJECT_STATE.md
 
