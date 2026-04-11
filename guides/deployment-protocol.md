@@ -267,18 +267,18 @@ fi
 
 ### Step 4: SRE Report Format
 
-SRE must output results in this human-readable format:
+Read service names, providers, and dashboard links from `.sre/config.yaml` `services` section. Output results in this human-readable format — **services first** so the User can see at a glance if everything is up:
 
 ```
 ## SRE Deploy Verification — [Environment]
 
 ### Services
 
-| Service | Status | Details |
-|---------|--------|---------|
-| Backend API | ✅ Healthy | /health → 200 (117ms) |
-| Frontend | ✅ Deployed | 200 OK (443ms), latest bundle hash verified |
-| Worker | ✅ Running | No errors in last 50 log lines |
+| Service | Provider | Status | Details |
+|---------|----------|--------|---------|
+| [Backend API](dashboard_url) | Railway | ✅ Healthy | /health → 200 (117ms) |
+| [Frontend](dashboard_url) | Vercel | ✅ Deployed | 200 OK (443ms), latest bundle verified |
+| [Worker](dashboard_url) | Railway | ✅ Running | No errors in last 50 log lines |
 
 ### Checks
 
@@ -295,6 +295,13 @@ SRE must output results in this human-readable format:
 All services healthy. No errors detected. Safe to proceed.
 ```
 
+**Key rules for the report:**
+- Service names and dashboard links come from `.sre/config.yaml` `services` section
+- Service name is a clickable markdown link to the provider dashboard
+- Provider column shows Railway/Vercel/etc. so User knows where to look if something is wrong
+- Services table is ALWAYS first — this answers "is everything up?" in 3 seconds
+- Detailed checks table is below for debugging context
+
 **On failure:**
 
 ```
@@ -302,11 +309,11 @@ All services healthy. No errors detected. Safe to proceed.
 
 ### Services
 
-| Service | Status | Details |
-|---------|--------|---------|
-| Backend API | ❌ Down | /health → 502 (timeout after 10s) |
-| Frontend | ✅ Deployed | 200 OK |
-| Worker | ⚠️ Unknown | Could not verify (backend down) |
+| Service | Provider | Status | Details |
+|---------|----------|--------|---------|
+| [Backend API](dashboard_url) | Railway | ❌ Down | /health → 502 (timeout after 10s) |
+| [Frontend](dashboard_url) | Vercel | ✅ Deployed | 200 OK |
+| [Worker](dashboard_url) | Railway | ⚠️ Unknown | Could not verify (backend down) |
 
 ### Failed Checks
 
@@ -320,9 +327,9 @@ All services healthy. No errors detected. Safe to proceed.
 [2026-04-10 14:32:01] ERROR: Worker process exited with code 1
 \```
 
-### Result: ❌ FAILED
+### Result: ❌ FAILED — [Backend API](dashboard_url) is down
 
-Backend is down. Import error in new module. Developer must fix before user handoff.
+Import error in new module. Developer must fix before user handoff.
 ```
 
 ### Step 5: Handle Results
