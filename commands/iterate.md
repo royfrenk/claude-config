@@ -8,6 +8,39 @@ Continue working on the current sprint after user testing reveals bugs or issues
 
 > **Purpose:** Maintain protocol and context during the bug-fix iteration loop.
 
+## Autonomous Iteration
+
+**Read `~/.claude/guides/autonomous-iteration.md` before processing any batch.**
+
+When automated checks fail (SRE, staging verification, functional verification), EM owns the iteration loop and can auto-continue without User involvement — subject to severity thresholds and circuit breakers.
+
+<!-- canonical: autonomous-iteration.md — severity checklist and circuit breakers inlined below -->
+
+### Severity Escalation Checklist (5 questions)
+
+Before auto-continuing after a failed verification, check:
+
+1. Does this fix touch a database migration file?
+2. Does this fix touch auth, payments, or session management?
+3. Does this fix trigger a re-transcription, re-summarization, or other paid API re-run?
+4. Does this fix change an architectural boundary (new service, new data model, new API contract)?
+5. Is this fix in response to a security-flagged finding?
+
+**ANY yes → ESCALATE to User. ALL no → AUTO-CONTINUE.**
+
+### Circuit Breakers
+
+<!-- canonical: autonomous-iteration.md -->
+
+| Counter | Scope | Limit | On Exceed |
+|---------|-------|-------|-----------|
+| Per-bug attempts | Same bug, same batch | 3 | Developer invokes Reviewer before 4th attempt |
+| Reviewer rounds | Same fix, review cycle | 3 | EM escalates to User |
+| SRE auto-iterate cycles | Same deploy, SRE checks | 3 | EM escalates to User |
+| Per-issue batches | Same Linear issue, across batches | 5 | EM escalates with full attempt summary |
+
+Reviewer rounds are NOT counted as per-issue batches (separate counters).
+
 ## Workflow
 
 1. **Load sprint context:**
@@ -61,13 +94,19 @@ Continue working on the current sprint after user testing reveals bugs or issues
    - Follow full developer protocol (verification loop, commit format)
    - After fix verification passes: proceed to 4a
 
-4a. **N-iteration circuit breaker:**
-   - Track number of attempts for each bug in sprint file
-   - If this is the 3rd failed attempt on same bug:
-     - STOP before making 4th attempt
-     - Invoke Reviewer to review approach
-     - Post to Linear: "⚠️ 3 failed attempts - requesting reviewer guidance"
-     - Wait for Reviewer's recommendations before continuing
+4a. **N-iteration circuit breaker (EM owns the loop):**
+   <!-- canonical: autonomous-iteration.md -->
+   - EM tracks per-bug attempt counter in sprint file
+   - If 3rd failed attempt on same bug: Developer invokes Reviewer before 4th attempt
+   - If automated-check failure (SRE, verification): EM runs severity escalation checklist (see above) and auto-continues or escalates
+   - See `autonomous-iteration.md` for full protocol
+
+4a-verify. **Verification Checklist (EM invokes Plan-Writer):**
+   - After each fix batch, EM spawns plan-writer in iteration-verification mode
+   - Plan-writer generates a lightweight verification checklist based on what was fixed
+   - Checklist is written to spec file under `#### Batch [N] — Verification Plan` (em-dash U+2014)
+   - Developer/visual-verifier executes the checklist before deployment
+   - See `autonomous-iteration.md` for Mode 5 spawning params
 
 4a-ext. **External Model Delegation (Optional):**
 
@@ -189,11 +228,13 @@ Or continue with normal iteration. What would you like to do?
    - Do NOT proceed with deployment
 
 5. **Circuit breaker (3 rounds max):**
+   <!-- canonical: autonomous-iteration.md — reviewer rounds counter -->
    - Track review round count in spec file
    - If this is 3rd round of changes requested without approval:
      - Post to Linear: "⚠️ 3 review rounds without approval - escalating"
-     - Alert user: "Reviewer has requested changes 3 times. Need guidance."
-     - Wait for user decision before continuing
+     - EM escalates to User
+     - Wait for User decision before continuing
+   - Reviewer rounds are NOT counted as per-issue batches (separate counter)
 
 **Fast-track protocol (Production incidents):**
 - If Linear issue has label "CRITICAL - Production Incident":
@@ -213,7 +254,7 @@ Or continue with normal iteration. What would you like to do?
      - Read `.sre/config.yaml` for health checks and smoke tests
      - Spawn SRE (managed or bootstrap mode)
      - If SRE PASSES: continue to batch check-in
-     - If SRE FAILS: fix the issue and redeploy (loop back to start of 4c). Circuit breaker: max 3 SRE failures, then escalate to User.
+     - If SRE FAILS: EM handles via autonomous iteration protocol (severity check → auto-fix or escalate). See `autonomous-iteration.md`. <!-- canonical: autonomous-iteration.md -->
    - Continue until batch complete
 
 4d. **Check-in: Batch Complete (Automatic):**

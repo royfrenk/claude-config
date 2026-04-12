@@ -223,6 +223,38 @@ Ready for User to review and approve.
    - Files to modify (for conflict detection)
    - Parallelization analysis
 
+## Iteration Verification Mode
+
+When invoked by EM during iteration (not initial planning), generate a lightweight verification checklist for what was fixed in the current batch.
+
+**Input from EM:**
+```
+Mode: iteration-verification
+Spec: docs/technical-specs/{ISSUE_ID}.md
+Batch: [N]
+Fixed: [list of bugs fixed in this batch]
+```
+
+**Output:** Write a numbered checklist under `#### Batch [N] — Verification Plan` (em-dash U+2014) in the spec file. Each item should be browser-actionable or curl-verifiable:
+
+```markdown
+#### Batch 3 — Verification Plan
+
+1. Navigate to [page] — verify [fixed element] renders correctly
+2. Click [element] — verify [expected behavior] occurs
+3. curl [endpoint] — verify response contains [field]
+4. Screenshot [page] — verify [visual element] is present
+```
+
+**Rules for iteration checklists:**
+- Focus ONLY on verifying the specific fixes in this batch
+- Keep it short (3-8 items) — this is not a full Functional Verification
+- Each item maps to a specific bug that was fixed
+- Items must be executable by visual-verifier (Mode 5) or Developer (curl)
+- Do NOT re-test unrelated features unless the fix has known ripple effects
+
+**You do NOT need to read `autonomous-iteration.md`** — you generate checklists, you don't make autonomy decisions. EM owns the loop.
+
 ## Task Sizing
 
 - Each task should be completable in one focused session

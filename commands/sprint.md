@@ -31,6 +31,8 @@ This command checks `CLAUDE.md` for Linear integration settings:
 
 ## Workflow
 
+**Read `~/.claude/guides/autonomous-iteration.md`** for the autonomous iteration protocol. This applies when SRE or verification failures occur during the sprint — EM auto-continues or escalates based on severity thresholds.
+
 ### 1. Read CLAUDE.md
 
 Get configuration:
@@ -186,6 +188,9 @@ Status: [status from sprint file]
 | — | — | — |
 
 ## Notes
+
+Autonomous iteration is enabled by default for staging/dev. See `~/.claude/guides/autonomous-iteration.md` for severity escalation policy and circuit breakers.
+
 [Context, decisions, blockers will be added as work progresses]
 
 **Linear Sync Status:**
@@ -236,7 +241,7 @@ docs/sprints/sprint-005-notifications.active.md
 
 **Now that sprint file exists and issues are selected, follow the EM protocol directly in this conversation.**
 
-Read `~/.claude/guides/em-protocol.md` and execute it. You ARE the engineering manager for this sprint — all orchestration happens here, visible to the User.
+Read `~/.claude/agents/em.md` and execute it. You ARE the engineering manager for this sprint — all orchestration happens here, visible to the User.
 
 **Sprint context to carry forward:**
 - Sprint file: [sprint file path]
@@ -246,7 +251,7 @@ Read `~/.claude/guides/em-protocol.md` and execute it. You ARE the engineering m
 - Team ID: [team-id]
 - Issue prefix: [prefix]
 
-**Execute these phases (details in em-protocol.md):**
+**Execute these phases (details in agents/em.md):**
 
 **PHASE 0 — Design-Planner Gate (BEFORE any exploration):**
 1. For EACH issue, classify: UI work or backend-only?
@@ -311,7 +316,7 @@ When all issues are complete:
 ## Rules
 
 - **Setup then orchestrate:** Steps 1-2 handle config, issue selection, sprint file creation. Step 3 switches to EM protocol for orchestration.
-- **EM protocol runs inline:** Read `~/.claude/guides/em-protocol.md` and follow it directly in the main conversation. Do NOT spawn it as a subagent.
+- **EM protocol runs inline:** Read `~/.claude/agents/em.md` and follow it directly in the main conversation. Do NOT spawn it as a subagent.
 - **Non-blocking Linear:** Use `linear-sync` agent with 30s timeouts, fallback to roadmap.md
 - **Sprint file = shared memory:** Update it with checkpoints throughout
 - **Resume support:** Can read sprint file to resume interrupted work

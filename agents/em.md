@@ -224,29 +224,45 @@ Developer runs SRE verification as Phase 6.5 of the deployment protocol (see `de
 - SRE pass: proceed to user handoff
 - SRE fail: failure context (which checks failed, error output, log excerpts)
 
-### SRE Failure Handling — Auto-Iterate (Staging/Dev)
+### Autonomous Iteration Protocol (Staging/Dev)
 
-**When Developer reports SRE failure on staging or dev, auto-iterate without involving User:**
+**Read `~/.claude/guides/autonomous-iteration.md` for full protocol details.**
 
-1. **Log the failure** in the sprint file under SRE Results
-2. **Spawn Developer agent** with the failure context:
-   ```
-   SRE deployment verification FAILED on [environment].
+When any automated check fails on staging or dev (SRE verification, staging verification, functional verification, visual verification), auto-iterate without involving User — subject to severity thresholds:
 
-   Failed checks:
-   [paste failure report from SRE]
+<!-- canonical: autonomous-iteration.md — severity checklist inlined below -->
 
-   Fix the deployment issue and redeploy. After redeploying, run SRE
-   verification again (Phase 6.5). Report back with SRE results.
-   ```
-3. **Developer fixes → redeploys → runs SRE again**
-4. **If SRE passes:** Proceed to user handoff. Log the fix in sprint file.
-5. **If SRE fails again:** Loop back to step 2.
+**Severity Escalation Checklist (5 questions):**
+1. Does this fix touch a database migration file?
+2. Does this fix touch auth, payments, or session management?
+3. Does this fix trigger a re-transcription, re-summarization, or other paid API re-run?
+4. Does this fix change an architectural boundary (new service, new data model, new API contract)?
+5. Is this fix in response to a security-flagged finding?
 
-**Circuit breaker:** Max 3 auto-iterate cycles. After 3 failures:
-- Log all 3 attempts in sprint file
-- Escalate to User: "SRE verification failed 3 times after auto-fix attempts. Here's what was tried: [summary]. Need your input."
-- Do NOT continue auto-iterating
+**ANY yes → ESCALATE to User. ALL no → AUTO-CONTINUE.**
+
+**Protocol:**
+1. **Log the failure** in the sprint file under Iteration Log
+2. **Run severity checklist** — if any check fails, escalate to User immediately
+3. **Check circuit breakers** — if any counter exceeded, escalate to User
+4. **Invoke Plan-Writer** (iteration-verification mode) to generate verification checklist
+5. **Spawn Developer** with failure context + verification checklist reference
+6. **Developer fixes → submits to Reviewer → deploys → verifies**
+7. **If verification passes:** Proceed to user handoff. Log success.
+8. **If verification fails:** Loop back to step 2. Circuit breaker counters increment.
+
+<!-- canonical: autonomous-iteration.md — circuit breakers inlined below -->
+
+**Circuit Breakers:**
+
+| Counter | Scope | Limit | On Exceed |
+|---------|-------|-------|-----------|
+| Per-bug attempts | Same bug, same batch | 3 | Developer invokes Reviewer before 4th attempt |
+| Reviewer rounds | Same fix, review cycle | 3 | EM escalates to User |
+| SRE auto-iterate cycles | Same deploy, SRE checks | 3 | EM escalates to User |
+| Per-issue batches | Same Linear issue, across batches | 5 | EM escalates with full attempt summary |
+
+Reviewer rounds are NOT counted as per-issue batches (separate counters).
 
 ### SRE Failure Handling — Production
 

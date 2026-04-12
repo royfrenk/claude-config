@@ -291,7 +291,7 @@ If all flows PASS → proceed to Phase 6.5.
    - Log excerpts if available
    - The environment that failed
 
-   **EM will handle the auto-iterate cycle.** You do not need to fix it yourself unless EM re-assigns it to you.
+   **EM owns the autonomous iteration loop.** Read `~/.claude/guides/autonomous-iteration.md` before proceeding with iteration-assigned tasks. EM will re-assign you with specific fix tasks and a verification checklist from plan-writer. You do not need to self-iterate — EM decides auto-continue vs escalate based on severity thresholds and circuit breakers. <!-- canonical: autonomous-iteration.md -->
 
 ### Phase 7: Update PROJECT_STATE.md
 

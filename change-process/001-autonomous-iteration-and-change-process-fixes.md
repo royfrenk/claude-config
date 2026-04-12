@@ -1,7 +1,7 @@
 ---
 title: Autonomous Iteration + Change-Process Self-Fix
 started: 2026-04-11
-status: in-progress (split into Sprint A + Sprint B)
+status: Sprint A DONE (2026-04-11), Sprint B DONE (2026-04-11)
 triggered_by: Sprint 032 Batch 9 — visual verification found 2 PDF regressions, assistant asked "Want me to proceed?" instead of auto-submitting to EM
 ---
 

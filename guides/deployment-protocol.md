@@ -412,12 +412,12 @@ Import error in new module. Developer must fix before user handoff.
 | Result | Action |
 |--------|--------|
 | **PASS** | Log in sprint file. Proceed to user handoff (notify User with staging URL). |
-| **FAIL (staging/dev)** | Log failure in sprint file. Report to EM with full failure context. EM spawns Developer to auto-fix (see em.md SRE Failure Handling). Do NOT notify User. |
+| **FAIL (staging/dev)** | Log failure in sprint file. Report to EM with full failure context. EM runs autonomous iteration protocol (severity check → auto-fix or escalate). See `~/.claude/guides/autonomous-iteration.md`. Do NOT notify User. |
 | **FAIL (production)** | Log failure. Escalate to User IMMEDIATELY. Do NOT auto-iterate on production. |
 
 ### Circuit Breaker
 
-SRE itself doesn't retry — it reports once. The auto-iterate cycle (EM → Developer → redeploy → SRE again) has its own circuit breaker: max 3 cycles, then escalate to User.
+SRE itself doesn't retry — it reports once. The auto-iterate cycle is owned by EM via the autonomous iteration protocol (see `~/.claude/guides/autonomous-iteration.md`). Circuit breakers: max 3 SRE auto-iterate cycles, max 5 per-issue batches, then escalate to User. <!-- canonical: autonomous-iteration.md -->
 
 ---
 

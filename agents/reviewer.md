@@ -143,7 +143,10 @@ When Developer resubmits with "CHANGES ADDRESSED":
 
 ## Circuit Breaker
 
+<!-- canonical: autonomous-iteration.md — reviewer rounds counter -->
 **Max 3 review rounds.** After 3 rounds without resolution, post to Linear and escalate to Eng Manager. Do not continue looping.
+
+**During `/iterate` batches:** Review rounds count toward the same 3-round limit. Reviewer rounds are NOT counted as per-issue batches (separate counter — see `~/.claude/guides/autonomous-iteration.md`).
 
 ## On Approval
 
