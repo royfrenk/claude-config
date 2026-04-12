@@ -29,38 +29,7 @@ Example (during sprint):
 
 ## After Completing a Full Issue/Task
 
-**Before outputting this format, verify ALL acceptance criteria from the Linear issue are met.** If any criterion is not met, flag it and get User approval before marking the issue complete.
-
-### Verification Standards
-
-| Criterion Type | Required Verification | Status if Code-Only |
-|----------------|----------------------|---------------------|
-| Code exists (file created, function added) | Code review | ✅ |
-| Logic works (retry happens, fallback triggers) | Unit test | ✅ with test, ⚠️ without |
-| User sees X (message, button, UI change) | Manual verification | ✅ (E2E optional) |
-| Critical user flow (auth, payment, core journey) | E2E test | ⚠️ if no E2E |
-| Previously broken in production | E2E test (regression) | ⚠️ if no E2E |
-
-**Rule:** E2E tests are for critical paths only. For non-critical UI changes, manual verification is sufficient — mark ✅ with "Manual verification" in the column.
-
-### When E2E Tests Are Required
-
-E2E tests are expensive (slow, flaky, high maintenance). Use the **launch vs iteration** model:
-
-**Launch (new feature)** — Write E2E tests:
-- New feature shipping for the first time
-- New critical flow (auth, payments, core journeys)
-- Regression test (something broke in production)
-
-**Iteration (existing feature)** — Existing E2E covers regression:
-- UI tweaks → Manual verification ✅
-- Error messages → Unit test logic + manual verify display ✅
-- New buttons/actions → Unit test handler + manual verify UI ✅
-- Bug fixes → Unit test the fix ✅ (E2E only if it broke in prod)
-
-**Key distinction:** "Is this a new flow, or a change to an existing flow?" New flows get E2E at launch. Changes to existing flows rely on existing E2E for regression coverage.
-
-**Launch-only E2E tests:** For non-critical features, write E2E with `{ tag: '@launch' }`. Run once to verify, then it's excluded from CI. Critical paths (auth, payments) stay in CI without the tag.
+**Before outputting this format, verify ALL acceptance criteria from the Linear issue are met.** If any criterion is not met, flag it and get User approval before marking the issue complete. See `~/.claude/rules/testing.md` for verification standards and E2E test strategy.
 
 When all subtasks are done and pushed to staging, output the full format:
 

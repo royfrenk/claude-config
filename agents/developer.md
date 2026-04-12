@@ -96,10 +96,11 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 | Testing | `~/.claude/guides/testing-patterns.md` | >70% coverage, E2E for critical paths only |
 | Performance | `~/.claude/guides/code-performance.md` | N+1 queries, memoization |
 | RTL/i18n | `~/.claude/guides/rtl-i18n-checklist.md` | Text-displaying components, i18n-enabled features |
+| Security | `~/.claude/guides/security-patterns.md` | Config validation, input validation, OAuth, file uploads |
 
 Work in small commits. Order: schema --> backend logic --> backend tests --> frontend components --> frontend tests.
 
-**Critical patterns:** Always `.trim()` env vars. Read at request time, not module load. Test at exact breakpoint boundaries. Use single primary + simple fallback for APIs. Every `while True` polling loop MUST have a `max_seconds` timeout (`stability.md` Section 7). When fixing null/missing data fields, verify data EXISTS before adding SQL fallbacks — run a diagnostic query first (`stability.md` Section 10, Data Existence Gate). When adding columns to SQL queries with CTEs, verify ALL query paths include the new column — the `columns` variable AND any explicit SELECT lists after `WHERE rn = 1` (`stability.md` Section 17). When adding a field the UI conditionally depends on, check if the object is persisted client-side (localStorage, Capacitor Preferences); if so, add an async fallback for stale objects missing the field (`stability.md` Section 18). When modifying a SQL query, verify Pydantic model AND TypeScript interface include all returned fields — three-layer sync (`stability.md` Section 20). Before implementing a write that should change a derived status, read the SQL `CASE WHEN` to identify which columns the status depends on (`stability.md` Section 19). Never use `BackgroundTasks` for operations >60 seconds — use a persistent job queue with checkpoint/resume (`stability.md` Section 22). When building LLM pipelines with 4+ objectives, decompose into focused single-objective steps (`stability.md` Section 23). Before building features that depend on a pipeline (YouTube, transcription, processing), verify the pipeline is healthy first — curl staging or run a test; when "all N items failed," diagnose root cause before improving error messages (`stability.md` Section 24).
+**Before writing code, check `~/.claude/rules/stability.md` quick reference table** for patterns relevant to your task type (e.g., polling loops, CTE columns, persisted data, schema sync).
 
 ### Phase 3: Verification Loop
 
@@ -132,8 +133,6 @@ Generate verification report (Build/Types/Lint/Tests/Security/Console: PASS/FAIL
 
 This is a 30-second scan, not a full review. If any item fails, fix before submitting.
 
-**Post-mortem:** `docs/post-mortem/2026-03-02-sprint-024-review-round-hygiene.md` (9 issues caught in review that this checklist would have prevented)
-
 ### Phase 3.5: Acceptance Criteria Self-Check
 
 Before submitting to Reviewer, verify functional completeness:
@@ -148,68 +147,7 @@ The Reviewer will verify your assessment. This catches functional gaps before re
 
 ### Phase 3.6: Interaction Self-Verification Gate
 
-**After acceptance criteria pass but BEFORE submitting to Reviewer**, verify that the feature actually works as a user would interact with it. This catches the class of bugs where "code exists" but "user interactions are broken."
-
-#### Checklist A: UI Component Verification
-
-**For every UI component you changed or created, complete ALL items:**
-
-- [ ] **List all screens** that render this component (grep for imports)
-- [ ] **Verify prop parity:** Every screen passes all required props (especially new ones)
-- [ ] **Verify all variants:** If the component has variants (e.g., `showArtwork` vs `!showArtwork`), verify EACH variant has the feature
-- [ ] **Verify click handlers:** Every clickable element does the right thing:
-  - Navigation elements -> navigate to correct route (not trigger playback/processing)
-  - Action buttons -> trigger correct action
-  - Stop propagation where needed (nested click targets)
-- [ ] **Verify edge states:** What happens when data is missing, episode is unprocessed, or API returns empty?
-- [ ] **Compare against design spec:** Open the design spec and verify each screen matches the mockup (section ordering, expand/collapse behavior, visibility rules)
-- [ ] **If component displays text:** RTL/i18n checklist completed (see `~/.claude/guides/rtl-i18n-checklist.md`)
-- [ ] **Test with real staging data:** Curl the staging API, use actual response data, not hardcoded mocks
-- [ ] **Edit forms — auto-populated fields:** For each field in an edit form, verify it's user-editable (not auto-populated by a backend process). If a backend service auto-fills fields from a primary input (e.g., research API populates channel name from playlist URL), only show the primary input in the form.
-- [ ] **Conditional action icons:** If rows render different numbers of action icons based on data state, use invisible spacers or fixed-width containers to prevent layout shifts (see `stability.md` Section 21)
-
-#### Checklist B: Data Format Impact Check
-
-**When you change how data is produced, stored, or returned (backend format change, new field, field removal):**
-
-- [ ] **Grep for ALL consumers** of the changed field across the entire frontend codebase
-  ```bash
-  grep -r "fieldName" src/ --include="*.tsx" --include="*.ts" -l
-  ```
-- [ ] **Verify each consumer handles the new format:** If backend now returns HTML instead of plain text, every component rendering that field needs review (detail views AND list views AND search results)
-- [ ] **Check for assumptions:** Does any consumer call `.substring()`, `.length`, or render raw text that would break with HTML/markdown?
-
-**Why this matters:** In Sprint 011, backend changed `description` from plain text to HTML. The detail screen was updated but EpisodeRow (list views) was not -- resulting in raw HTML tags visible to users. One grep for `description` across all `.tsx` files would have caught this.
-
-#### Run Tests
-
-```bash
-npm test -- --grep "ComponentName"
-```
-
-If tests don't exist for the changed component, **write them first** covering:
-- All variants render correctly
-- Click handlers fire with correct arguments
-- Edge states don't show error UI
-- New props are passed in all parent contexts
-
-#### Self-Verification Output
-
-Before submitting to Reviewer, include in your submission:
-
-```markdown
-## Self-Verification Report
-
-### UI Components Checked
-| Component | Screens | Variants | Edge States | Design Match |
-|-----------|---------|----------|-------------|--------------|
-| [name]    | [count] | [count]  | [tested]    | [yes/no]     |
-
-### Data Format Impact
-| Field Changed | Consumers Found | All Updated |
-|---------------|-----------------|-------------|
-| [field]       | [count files]   | [yes/no]    |
-```
+**Read the Interaction Self-Verification section in `~/.claude/guides/testing-patterns.md`.** Complete both checklists (UI Component Verification + Data Format Impact Check) and include the Self-Verification Report in your review submission.
 
 ### Phase 4: Submit to Reviewer (BLOCKING -- CANNOT BYPASS)
 

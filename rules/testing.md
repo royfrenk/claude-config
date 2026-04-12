@@ -32,12 +32,6 @@ For features where correctness isn't binary (search, recommendations, performanc
 - Existing feature with quality requirements
 - Performance requirements (speed, accuracy)
 
-**Evals are:**
-- ✓ Evergreen (persist across issues)
-- ✓ Regression-aware (document what NOT to break)
-- ✓ Human-verified (not a replacement for judgment)
-- ✗ NOT per-issue (don't put in spec files)
-
 **See:** Eval-Writer agent for creating evals
 
 ## When to Write Tests
@@ -47,207 +41,32 @@ For features where correctness isn't binary (search, recommendations, performanc
 - Complex business logic
 - Edge cases and error handling
 - Bug fixes (regression test)
-- Database migrations (integration test)
+- Database migrations (integration test — use real DB, not mocks)
 - External API integrations (real API, not mocks)
 - Concurrent operations (race condition prevention)
-- Shared UI component changes (variant parity + consumer prop passing — see `~/.claude/guides/testing-patterns.md` "Component Parity Testing")
+- Shared UI component changes (variant parity + consumer prop passing)
+- New database queries (run against real DB — mocks hide type mismatches and missing indexes)
 
 **Judgment call:**
 - Simple CRUD operations
 - UI-only changes (that don't affect shared components)
 - Prototype/experimental code
 
-## Test Structure
-
-```typescript
-describe('EpisodeService', () => {
-  describe('getById', () => {
-    it('returns episode when found', async () => {
-      // Arrange
-      const episodeId = 'test-123'
-
-      // Act
-      const result = await service.getById(episodeId)
-
-      // Assert
-      expect(result.id).toBe(episodeId)
-    })
-
-    it('throws NotFoundError when episode missing', async () => {
-      await expect(service.getById('nonexistent'))
-        .rejects.toThrow(NotFoundError)
-    })
-  })
-})
-```
-
-## Integration Tests for Stability
-
-### Database Migrations
-
-**Always test migrations with real database instances, not mocks.**
-
-```typescript
-describe('Database Migrations', () => {
-  it('should add receipt_number column', () => {
-    // Start with fresh database
-    const db = new Database(':memory:')
-
-    // Run migrations
-    runMigrations(db)
-
-    // Verify schema
-    const columns = db.exec('PRAGMA table_info(receipts)')
-      .map(row => row[1])  // Column names
-
-    expect(columns).toContain('receipt_number')
-  })
-
-  it('should handle idempotent migrations', () => {
-    const db = new Database(':memory:')
-
-    // Run migrations twice
-    runMigrations(db)
-    runMigrations(db)  // Should not throw
-
-    // Verify schema still correct
-    const columns = db.exec('PRAGMA table_info(receipts)')
-    expect(columns.length).toBeGreaterThan(0)
-  })
-})
-```
-
-### External API Integration
-
-**Test with real APIs, not mocks, to catch API misuse:**
-
-```typescript
-describe('OAuth Integration', () => {
-  it('should handle missing email in profile', async () => {
-    // Use real passport strategy, not mock
-    const strategy = new GoogleStrategy(config, (token, refresh, profile, done) => {
-      // This will catch if we assume profile.emails exists
-      handleProfile(profile, done)
-    })
-
-    // Simulate Google returning profile without email
-    const profileWithoutEmail = { id: '123', displayName: 'Test' }
-
-    await expect(
-      strategy.userProfile(accessToken)
-    ).rejects.toThrow('OAuth profile missing email')
-  })
-})
-```
-
-### Race Conditions
-
-**Test concurrent operations explicitly:**
-
-```typescript
-describe('User Registration', () => {
-  it('should handle concurrent registrations', async () => {
-    const emails = ['alice@test.com', 'bob@test.com', 'charlie@test.com']
-
-    // Create users concurrently
-    const userIds = await Promise.all(
-      emails.map(email => createUser(email))
-    )
-
-    // All should get unique IDs
-    const uniqueIds = new Set(userIds)
-    expect(uniqueIds.size).toBe(3)
-
-    // All users should exist in database
-    const users = await db.all(
-      'SELECT * FROM users WHERE id IN (?, ?, ?)',
-      userIds
-    )
-    expect(users).toHaveLength(3)
-  })
-
-  it('should not have duplicate admin on concurrent first registrations', async () => {
-    // Start with empty users table
-    await db.run('DELETE FROM users')
-
-    // Two users register simultaneously (both think they're first)
-    const [user1, user2] = await Promise.all([
-      registerUser('alice@test.com'),
-      registerUser('bob@test.com')
-    ])
-
-    // Only one should be admin
-    const admins = await db.all('SELECT * FROM users WHERE is_admin = 1')
-    expect(admins).toHaveLength(1)
-  })
-})
-```
-
-### Configuration Validation
-
-**Test that server refuses to start with invalid config:**
-
-```typescript
-describe('Configuration Validation', () => {
-  it('should fail fast on missing required env vars', () => {
-    delete process.env.GOOGLE_CLIENT_ID
-
-    expect(() => {
-      validateConfig()
-    }).toThrow('Missing required environment variables: GOOGLE_CLIENT_ID')
-  })
-
-  it('should validate callback URL format', () => {
-    process.env.GOOGLE_CALLBACK_URL = 'not-a-url'
-
-    expect(() => {
-      validateConfig()
-    }).toThrow('GOOGLE_CALLBACK_URL must be a valid HTTP(S) URL')
-  })
-})
-```
-
-**See also:** `~/.claude/rules/stability.md` for more integration test patterns
+**For code examples and detailed patterns, see:** `~/.claude/guides/testing-patterns.md`
 
 ## E2E Test Strategy
 
-E2E tests are expensive: slow to run, prone to flakiness, and high maintenance. Follow the **test pyramid** — E2E should be ~10% of your tests.
-
-### Feature Lifecycle: Launch vs Iteration
+Follow the **test pyramid** — E2E should be ~10% of your tests.
 
 | Phase | E2E Approach |
 |-------|--------------|
-| **Launch** (new feature) | Write E2E tests covering the happy path and critical error states |
-| **Iteration** (tweaks to existing) | Existing E2E tests catch regressions; new changes get unit tests + manual |
+| **Launch** (new feature) | Write E2E covering happy path + critical error states |
+| **Iteration** (tweaks to existing) | Existing E2E catches regressions; new changes get unit tests + manual |
 
-**Launch phase** = First time a feature ships. Write E2E tests that verify:
-- The core user flow works end-to-end
-- Critical error states are handled (payment fails, auth expires, etc.)
-- Key entry points render correctly
-
-**Iteration phase** = Changes to an existing feature. The E2E tests you wrote at launch now serve as regression tests. New changes only need:
-- Unit tests for new logic
-- Manual verification for UI tweaks
-- New E2E only if the *flow itself* changes significantly
-
-### When to Write NEW E2E Tests
-
-**Always:**
-- New feature launch (first ship)
-- New critical flow (auth, payments, core journeys)
-- Regression test (something broke in production)
-
-**Skip:**
-- Iterations/tweaks to existing features (existing E2E covers it)
-- Simple UI changes
-- Error messages (unit test logic, manual verify display)
-- Styling changes
-
-**For detailed E2E patterns and Playwright best practices, see:** `~/.claude/guides/testing-patterns.md`
+**Write new E2E for:** new feature launch, new critical flow (auth, payments), regression (broke in production).
+**Skip E2E for:** iterations/tweaks, simple UI changes, error messages, styling.
 
 ## Verification Methods by Criterion Type
-
-Not everything needs E2E. Match verification to the criterion:
 
 | Criterion Type | Verification Method | Rationale |
 |----------------|---------------------|-----------|
@@ -259,8 +78,6 @@ Not everything needs E2E. Match verification to the criterion:
 | Code exists | Code review | Sufficient |
 | Styling correct | Manual | E2E can't judge aesthetics |
 
-**Rule of thumb:** If it's a critical path or previously broke in production, write an E2E test. Otherwise, unit test the logic and manually verify the UI.
-
 ## Before Submitting Code
 
 - [ ] All existing tests pass
@@ -271,37 +88,13 @@ Not everything needs E2E. Match verification to the criterion:
 
 ## Before Handoff to User
 
-**MANDATORY** — Before telling the user "ready to test" or "test at [URL]":
+**MANDATORY** — Before telling the user "ready to test":
 
-1. **Run full test suite** — not just the changed code's tests
-   ```bash
-   # Backend
-   cd backend && pytest tests/ -v
-
-   # Frontend
-   cd frontend && npm test
-   ```
-
-2. **Check test coverage for the flow being tested:**
-   - Does the flow have tests? (e.g., if user will test auth, do auth tests exist?)
-   - If no tests exist → create them or verify via API/curl yourself first
-
-3. **Verify locally before handoff:**
-   - Start backend + frontend
-   - Test the flow yourself (curl, browser, or automated)
-   - Only after YOU verify it works → ask user to test
-
-4. **Run automated deployment readiness checks** (see `~/.claude/agents/developer.md` Phase 5.5):
-   - Backend health, migrations, env vars
-   - Frontend build, health, API connectivity
-   - Auto-retry/fix if issues detected (max 3 attempts)
-
-5. **Run automated staging verification** (see `~/.claude/agents/developer.md` Phase 6):
-   - API health checks with curl/vercel curl
-   - Response structure validation
-   - Log analysis for errors
-   - Relevant E2E tests from spec file
-   - Only proceed to user handoff after checks pass
+1. Run full test suite (backend + frontend), not just changed code's tests
+2. Check test coverage for the flow being tested
+3. Verify locally before handoff (curl, browser, or automated)
+4. Run automated deployment readiness checks (see developer.md Phase 5.5)
+5. Run automated staging verification (see developer.md Phase 6)
 
 **Never ask the user to test something you haven't verified yourself.**
 
@@ -310,14 +103,9 @@ Not everything needs E2E. Match verification to the criterion:
 Before submitting to Reviewer, run full verification:
 
 ```bash
-# Backend
-cd backend && pytest tests/ -v
-
-# Frontend
-cd frontend && npm test
-
-# E2E (if applicable)
-cd e2e && npm run test:staging
+cd backend && pytest tests/ -v    # Backend
+cd frontend && npm test           # Frontend
+cd e2e && npm run test:staging    # E2E (if applicable)
 ```
 
 **All tests must pass. No exceptions.**

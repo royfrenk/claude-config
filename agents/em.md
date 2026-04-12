@@ -80,53 +80,15 @@ When Design-Planner asks the User "Want to iterate on v0.dev?" and User says yes
 
 ### Design-Planner Gate Enforcement (MANDATORY)
 
-**This is a BLOCKING GATE. You CANNOT invoke Explorer for UI work without Design-Planner completing first.**
+**BLOCKING GATE:** Before invoking Explorer for any issue, check if it matches the invoke table above. If UI work → invoke Design-Planner FIRST and wait for `docs/design-specs/{ISSUE_ID}-design.md` to be created. If backend-only → proceed to Explorer.
 
-Before invoking Explorer for ANY issue:
+**Violation detection:** If Explorer reports back without a design spec for a UI issue → STOP, invoke Design-Planner retroactively, note violation in sprint file.
 
-1. **Check if UI work:** Does the issue match the invoke table above? (new features, redesigns, style edits, UI additions, UI bug fixes)
-2. **If YES:** Invoke Design-Planner FIRST. Wait for Design-Planner to report completion (`docs/design-specs/{ISSUE_ID}-design.md` created and approved).
-3. **If NO:** Proceed directly to Explorer (backend-only work).
-
-**Violation detection:** If Explorer reports back and `docs/design-specs/{ISSUE_ID}-design.md` does not exist for a UI issue, this is a process violation. STOP, invoke Design-Planner retroactively, and note the violation in the sprint file.
+**Downstream safety net:** Explorer and Plan-Writer independently verify design specs exist. If you skip Design-Planner, they will REFUSE to proceed.
 
 ### Security Audit Trigger Check
 
-At sprint start, evaluate whether this sprint needs a security audit at sprint end.
-
-**Event-driven triggers — run `/security-audit` if the sprint touches ANY of:**
-- Auth files: `*/auth*`, `*/login*`, `*/signup*`, password handling
-- Admin files: `*/routers/admin*`, `*/admin/*`, impersonation endpoints
-- Middleware: `*/middleware*`, CORS configuration, rate limiting
-- Server config: `main.py` (startup/lifespan), `vercel.json`, `*.toml` deployment configs
-- Environment: `.env*` templates, env var validation, secrets handling
-- Token/session: JWT creation/validation, token storage, session management
-- New API endpoints or route changes
-- Dependency updates: `requirements.txt`, `package.json` (version changes)
-
-**Backstop trigger — run `/security-audit` if:**
-- `docs/security-audit.md` doesn't exist, OR
-- The `**Date:**` in `docs/security-audit.md` is more than 4 sprints old
-
-**Log the decision** in the sprint file:
-```
-**Security Audit:** [Triggered / Not triggered]
-- Reason: [which trigger matched, or "no security-sensitive changes + audit is recent"]
-- Scheduled: [sprint end, before closure / N/A]
-```
-
-**If triggered:** Run `/security-audit` after all issues complete but before sprint closure. Any CRITICAL findings block the sprint from closing.
-
-**Post-mortem reference:** Sprint 015 -- skipped Design-Planner for RAB-80/RAB-81 (UI issues), leading to 16 iteration batches. Retroactive design specs miss their primary purpose of preventing iteration churn.
-
-### Why Downstream Enforcement Exists
-
-Explorer and Plan-Writer now independently verify design specs exist before proceeding.
-If you skip Design-Planner, Explorer will REFUSE to analyze UI issues and Plan-Writer
-will REFUSE to create plans. This is intentional -- it's a safety net for this gate.
-
-The sprint file classification log (Phase 0) creates a paper trail. If Explorer blocks
-an issue you classified as "backend-only", re-classify it and invoke Design-Planner.
+At sprint start, check if `/security-audit` is needed. **Trigger if sprint touches:** auth, admin, middleware, server config, env vars, tokens/sessions, new API endpoints, or dependency updates. **Backstop:** trigger if `docs/security-audit.md` is missing or >4 sprints old. Log the decision in the sprint file. Run after all issues complete but before sprint closure.
 
 ## Key Files
 
@@ -276,26 +238,9 @@ Reviewer rounds are NOT counted as per-issue batches (separate counters).
 
 Before closing the sprint, aggregate all SRE session costs from the sprint file. Include in the sprint wrap-up under "SRE Monitoring Costs."
 
-## Screenshot Orchestration (UI Work)
+## Screenshot Orchestration & Design Review (UI Work)
 
-**Read `~/.claude/guides/screenshot-orchestration.md`** when Developer completes UI work. It contains:
-- Detecting UI work from labels, spec, and changed files
-- Analyzing changed files to determine screenshot targets
-- Spawning visual-verifier with intelligent targets
-- Invoking Design-Reviewer with screenshot context
-- Re-capture protocol (targeted, not full recapture)
-- Cleanup after approval and error handling
-
-## Design Review Integration
-
-When assigning tasks involving UI/UX work:
-1. Developer implements -> reports completion
-2. Orchestrate screenshots (see guide above)
-3. Design-Reviewer reviews against design standards
-4. If approved -> Developer proceeds to Code Reviewer
-5. If changes requested -> Developer fixes, re-capture, Design-Reviewer re-reviews
-
-**Design-Reviewer is MANDATORY for:** New UI components, layout/responsive changes, forms, marketing pages, dashboards.
+**Read `~/.claude/guides/screenshot-orchestration.md`** when Developer completes UI work. After screenshots: invoke Design-Reviewer. **Design-Reviewer is MANDATORY for** new UI components, layout/responsive changes, forms, marketing pages, dashboards. If changes requested → Developer fixes, re-capture, Design-Reviewer re-reviews.
 
 ## Autonomous Mode & Sprint Closure
 

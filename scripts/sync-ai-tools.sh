@@ -41,6 +41,7 @@ GUIDES=(
   review-submission.md
   roadmap-management.md
   rtl-i18n-checklist.md
+  security-patterns.md
   testing-patterns.md
 )
 
@@ -466,6 +467,7 @@ log_section "GEMINI.md"
   echo "- API integration: @guides/api-integration-patterns.md"
   echo "- Google Auth: @guides/google-auth.md"
   echo "- Testing: @guides/testing-patterns.md"
+  echo "- Security: @guides/security-patterns.md"
   echo "- Code performance: @guides/code-performance.md"
   echo "- Deployment: @guides/deployment-protocol.md"
   echo "- Design: @guides/design.md"
@@ -496,6 +498,7 @@ log_section "CODEX AGENTS.md"
   echo "- API integration: ~/.codex/guides/api-integration-patterns.md"
   echo "- Google Auth: ~/.codex/guides/google-auth.md"
   echo "- Testing: ~/.codex/guides/testing-patterns.md"
+  echo "- Security: ~/.codex/guides/security-patterns.md"
   echo "- Code performance: ~/.codex/guides/code-performance.md"
   echo "- Deployment: ~/.codex/guides/deployment-protocol.md"
   echo "- Design: ~/.codex/guides/design.md"
@@ -605,8 +608,8 @@ echo "    Skills:   $CODEX_SKILLS files"
 echo ""
 echo "  Skipped (Claude-only):"
 echo "    Commands: audit, sync-linear, sync-roadmap, v0-feature, v0-new-project"
-echo "    Guides:   agent-teams, autonomous-sprint, codex-peer-review,"
+echo "    Guides:   autonomous-sprint, codex-peer-review,"
 echo "              external-model-delegation, parallel-review, retroactive-review,"
-echo "              screenshot-orchestration, v0-design-workflow, visual-verification"
+echo "              screenshot-orchestration, visual-verification"
 echo ""
 echo "Done."

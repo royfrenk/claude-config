@@ -63,70 +63,12 @@ src/utils/
 
 Always handle errors explicitly. Never use empty catch blocks.
 
-### Silent Failures (Critical Anti-Pattern)
+- **No silent failures:** Empty catch blocks hide failures. Always log and re-throw or handle explicitly.
+- **No assuming success:** Don't catch errors and assume the operation worked. Check before assuming (e.g., `checkColumnExists` before `ALTER TABLE`).
+- **When ignoring errors:** If genuinely non-critical (rare), document WHY in a comment.
+- **Validate after risky operations:** After migrations or file writes, verify the result.
 
-Empty catch blocks hide failures and cause unpredictable behavior:
-
-```typescript
-// WRONG - Silent failure
-try {
-  await riskyOperation()
-} catch (e) {
-  // ignore
-}
-
-// WRONG - Assuming operation succeeded
-try {
-  db.run('ALTER TABLE users ADD COLUMN new_field TEXT')
-} catch (e) {
-  // Assume column already exists
-}
-
-// CORRECT - Explicit handling
-try {
-  await riskyOperation()
-} catch (error) {
-  console.error('Operation failed:', error)
-  throw new Error('User-friendly message')
-}
-
-// CORRECT - Check before assuming
-const hasColumn = checkColumnExists(db, 'users', 'new_field')
-if (!hasColumn) {
-  db.run('ALTER TABLE users ADD COLUMN new_field TEXT')
-}
-```
-
-### When Errors Must Be Ignored
-
-If you genuinely need to ignore an error (rare), document why:
-
-```typescript
-try {
-  await nonCriticalOperation()
-} catch (error) {
-  // Intentionally ignored: Non-critical cache warming
-  // System continues functioning without cache
-  console.debug('Cache warming failed:', error.message)
-}
-```
-
-### Validation After Risky Operations
-
-After operations that might silently fail, validate success:
-
-```typescript
-// Database migrations
-await runMigration('add_column')
-validateSchema(db, ['expected', 'columns', 'new_column'])  // Verify it worked
-
-// File operations
-await writeFile(path, data)
-const exists = await fileExists(path)  // Verify it worked
-if (!exists) throw new Error('File write failed')
-```
-
-**See also:** `~/.claude/rules/stability.md` for API misuse patterns
+**For code examples, see:** `~/.claude/guides/testing-patterns.md` (Error Handling Examples section)
 
 ## Code Quality Checklist
 

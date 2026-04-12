@@ -129,14 +129,34 @@ Guides provide detailed patterns and examples for specific domains. Use them:
 
 ---
 
+### Web Scraping
+**File:** `web-scraping.md`
+
+**When to read:**
+- Building any web scraper
+- Debugging blocked requests
+- Choosing proxies, IPs, or browser approaches
+
+**Key topics:**
+- Cloudflare bypass: real Chrome via CDP (not Playwright-launched, not httpx)
+- IP types: residential ✅, datacenter ❌, Pi ProtonVPN ❌ for CF sites
+- Site playbooks: BiggerPockets, Reddit, YouTube transcripts
+- Safe request pacing (15-35s for BP, 3-9s for Reddit)
+- SPA rendering: always wait for content selectors, not just `domcontentloaded`
+- Job queue pattern with Supabase for resumable scraping
+
+**Critical lesson:** httpx/curl TLS fingerprint is blocked by Cloudflare regardless of cookies or headers. Must use real Chrome via CDP.
+
+---
+
 ## Existing Guides (Non-Domain)
 
-### Agent Teams
-**File:** `agent-teams.md`
+### Security Patterns
+**File:** `security-patterns.md`
 
-**Purpose:** How to work with parallel agent teams
+**Purpose:** Code examples for config validation, input validation, OAuth, file uploads, error handling
 
-**When to read:** When spawned as part of a team
+**When to read:** When implementing security-sensitive features or reviewing security rules
 
 ---
 

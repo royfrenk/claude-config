@@ -394,6 +394,183 @@ npx playwright test --update-snapshots
 
 **Solution:** Fix flaky tests immediately. Zero tolerance for ignored failures.
 
+## Interaction Self-Verification
+
+**Run AFTER acceptance criteria pass but BEFORE submitting to Reviewer.** Catches bugs where "code exists" but "user interactions are broken."
+
+### Checklist A: UI Component Verification
+
+For every UI component you changed or created:
+
+- [ ] **List all screens** that render this component (grep for imports)
+- [ ] **Verify prop parity:** Every screen passes all required props (especially new ones)
+- [ ] **Verify all variants:** If component has variants (e.g., `showArtwork` vs `!showArtwork`), verify EACH variant has the feature
+- [ ] **Verify click handlers:** Navigation elements navigate (not trigger playback), action buttons trigger correct action, stop propagation where needed
+- [ ] **Verify edge states:** Missing data, unprocessed episodes, empty API responses
+- [ ] **Compare against design spec:** Verify each screen matches mockup
+- [ ] **Test with real staging data:** Curl the staging API, use actual response data
+- [ ] **Edit forms:** Verify fields are user-editable (not auto-populated by backend)
+- [ ] **Conditional action icons:** Use invisible spacers or fixed-width containers to prevent layout shifts (`stability.md` Section 21)
+
+### Checklist B: Data Format Impact Check
+
+When you change how data is produced, stored, or returned:
+
+- [ ] **Grep for ALL consumers** of the changed field across the entire frontend codebase
+- [ ] **Verify each consumer handles the new format:** detail views AND list views AND search results
+- [ ] **Check for assumptions:** `.substring()`, `.length`, raw text rendering that breaks with HTML/markdown
+
+### Self-Verification Output
+
+```markdown
+## Self-Verification Report
+
+### UI Components Checked
+| Component | Screens | Variants | Edge States | Design Match |
+|-----------|---------|----------|-------------|--------------|
+| [name]    | [count] | [count]  | [tested]    | [yes/no]     |
+
+### Data Format Impact
+| Field Changed | Consumers Found | All Updated |
+|---------------|-----------------|-------------|
+| [field]       | [count files]   | [yes/no]    |
+```
+
+---
+
+## Integration Test Examples
+
+### Database Migrations
+
+**Always test migrations with real database instances, not mocks.**
+
+```typescript
+describe('Database Migrations', () => {
+  it('should add receipt_number column', () => {
+    const db = new Database(':memory:')
+    runMigrations(db)
+    const columns = db.exec('PRAGMA table_info(receipts)')
+      .map(row => row[1])
+    expect(columns).toContain('receipt_number')
+  })
+
+  it('should handle idempotent migrations', () => {
+    const db = new Database(':memory:')
+    runMigrations(db)
+    runMigrations(db)  // Should not throw
+  })
+})
+```
+
+### External API Integration
+
+**Test with real APIs, not mocks, to catch API misuse:**
+
+```typescript
+describe('OAuth Integration', () => {
+  it('should handle missing email in profile', async () => {
+    const strategy = new GoogleStrategy(config, (token, refresh, profile, done) => {
+      handleProfile(profile, done)
+    })
+    const profileWithoutEmail = { id: '123', displayName: 'Test' }
+    await expect(
+      strategy.userProfile(accessToken)
+    ).rejects.toThrow('OAuth profile missing email')
+  })
+})
+```
+
+### Race Conditions
+
+**Test concurrent operations explicitly:**
+
+```typescript
+describe('User Registration', () => {
+  it('should handle concurrent registrations', async () => {
+    const emails = ['alice@test.com', 'bob@test.com', 'charlie@test.com']
+    const userIds = await Promise.all(
+      emails.map(email => createUser(email))
+    )
+    const uniqueIds = new Set(userIds)
+    expect(uniqueIds.size).toBe(3)
+  })
+
+  it('should not have duplicate admin on concurrent first registrations', async () => {
+    await db.run('DELETE FROM users')
+    const [user1, user2] = await Promise.all([
+      registerUser('alice@test.com'),
+      registerUser('bob@test.com')
+    ])
+    const admins = await db.all('SELECT * FROM users WHERE is_admin = 1')
+    expect(admins).toHaveLength(1)
+  })
+})
+```
+
+### Configuration Validation
+
+**Test that server refuses to start with invalid config:**
+
+```typescript
+describe('Configuration Validation', () => {
+  it('should fail fast on missing required env vars', () => {
+    delete process.env.GOOGLE_CLIENT_ID
+    expect(() => validateConfig())
+      .toThrow('Missing required environment variables: GOOGLE_CLIENT_ID')
+  })
+})
+```
+
+---
+
+## Error Handling Examples
+
+### Silent Failures (Anti-Pattern)
+
+```typescript
+// WRONG - Silent failure
+try { await riskyOperation() } catch (e) { /* ignore */ }
+
+// WRONG - Assuming operation succeeded
+try { db.run('ALTER TABLE users ADD COLUMN new_field TEXT') }
+catch (e) { /* Assume column already exists */ }
+
+// CORRECT - Explicit handling
+try { await riskyOperation() }
+catch (error) {
+  console.error('Operation failed:', error)
+  throw new Error('User-friendly message')
+}
+
+// CORRECT - Check before assuming
+const hasColumn = checkColumnExists(db, 'users', 'new_field')
+if (!hasColumn) db.run('ALTER TABLE users ADD COLUMN new_field TEXT')
+```
+
+### Intentionally Ignored Errors
+
+```typescript
+try {
+  await nonCriticalOperation()
+} catch (error) {
+  // Intentionally ignored: Non-critical cache warming
+  console.debug('Cache warming failed:', error.message)
+}
+```
+
+### Validation After Risky Operations
+
+```typescript
+await runMigration('add_column')
+validateSchema(db, ['expected', 'columns', 'new_column'])  // Verify it worked
+
+await writeFile(path, data)
+const exists = await fileExists(path)
+if (!exists) throw new Error('File write failed')
+```
+
+---
+
 ## See Also
 
 - Project-specific E2E patterns: `docs/E2E_TESTING_PLAN.md` (if exists)

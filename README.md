@@ -509,7 +509,9 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── reviewer.md        # Code review
 │   ├── security-reviewer.md # Security review (PR mode + audit mode)
 │   ├── design-reviewer.md # Design/UX review
-│   └── external-model-delegate.md  # External AI model delegation (Gemini, Codex)
+│   ├── external-model-delegate.md  # External AI model delegation (Gemini, Codex)
+│   ├── em.md              # EM protocol (runs inline via /sprint, NOT as subagent)
+│   └── sre.md             # SRE agent definition (uses Managed Agents)
 ├── commands/
 │   ├── context.md         # /context
 │   ├── sprint.md          # /sprint
@@ -523,8 +525,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   └── change-process.md  # /change-process
 ├── guides/
 │   ├── README.md                  # Guide index and usage instructions
-│   ├── em-protocol.md             # EM orchestration protocol (runs inline via /sprint)
-│   ├── agent-teams.md             # Parallel agent team coordination
+│   ├── (em-protocol.md moved to agents/em.md)
 │   ├── api-integration-patterns.md # Env vars, fallbacks, error handling
 │   ├── code-performance.md        # N+1 queries, caching, memoization
 │   ├── codex-peer-review.md       # OpenAI Codex peer review process

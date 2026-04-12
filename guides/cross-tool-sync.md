@@ -145,13 +145,13 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 
 ### Guides (13 of 23 synced)
 
-**Verbatim:** design, legal, project-state-update, rtl-i18n-checklist, testing-patterns
+**Verbatim:** design, legal, project-state-update, rtl-i18n-checklist, testing-patterns, security-patterns
 
 **Path substitution only:** api-integration-patterns, code-performance, database-patterns, frontend-patterns, google-auth
 
 **Structural adaptation:** deployment-protocol, review-submission, roadmap-management
 
-**Skipped (Claude-only):** README, agent-teams, autonomous-sprint, codex-peer-review, external-model-delegation, parallel-review, retroactive-review, screenshot-orchestration, v0-design-workflow, visual-verification
+**Skipped (Claude-only):** README, autonomous-sprint, codex-peer-review, external-model-delegation, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
 
 ### Commands (11 of 16 synced)
 
