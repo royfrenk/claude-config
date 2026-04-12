@@ -16,10 +16,13 @@ set -euo pipefail
 CLAUDE_DIR="$HOME/.claude"
 GEMINI_DIR="$HOME/.gemini"
 CODEX_DIR="$HOME/.codex"
+PARITY_MANIFEST="$CLAUDE_DIR/guides/cross-tool-parity-phase-a.json"
+PARITY_REPORT_PATH="/tmp/sync-parity-report.json"
 
 # Rules to sync (all of them)
 RULES=(
   coding-style.md
+  infrastructure.md
   performance.md
   security.md
   stability.md
@@ -30,10 +33,13 @@ RULES=(
 # Guides to sync (universal ones only)
 GUIDES=(
   api-integration-patterns.md
+  autonomous-iteration.md
   code-performance.md
   database-patterns.md
   deployment-protocol.md
   design.md
+  platform-access.md
+  external-model-delegation.md
   frontend-patterns.md
   google-auth.md
   legal.md
@@ -90,6 +96,194 @@ log_skip() {
 
 log_warn() {
   echo "  [WARN] $1"
+}
+
+run_parity_validation() {
+  if [ ! -f "$PARITY_MANIFEST" ]; then
+    echo "ERROR: parity manifest not found at $PARITY_MANIFEST" >&2
+    exit 1
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 is required for parity validation" >&2
+    exit 1
+  fi
+
+  python3 - "$PARITY_MANIFEST" "$PARITY_REPORT_PATH" "$CLAUDE_DIR" "$GEMINI_DIR" "$CODEX_DIR" <<'PY'
+import json
+import pathlib
+import sys
+
+manifest_path, report_path, claude_dir, gemini_dir, codex_dir = sys.argv[1:]
+
+with open(manifest_path, "r", encoding="utf-8") as handle:
+    manifest = json.load(handle)
+
+status_tokens = set(manifest["status_tokens"])
+max_bytes = manifest["limits"]["codex_project_doc_max_bytes"]
+
+def add_result(results, command, platform, status, notes, checks, path):
+    if status not in status_tokens:
+        raise ValueError(f"Unknown parity status token: {status}")
+    results.append(
+        {
+            "command": command,
+            "platform": platform,
+            "status": status,
+            "notes": notes,
+            "checks": checks,
+            "path": path,
+        }
+    )
+
+def read_text_if_exists(path):
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8", errors="ignore")
+
+results = []
+global_checks = {}
+hard_fail = False
+
+gemini_md = pathlib.Path(gemini_dir) / "GEMINI.md"
+missing_imports = []
+if gemini_md.exists():
+    for line in gemini_md.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if line.startswith("@"):
+            rel_path = line[1:].strip()
+            target = pathlib.Path(gemini_dir) / rel_path
+            if not target.exists():
+                missing_imports.append(rel_path)
+else:
+    missing_imports.append("GEMINI.md")
+
+if missing_imports:
+    global_checks["gemini_imports_resolve"] = {
+        "status": "FAIL",
+        "missing": missing_imports,
+    }
+    hard_fail = True
+else:
+    global_checks["gemini_imports_resolve"] = {
+        "status": "PASS",
+        "missing": [],
+    }
+
+codex_agents = pathlib.Path(codex_dir) / "AGENTS.md"
+codex_size = codex_agents.stat().st_size if codex_agents.exists() else None
+if codex_size is None or codex_size > max_bytes:
+    global_checks["codex_project_doc_size"] = {
+        "status": "FAIL",
+        "bytes": codex_size,
+        "max_bytes": max_bytes,
+    }
+    hard_fail = True
+else:
+    global_checks["codex_project_doc_size"] = {
+        "status": "PASS",
+        "bytes": codex_size,
+        "max_bytes": max_bytes,
+    }
+
+roots = {
+    "claude": pathlib.Path(claude_dir),
+    "gemini": pathlib.Path(gemini_dir),
+    "codex": pathlib.Path(codex_dir),
+}
+
+for command_name, config in manifest["commands"].items():
+    source_path = roots["claude"] / config["source"]
+    source_exists = source_path.exists()
+    claude_status = "PASS" if source_exists else "FAIL"
+    if not source_exists:
+      hard_fail = True
+    add_result(
+        results,
+        command_name,
+        "claude",
+        claude_status,
+        [] if source_exists else ["Source command is missing"],
+        {"source_exists": source_exists},
+        str(source_path),
+    )
+
+    for platform_name in ("gemini", "codex"):
+        platform = config["platforms"][platform_name]
+        output_path = roots[platform_name] / platform["required_output"]
+        output_exists = output_path.exists()
+        checks = {
+            "source_exists": source_exists,
+            "output_exists": output_exists,
+        }
+        notes = []
+
+        if not output_exists:
+            status = "FAIL"
+            notes.append("Required generated output is missing")
+            hard_fail = True
+        elif not config.get("phase_a_scope", False):
+            status = "DEFERRED"
+        elif platform["execution_model"] == "UNSUPPORTED":
+            status = "UNSUPPORTED"
+        else:
+            status = "PASS"
+
+        for override in config.get("manual_overrides", []):
+            if override["platform"] == platform_name:
+                notes.append(
+                    f"Manual override: {override['reason']} ({override['owner']})"
+                )
+                if status == "PASS":
+                    status = "INTENTIONAL_DIFFERENCE"
+
+        output_text = read_text_if_exists(output_path)
+        matched_warning_patterns = [
+            pattern
+            for pattern in platform.get("warning_patterns", [])
+            if pattern in output_text
+        ]
+        if matched_warning_patterns:
+            checks["warning_patterns_clean"] = False
+            notes.append(
+                "Known drift patterns present: "
+                + ", ".join(matched_warning_patterns)
+            )
+        elif platform.get("warning_patterns"):
+            checks["warning_patterns_clean"] = True
+
+        add_result(
+            results,
+            command_name,
+            platform_name,
+            status,
+            notes,
+            checks,
+            str(output_path),
+        )
+
+report = {
+    "version": manifest["version"],
+    "report_path": report_path,
+    "global_checks": global_checks,
+    "results": results,
+}
+
+with open(report_path, "w", encoding="utf-8") as handle:
+    json.dump(report, handle, indent=2)
+
+counts = {token: 0 for token in manifest["status_tokens"]}
+for result in results:
+    counts[result["status"]] += 1
+
+print(f"  [OK] Wrote parity report: {report_path}")
+print(
+    "  [OK] Parity status counts: "
+    + ", ".join(f"{token}={counts[token]}" for token in manifest["status_tokens"])
+)
+
+if hard_fail:
+    sys.exit(1)
+PY
 }
 
 # Apply universal text substitutions for a target platform.
@@ -166,6 +360,14 @@ adapt_for_target() {
     -e 's/mcp__linear__[a-z_]*/Linear API call/g' \
   )
 
+  # Claude-only sync helpers -> generic non-Claude wording
+  content=$(echo "$content" | sed \
+    -e 's/`\/sync-roadmap`/a Linear\/roadmap reconciliation step/g' \
+    -e 's/`\/sync-linear`/manual Linear\/roadmap reconciliation/g' \
+    -e 's/linear-sync agent/available Linear integration/g' \
+    -e 's/linear-sync/available Linear integration/g' \
+  )
+
   # Subagent spawning instructions -> single-agent
   content=$(echo "$content" | sed \
     -e 's/spawn a subagent/handle the work directly/g' \
@@ -180,6 +382,14 @@ adapt_for_target() {
     -e 's/All agents must follow these/Follow these/g' \
     -e 's/All agents must follow/Follow/g' \
   )
+
+  # Remove Claude-only runtime file section from new-project style docs
+  content=$(echo "$content" | awk '
+    /## Claude Runtime Files \(Global\)/ { skip=1; next }
+    skip && /^## The Spec File/ { skip=0 }
+    skip { next }
+    { print }
+  ')
 
   echo "$content"
 }
@@ -270,6 +480,54 @@ convert_to_skill() {
     echo "---"
     echo ""
     echo "$content"
+  } > "${skill_dir}/SKILL.md"
+}
+
+write_unsupported_gemini_command() {
+  local target_file="$1"
+  {
+    echo 'description = "Change-process is Claude-owned and unsupported on this platform in Phase A."'
+    echo ""
+    echo 'prompt = """'
+    echo 'Parse any arguments provided: {{args}}'
+    echo ""
+    echo "# Change Process"
+    echo ""
+    echo "This command is unsupported on Gemini in Phase A."
+    echo ""
+    echo "Run \`/change-process\` from the Claude runtime, which owns:"
+    echo "- the live writable source under \`~/.claude/\`"
+    echo "- the sync step to Gemini and Codex"
+    echo "- the parity audit gate"
+    echo ""
+    echo "If you need to inspect the shared process model first, read:"
+    echo "- \`~/.gemini/guides/cross-tool-sync.md\`"
+    echo '- \`~/.gemini/guides/cross-tool-parity-phase-a.json\` (machine-readable Phase A decisions)'
+    echo '"""'
+  } > "$target_file"
+}
+
+write_unsupported_codex_skill() {
+  local skill_dir="$1"
+  mkdir -p "$skill_dir"
+  {
+    echo "---"
+    echo "name: change-process"
+    echo "description: Change-process is Claude-owned and unsupported on this platform in Phase A."
+    echo "---"
+    echo ""
+    echo "# Change Process"
+    echo ""
+    echo "This command is unsupported on Codex in Phase A."
+    echo ""
+    echo "Run \`/change-process\` from the Claude runtime, which owns:"
+    echo "- the live writable source under \`~/.claude/\`"
+    echo "- the sync step to Gemini and Codex"
+    echo "- the parity audit gate"
+    echo ""
+    echo "If you need to inspect the shared process model first, read:"
+    echo "- \`~/.codex/guides/cross-tool-sync.md\`"
+    echo "- \`~/.codex/guides/cross-tool-parity-phase-a.json\`"
   } > "${skill_dir}/SKILL.md"
 }
 
@@ -471,6 +729,7 @@ log_section "GEMINI.md"
   echo "- Code performance: @guides/code-performance.md"
   echo "- Deployment: @guides/deployment-protocol.md"
   echo "- Design: @guides/design.md"
+  echo "- Platform access: @guides/platform-access.md"
   echo "- Legal: @guides/legal.md"
   echo "- RTL/i18n: @guides/rtl-i18n-checklist.md"
   echo "- Review format: @guides/review-submission.md"
@@ -502,6 +761,7 @@ log_section "CODEX AGENTS.md"
   echo "- Code performance: ~/.codex/guides/code-performance.md"
   echo "- Deployment: ~/.codex/guides/deployment-protocol.md"
   echo "- Design: ~/.codex/guides/design.md"
+  echo "- Platform access: ~/.codex/guides/platform-access.md"
   echo "- Legal: ~/.codex/guides/legal.md"
   echo "- RTL/i18n: ~/.codex/guides/rtl-i18n-checklist.md"
   echo "- Review format: ~/.codex/guides/review-submission.md"
@@ -560,13 +820,22 @@ for cmd in "${COMMANDS[@]}"; do
   echo "$local_content" > "$TEMP_CMD"
 
   # Gemini: TOML
-  convert_to_toml "$TEMP_CMD" "$GEMINI_DIR/commands/${cmd_name}.toml"
-  log_ok "Gemini commands/${cmd_name}.toml"
+  if [ "$cmd_name" = "change-process" ]; then
+    write_unsupported_gemini_command "$GEMINI_DIR/commands/${cmd_name}.toml"
+    log_ok "Gemini commands/${cmd_name}.toml (unsupported adapter)"
+  else
+    convert_to_toml "$TEMP_CMD" "$GEMINI_DIR/commands/${cmd_name}.toml"
+    log_ok "Gemini commands/${cmd_name}.toml"
+  fi
   GEMINI_CMDS=$((GEMINI_CMDS + 1))
 
   # Codex: SKILL.md (skip create-issue, it already exists and was manually crafted)
   if [ "$cmd_name" = "create-issue" ] && [ -f "$CODEX_DIR/skills/create-issue/SKILL.md" ]; then
     log_skip "Codex skills/create-issue (manually maintained)"
+  elif [ "$cmd_name" = "change-process" ]; then
+    write_unsupported_codex_skill "$CODEX_DIR/skills/$cmd_name"
+    log_ok "Codex skills/${cmd_name}/SKILL.md (unsupported adapter)"
+    CODEX_SKILLS=$((CODEX_SKILLS + 1))
   else
     convert_to_skill "$TEMP_CMD" "$CODEX_DIR/skills/$cmd_name"
     log_ok "Codex skills/${cmd_name}/SKILL.md"
@@ -588,6 +857,11 @@ for toml in "${GEMINI_REMOVE[@]}"; do
   fi
 done
 
+# ─── Phase A Parity Validation ──────────────────────────────────────────────
+
+log_section "PARITY REPORT"
+run_parity_validation
+
 # ─── Summary ────────────────────────────────────────────────────────────────
 
 echo ""
@@ -606,10 +880,14 @@ echo "    AGENTS.md: regenerated ($(wc -c < "$CODEX_DIR/AGENTS.md" | tr -d ' ') 
 echo "    Guides:   $CODEX_GUIDES files"
 echo "    Skills:   $CODEX_SKILLS files"
 echo ""
+echo "  Parity:"
+echo "    Manifest: $PARITY_MANIFEST"
+echo "    Report:   $PARITY_REPORT_PATH"
+echo ""
 echo "  Skipped (Claude-only):"
 echo "    Commands: audit, sync-linear, sync-roadmap, v0-feature, v0-new-project"
 echo "    Guides:   autonomous-sprint, codex-peer-review,"
-echo "              external-model-delegation, parallel-review, retroactive-review,"
+echo "              parallel-review, retroactive-review,"
 echo "              screenshot-orchestration, visual-verification"
 echo ""
 echo "Done."

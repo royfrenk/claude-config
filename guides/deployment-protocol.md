@@ -435,15 +435,15 @@ which vercel || which railway || which netlify
 |------|--------|---------|---------|
 | Status | `vercel inspect <URL>` | `railway status` | `netlify status` |
 | Logs | `vercel logs <URL>` | `railway logs` | `netlify logs` |
-| Env vars | `vercel env ls` | `railway variables` | `netlify env:list` |
-| Add env var | `vercel env add <KEY>` | `railway variables set K=V` | `netlify env:set K V` |
+| Deploy | `vercel --prod` | `railway up` | `netlify deploy --prod` |
+
+For env var and config commands, see `~/.claude/guides/platform-access.md`.
 
 ### Rules
 
-- Execute CLI operations yourself (don't ask user to do it)
-- Only escalate for: CLI not installed, auth errors, destructive operations
+For CLI execution policy and escalation rules, see `~/.claude/rules/infrastructure.md`.
+
 - Ask permission before: deleting resources, modifying production, billing changes
-- Execute without asking: adding env vars, checking logs, listing resources
 
 ### Deployment Failure Protocol
 

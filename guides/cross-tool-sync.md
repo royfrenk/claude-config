@@ -6,7 +6,7 @@ How to maintain consistent engineering standards across Claude Code, Gemini CLI,
 
 ## Architecture Overview
 
-**Source of truth:** `~/.claude/` (rules, guides, commands)
+**Operational source of truth today:** `~/.claude/` (rules, guides, commands)
 
 **Derived targets:**
 - `~/.gemini/` (GEMINI.md with @imports, rules/, guides/, commands/)
@@ -15,6 +15,45 @@ How to maintain consistent engineering standards across Claude Code, Gemini CLI,
 **Sync mechanism:** `~/.claude/scripts/sync-ai-tools.sh`
 
 **Trigger:** Automatically via change-process Phase 7, or manually anytime.
+
+### Canonical Model
+
+The long-term maintainable model is:
+
+```text
+Project docs
+    ↓
+Shared workflow intent
+    ↓
+Platform-specific runtime adapters
+```
+
+- Project docs (`CLAUDE.md`, `PROJECT_STATE.md`, `roadmap.md`) define the project
+- Shared workflow docs define the process, gates, and outputs
+- Platform-specific runtime files implement that process
+
+**Important:** Claude `agents/` files are runtime adapters for Claude, not the canonical source for cross-platform workflow behavior. Gemini and Codex do not share that runtime model.
+
+### Phase A Parity Sources
+
+Phase A now has two surfaces:
+
+- Human-readable contract surface: `~/.claude/guides/cross-tool-sync.md`
+- Machine-readable decision surface: `~/.claude/guides/cross-tool-parity-phase-a.json`
+
+The guide explains the model. The JSON manifest drives sync-time validation and report generation.
+
+**Exact status tokens:**
+
+| Token | Meaning |
+|------|---------|
+| `PASS` | Expected output exists and passes required hard checks |
+| `INTENTIONAL_DIFFERENCE` | Output exists but is intentionally different, such as a documented manual override |
+| `UNSUPPORTED` | Platform does not support the declared execution model for that command |
+| `DEFERRED` | Command is inventory-only in Phase A; report it, do not gate on it |
+| `FAIL` | Missing output, malformed manifest, size overflow, or another hard validation failure |
+
+**Stable report path:** `/tmp/sync-parity-report.json`
 
 ---
 
@@ -29,6 +68,15 @@ How to maintain consistent engineering standards across Claude Code, Gemini CLI,
 | MCP tools | Yes (Linear, v0, etc.) | Limited (via config) | Yes (via config.toml) |
 | Hooks | PostToolUse hooks | No | No |
 | Agent orchestration | EM, Explorer, Developer, Reviewer | Single-agent | Single-agent |
+
+### How Guidance Shifts By Platform
+
+| Layer | Claude Code | Gemini CLI | Codex CLI |
+|------|-------------|------------|-----------|
+| Project entrypoint | `CLAUDE.md` points to project docs and workflow commands | Same project docs | Same project docs |
+| Workflow expression | Role-oriented, can use agents | Phase-oriented, single-agent adaptation | Phase-oriented, single-agent adaptation |
+| Runtime detail location | `commands/` + `agents/` | `commands/*.toml` | `skills/*/SKILL.md` + `AGENTS.md` |
+| Safe assumption | Agent roles can be operational | Agent roles are conceptual unless inlined | Agent roles are conceptual unless inlined |
 
 ---
 
@@ -132,7 +180,7 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 
 ## What Gets Synced
 
-### Rules (6 files -- all synced with adaptation)
+### Rules (7 files -- all synced with adaptation)
 
 | Rule | Adaptations |
 |------|-------------|
@@ -142,22 +190,80 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 | `stability.md` | Path refs, MCP tool names -> generic, agent refs -> generic |
 | `task-completion.md` | Path refs, command refs -> generic |
 | `testing.md` | Agent refs -> generic, path refs |
+| `infrastructure.md` | Path refs, agent refs -> generic |
 
-### Guides (13 of 23 synced)
+### Guides (17 of 24 synced)
 
-**Verbatim:** design, legal, project-state-update, rtl-i18n-checklist, testing-patterns, security-patterns
+**Verbatim:** autonomous-iteration, design, external-model-delegation, legal, project-state-update, rtl-i18n-checklist, testing-patterns, security-patterns
 
-**Path substitution only:** api-integration-patterns, code-performance, database-patterns, frontend-patterns, google-auth
+**Path substitution only:** api-integration-patterns, code-performance, database-patterns, frontend-patterns, google-auth, platform-access
 
 **Structural adaptation:** deployment-protocol, review-submission, roadmap-management
 
-**Skipped (Claude-only):** README, autonomous-sprint, codex-peer-review, external-model-delegation, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
+**Skipped (Claude-only):** README, autonomous-sprint, codex-peer-review, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
 
 ### Commands (11 of 16 synced)
 
 **Synced:** checkpoint, context, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process
 
 **Skipped:** audit, sync-linear, sync-roadmap, v0-feature, v0-new-project
+
+### Phase A Parity Contracts
+
+| Command | Phase A Scope | Claude | Gemini | Codex | Gate Expectation |
+|---------|---------------|--------|--------|-------|------------------|
+| `change-process` | Yes | Claude-owned live workflow | Unsupported adapter | Unsupported adapter | `UNSUPPORTED` allowed on Gemini/Codex; `PASS` required for Claude source |
+| `checkpoint` | No | Standard command | Single-agent adaptation | Single-agent adaptation | `DEFERRED` allowed |
+| `context` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation | `PASS` required |
+| `create-issue` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation with manual override | `PASS` or documented `INTENTIONAL_DIFFERENCE` |
+| `design` | No | Standard command | Single-agent adaptation | Single-agent adaptation | `DEFERRED` allowed |
+| `iterate` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation | `PASS` required |
+| `learning-opportunity` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation | `PASS` required |
+| `new-project` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation | `PASS` required |
+| `post-mortem` | No | Standard command | Single-agent adaptation | Single-agent adaptation | `DEFERRED` allowed |
+| `review-prd` | No | Standard command | Single-agent adaptation | Single-agent adaptation | `DEFERRED` allowed |
+| `sprint` | Yes | Multi-agent runtime | Single-agent adaptation | Single-agent adaptation | `PASS` required with platform-specific execution-model differences allowed |
+
+### Phase A Contract Notes
+
+- `change-process` remains Claude-owned in Phase A. Gemini and Codex get explicit unsupported adapters rather than broken partial translations.
+- `sprint` and `iterate` are allowed to differ internally by platform, but they must preserve the user-visible gates and artifacts.
+- Codex `create-issue` is the only documented manual override in Phase A. It remains allowed only while the override is explicitly tracked in the parity manifest and report.
+
+### Phase A Validator Behavior
+
+`sync-ai-tools.sh` is responsible for Phase A parity reporting. It reads `cross-tool-parity-phase-a.json` and writes `/tmp/sync-parity-report.json`.
+
+**Hard failures in Phase A:**
+- parity manifest missing
+- parity manifest malformed
+- required generated output missing
+- Codex `AGENTS.md` exceeds `131072` bytes
+- parity report missing after sync
+- any Phase A command reported as `FAIL`
+
+**Report-only findings in Phase A:**
+- known drift patterns still present in generated Gemini/Codex outputs
+- documented manual overrides
+- commands outside Phase A scope
+
+This means Phase A can start enforcing the sync layer without requiring every known drift to be fixed in the same change.
+
+### Rollback And Completion
+
+**Rollback path:**
+- revert the `~/.claude/` source changes
+- rerun `~/.claude/scripts/sync-ai-tools.sh`
+- confirm `/tmp/sync-parity-report.json` returns to the prior non-failing state
+- only then mirror back to `~/Documents/repos/claude-config/`
+
+**Phase A complete means:**
+- machine-readable parity manifest exists and is valid
+- human-readable contract table matches the manifest decisions
+- sync script writes `/tmp/sync-parity-report.json`
+- Phase A commands (`change-process`, `context`, `create-issue`, `iterate`, `learning-opportunity`, `new-project`, `sprint`) have no `FAIL`
+- any `UNSUPPORTED` or `INTENTIONAL_DIFFERENCE` states are explicit and documented
+- repo mirroring happens only after local sync + parity validation pass
 
 ---
 

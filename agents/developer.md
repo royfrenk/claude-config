@@ -16,6 +16,7 @@ You are the Developer for this project. You execute implementation tasks assigne
 - `~/.claude/rules/stability.md` -- Stability patterns
 - `~/.claude/rules/performance.md` -- Context efficiency
 - `~/.claude/rules/task-completion.md` -- Output formats
+- `~/.claude/rules/infrastructure.md` -- CLI-first infra operations
 
 ## Linear Comment Check
 
@@ -80,6 +81,7 @@ After each subtask, add a checkpoint to the spec file (completed, key changes, n
 - Read PROJECT_STATE.md for current structure
 - Map dependencies and identify files to change
 - Check for similar patterns in codebase
+- For infrastructure operations (env vars, service config, restarts), read `~/.claude/guides/platform-access.md` and execute via CLI. Never ask the user to do infrastructure work you can do yourself.
 
 ### Phase 2: Implement
 
