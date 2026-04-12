@@ -4,22 +4,7 @@ description: Update the agent/command process systematically. Reviews all files,
 
 # Change Process
 
-**Note:** This command always runs as a subagent to keep main context clean during process changes.
-
-## Invocation
-
-When this command is invoked, immediately spawn a subagent to handle the work:
-
-Use the Task tool with:
-- `subagent_type: "general-purpose"`
-- `description: "Process change request"`
-- `prompt`: Pass the user's request ($ARGUMENTS) and all instructions below
-
-The subagent will follow the Change Process workflow below and handle all phases including syncing to repo.
-
----
-
-## Instructions for Subagent
+## Instructions
 
 You are helping the User update the engineering process. Your goal is to ensure changes are consistent across all files and don't add noise.
 
@@ -89,6 +74,8 @@ Let me understand the change first. I'm going to ask some questions. What change
 
 **STOP AND ASK QUESTIONS - DO NOT PROCEED TO PHASE 2 UNTIL USER RESPONDS**
 
+**HARD STOP RULE:** DO NOT spawn any subagents, relay agents, or messenger agents. DO NOT call any tools (no SendMessage, no Task, no file operations). Output ONLY the questions below, then end your turn. Wait for the user's next message.
+
 Output ONLY the following question block and nothing else:
 
 ---
@@ -132,7 +119,9 @@ I'll wait for your answers before reviewing the affected files.
 
 ## Phase 2: Review All Files
 
-Read and analyze every file that might be affected:
+Read and analyze every file that might be affected.
+
+**Delegation rule:** If the file list exceeds 20 files, Phase 2 reads MAY be delegated to an Explore subagent. Constraints: Explore subagent ONLY, one level deep, returns summary text only, no further delegation, Read/Grep/Glob access only (no Edit/Write). The Explore agent returns its findings to the main conversation, which continues with Phase 3.
 
 ### Global Files (~/.claude/)
 
@@ -182,6 +171,8 @@ Present findings as a table:
 ## Phase 4: Challenge the Change
 
 **STOP AND ASK CHALLENGE QUESTIONS - DO NOT PROCEED TO PHASE 5 UNTIL USER RESPONDS**
+
+**HARD STOP RULE:** DO NOT spawn any subagents, relay agents, or messenger agents. DO NOT call any tools (no SendMessage, no Task, no file operations). Output ONLY the challenge questions below, then end your turn. Wait for the user's next message.
 
 After completing Phase 2 (file review) and Phase 3 (impact analysis), check if you found any gaps, contradictions, complexity issues, or scope concerns.
 
@@ -257,11 +248,161 @@ Once clarified, present the exact changes:
 [Continue for all affected files]
 ```
 
-Ask: "Does this look right? Any adjustments before I make the changes?"
+After outputting the proposed changes, transition automatically to Phase 5.5. Do NOT ask the user for approval yet — the audit runs first.
+
+**Determine change type** before Phase 5.5: scan the proposed changes list and set `CHANGE_TYPE` flags:
+- If any file in `~/.claude/agents/` is touched → `subagent`
+- If any file in `~/.claude/managed-agents/` is touched → `managed-runtime`
+- If any file in `~/.claude/commands/` is touched → `workflow`
+- Multiple flags can be active simultaneously
+
+## Phase 5.5: Independent Plan Audit
+
+**This phase is mandatory for every /change-process run.** It exists because the agent proposing the plan and the agent auditing the plan cannot be the same — Sprint 032 proved that self-review misses orphaning, silent defaults, and cross-file contradictions. A fresh subagent with no investment in the plan catches what the author missed.
+
+### Spawn the reviewer
+
+Use the Agent tool with:
+- `subagent_type: "general-purpose"`
+- `description: "Independent plan audit"`
+- `prompt`: Build the prompt from the template below, injecting the Phase 5 plan text and the active `CHANGE_TYPE` flags
+- **Timeout:** If the subagent does not return within 5 minutes, retry once. If the retry also fails, fall back to presenting the plan directly to the user with a warning: "Phase 5.5 audit failed — manual review required before Phase 6."
+
+### The reviewer prompt template
+
+Build the reviewer prompt by concatenating these sections. Inject `{{PLAN_TEXT}}` and `{{CHANGE_TYPE}}` at the marked locations.
+
+```
+You are an independent skeptical reviewer auditing a proposed change to
+the user's Claude Code configuration. Your job is to find architectural
+dead ends, silent failure modes, and "this won't actually work at runtime"
+issues BEFORE any files are written.
+
+## Critical context: the dead-end class of bug
+
+An earlier process change proposed putting canonical policy content into
+~/.claude/rules/managed-agents-decision-rule.md, assuming rules are
+auto-loaded into every agent. That was wrong — rule files auto-load into
+the MAIN CONVERSATION only, NOT into spawned subagents. The content was
+invisible to the agents that needed it. This was caught when a grep
+showed zero references.
+
+That is the class of bug to hunt: plans that assume a file will be read
+or loaded when in practice it won't be.
+
+## The proposed plan you are auditing
+
+{{PLAN_TEXT}}
+
+## Change type flags: {{CHANGE_TYPE}}
+
+## Audit classes
+
+Run ALL mandatory classes. Run configurable classes only if the matching
+CHANGE_TYPE flag is active.
+
+### Mandatory (always run):
+
+1. **Orphaning and dead references** — does any new canonical source
+   have zero readers? Does any reference point to a file/section that
+   doesn't exist? Grep for new filenames across ~/.claude/.
+
+2. **Cross-file consistency of literal values** — every literal value
+   appearing in 2+ files (limits, flag names, section headers, return
+   tokens) must match character-for-character. Run grep across cited
+   files.
+
+3. **Silent defaults and missing-field behavior** — when a new
+   field/flag is added, what happens to files that existed before the
+   change? Is there an explicit migration or fall-through? Is it
+   documented?
+
+4. **Loop ownership and control flow** — if the change introduces a
+   loop/retry/batch pattern, which file/agent owns the loop state? Can
+   that owner persist across iterations?
+
+5. **Tool availability vs spec requirements** — does every agent/phase
+   required to write files have Edit/Write? Does every agent required to
+   read files have Read/Grep? Check agent frontmatter. Tool mismatches
+   cause silent "the agent didn't do it" failures.
+
+### Configurable (run only if matching CHANGE_TYPE is active):
+
+6. **Inline duplication drift risk** (CHANGE_TYPE: subagent or
+   managed-runtime) — if the change duplicates content inline for
+   subagent self-containment, is each duplicate marked with a
+   canonical-source pointer comment? Is there a grep-able marker?
+
+7. **Subagent context assumptions** (CHANGE_TYPE: subagent) — does the
+   change assume a subagent can read a file/guide that isn't auto-loaded
+   into the subagent's context?
+
+8. **Managed-runtime filesystem assumptions** (CHANGE_TYPE:
+   managed-runtime) — does the change assume the managed-agent runtime
+   can read local ~/.claude/ files?
+
+9. **Template propagation** (CHANGE_TYPE: workflow) — if the change adds
+   a new field that should appear in every new instance of a file type,
+   is the template updated? Is there a fall-through for legacy
+   instances?
+
+10. **Stop-rule placement at all question points** (CHANGE_TYPE:
+    workflow) — if the change strengthens a "stop and wait" rule at one
+    phase, does it apply to EVERY phase where the command asks questions?
+
+## How to do the audit
+
+You have Read, Grep, Glob, and Bash. Do NOT Edit or Write anything.
+
+1. Read each target file as it currently exists (the plan has NOT been
+   executed yet — files show current state, not planned state).
+2. Check agent frontmatter for tool access (Read, Write, Edit, Bash).
+3. Grep for canonical elements (new filenames, flag names, literal
+   values) across ~/.claude/ to find conflicts or orphans.
+4. Compare current state + plan text to predict runtime behavior.
+
+## Output format
+
+Return a structured report with one section per audit class (skip
+classes not run). End with:
+
+- **Verdict:** SAFE TO EXECUTE / FIX BEFORE EXECUTE / REDESIGN REQUIRED
+- **Priority fixes** (numbered list, only if not SAFE)
+
+Report must be under 800 words. Be blunt — no diplomatic hedges.
+```
+
+### Handle the verdict
+
+Parse the reviewer subagent's return for one of three verdict tokens:
+
+**SAFE TO EXECUTE:**
+- Present verdict summary to the user
+- Ask: "The plan passed independent audit. Does this look right? Any adjustments before I make the changes?"
+- On user approval → proceed to Phase 6
+
+**FIX BEFORE EXECUTE:**
+- Present the numbered gap list to the user
+- Increment round counter (starts at 1)
+- If round counter ≤ 3: revise the plan to address each gap, then re-run Phase 5.5 with the revised plan
+- If round counter > 3: auto-promote to REDESIGN REQUIRED
+
+**REDESIGN REQUIRED:**
+- Present the reviewer's rationale to the user
+- Ask: "The reviewer found fundamental structural issues. Options: (a) revise scope and restart from Phase 1, (b) override the reviewer and proceed anyway (not recommended), (c) abandon the change."
+- Wait for user decision
+
+### Audit log
+
+The reviewer's full report is saved to `/tmp/change-process-audit-{timestamp}.md` (timestamp format: `YYYYMMDD-HHMMSS`). This persists the detailed findings so the user can inspect them after the subagent returns.
+
+### Iteration state
+
+Change-process runs that span multiple audit rounds should save state to `~/.claude/change-process/NNN-description.md` so context can be recovered if the conversation is lost. Each round's findings and plan revisions are appended to the iteration file.
 
 ## Phase 6: Execute
 
-Only after the User confirms:
+Only after Phase 5.5 returns SAFE TO EXECUTE and the User confirms the audited plan:
 1. Make all changes to `~/.claude/` (the live config)
 2. Verify consistency across files
 3. Summarize what was changed
@@ -334,6 +475,10 @@ After Phase 6 completes (changes made to `~/.claude/` and synced to claude-confi
 - **Challenge gently** - The User might have missed something, help them see it
 - **Be thorough** - Read every file, don't skip
 - **Be specific** - Vague changes lead to inconsistency
+- **Inline execution** - Never spawn relay/messenger subagents after asking questions. End your turn and wait for the user's next message. The only permitted subagent spawn is the Explore agent in Phase 2 (if >20 files) and the reviewer agent in Phase 5.5.
+- **Audit before execute** - Every /change-process run MUST complete Phase 5.5 (Independent Plan Audit) with verdict SAFE TO EXECUTE before proceeding to Phase 6. No exceptions — even for "trivial" changes. Trivial changes are where process failures hide.
+- **Audit loop cap** - Maximum 3 audit rounds per /change-process invocation. If round 3 still returns FIX BEFORE EXECUTE, auto-promote to REDESIGN REQUIRED and escalate to the user.
+- **Save iteration state** - For multi-round changes, save state to `~/.claude/change-process/NNN-description.md` so context survives compaction or session loss.
 
 ## Anti-patterns to Watch For
 
@@ -343,6 +488,8 @@ Flag these if you see them:
 - Adding steps without clear ownership
 - Removing something without a replacement
 - Making changes that only apply to one project but are in global files
+- Skipping Phase 5.5 "because the change is small" — trivial changes are exactly where orphaning and silent-default bugs hide (Sprint 032 evidence)
+- Spawning relay/messenger subagents to pass user answers between phases — causes death-loop failures (Sprint 032 evidence)
 
 ---
 
