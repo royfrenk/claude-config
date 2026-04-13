@@ -1,0 +1,24 @@
+{
+  "name": "sre-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bridge daemon between Anthropic Managed Agent sessions and local SRE adapters",
+  "main": "daemon.ts",
+  "scripts": {
+    "start": "tsx daemon.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.0.0",
+    "eventsource-parser": "^3.0.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}

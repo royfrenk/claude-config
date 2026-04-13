@@ -33,7 +33,36 @@ That's it. The rest of this README explains how it works.
 
 ## How It Works
 
-Specialized agents handle different parts of development:
+The workflow has one canonical shape, but each platform expresses it differently.
+
+### Architecture
+
+```text
+Project docs (CLAUDE.md, PROJECT_STATE.md, roadmap.md)
+    ↓
+Shared workflow intent (/sprint, /iterate, /create-issue, guides, rules)
+    ↓
+Platform adapter
+    ├── Claude: commands + agent/runtime orchestration
+    ├── Gemini: commands adapted into single-agent phases
+    └── Codex: skills adapted into single-agent phases + AGENTS.md policy
+```
+
+**What stays canonical:**
+- Project docs define the project
+- Shared workflow docs define the process, gates, and outputs
+- Platform-specific runtime files implement that process
+
+**What does not stay canonical:**
+- Claude-only `agents/` files
+- Gemini-only command TOML structure
+- Codex-only skill layout
+
+`CLAUDE.md` should point people to project docs and workflow entrypoints. It should not make Claude-specific `agents/` files a hard runtime dependency for the project.
+
+### Claude Runtime View
+
+In Claude, specialized agents handle different parts of development:
 
 ```
 You: "Add user authentication"
@@ -148,6 +177,28 @@ Execution:
 
 ---
 
+### Managed Agents (SRE)
+
+The system includes an optional SRE (Site Reliability Engineer) agent that runs on Anthropic's infrastructure via the Managed Agents API. Unlike Task-tool subagents (Explorer, Developer, Reviewer), the SRE agent runs independently and monitors deployments.
+
+**How it works:**
+1. Developer pushes code to sprint branch
+2. A local bridge daemon creates an Anthropic Session for the SRE agent
+3. SRE runs health checks, smoke tests, and log analysis
+4. If all pass: green check in sprint file
+5. If failure: SRE suggests `/iterate` with failure context (never auto-executes)
+
+**Per-project opt-in:** Add `.sre/config.yaml` to your project root. Supports three deployment targets:
+- **vercel-railway** — Vercel build logs + Railway runtime logs + HTTP health checks
+- **raspberry-pi** — SSH + journalctl + systemctl + LAN health checks
+- **macos-desktop** — Swift/Xcode build verification + process launch checks
+
+**Cost:** Each Deploy Session costs ~$0.05-0.50. Cost is reported per session and aggregated in sprint wrap-up.
+
+**Decision rule:** See `rules/managed-agents-decision-rule.md` for when to use Managed Agents vs Task-tool subagents.
+
+---
+
 ## Dependencies
 
 | Dependency | Required? | Notes |
@@ -208,7 +259,7 @@ project/
 | Content | CLAUDE.md | PROJECT_STATE.md | roadmap.md | Linear |
 |---------|-----------|------------------|------------|--------|
 | Run commands | ✓ | | | |
-| Agent workflow | ✓ | | | |
+| Workflow entrypoints and gates | ✓ | | | |
 | Linear config | ✓ | | | |
 | File structure | | ✓ | | |
 | Database schema | | ✓ | | |
@@ -273,7 +324,7 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 | `/v0-new-project` | Init v0.dev chat from current repo (v0 sees all files) |
 | `/v0-feature` | Add feature chat to existing v0 project |
 
-> **How commands work:** Command files live in `~/.claude/commands/`. Claude Code discovers them automatically. Each command is a markdown file with instructions.
+> **How commands work:** Command files live in `~/.claude/commands/`. Claude Code discovers them automatically. Each command is a markdown file with instructions. In Claude, commands may invoke agents. In Gemini and Codex, the same workflow is adapted into single-agent commands/skills.
 
 ### Sprint & Iterate Workflow
 
@@ -548,10 +599,17 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── external-model-call.sh     # External model API caller
 │   ├── v0-init-repo.mjs             # v0 chat from GitHub repo (repo-aware)
 │   └── v0-feature-chat.mjs          # v0 feature chat in existing project
+├── managed-agents/
+│   └── sre/
+│       ├── agent-config.yaml      # Anthropic Agent resource config (target-agnostic)
+│       ├── README.md              # Architecture, config schemas, provisioning
+│       ├── adapters/              # Target-specific adapters (SREAdapter interface)
+│       └── bridge/                # Bridge daemon (dispatches tool calls to adapters)
 └── rules/
     ├── security.md
     ├── coding-style.md
     ├── testing.md
+    ├── managed-agents-decision-rule.md  # When to use MA vs subagents
     └── performance.md
 ```
 

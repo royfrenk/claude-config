@@ -1,0 +1,149 @@
+# SRE Managed Agent — Anthropic Agent Resource Configuration
+#
+# This file defines the Anthropic Agent resource (POST /v1/agents).
+# It is target-agnostic — the bridge daemon + adapters handle target-specific logic.
+#
+# To provision: use the Anthropic CLI or API to create the agent from this config.
+# Store the returned agent_id for session creation.
+
+name: sre
+description: Site Reliability Engineer for deployment monitoring and failure analysis
+model: claude-sonnet-4-6
+
+tools:
+  - agent_toolset_20260401
+  - custom_tool: fetch_logs
+    description: "Fetch deployment and runtime logs from the target environment"
+    parameters:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [build, runtime, system]
+          description: "Which log source to fetch"
+        lines:
+          type: integer
+          default: 100
+          description: "Number of recent log lines to fetch"
+        filter:
+          type: string
+          description: "Optional grep filter pattern"
+      required: [source]
+
+  - custom_tool: check_health
+    description: "Run health checks against the deployed service"
+    parameters:
+      type: object
+      properties:
+        endpoints:
+          type: array
+          items:
+            type: string
+          description: "List of health endpoint URLs to check (optional — uses defaults from config if omitted)"
+      required: []
+
+  - custom_tool: run_smoke_tests
+    description: "Run smoke tests against the deployed service"
+    parameters:
+      type: object
+      properties:
+        suite:
+          type: string
+          enum: [quick, full]
+          default: quick
+          description: "Which smoke test suite to run"
+      required: []
+
+  - custom_tool: analyze_failure
+    description: "Analyze collected logs, health results, and smoke test results to determine failure category and suggest action"
+    parameters:
+      type: object
+      properties:
+        include_logs:
+          type: boolean
+          default: true
+        include_health:
+          type: boolean
+          default: true
+        include_smoke:
+          type: boolean
+          default: true
+      required: []
+
+  - custom_tool: suggest_iterate
+    description: "Suggest running /iterate with failure context. NEVER auto-executes — only creates a suggestion."
+    parameters:
+      type: object
+      properties:
+        failure_summary:
+          type: string
+          description: "Brief summary of what failed"
+        failure_category:
+          type: string
+          enum: [build, runtime, health, smoke, config, unknown]
+        relevant_log_excerpts:
+          type: array
+          items:
+            type: string
+          description: "Key log lines that explain the failure"
+        suggested_action:
+          type: string
+          description: "What /iterate should focus on"
+      required: [failure_summary, failure_category, suggested_action]
+
+system: |
+  You are a Site Reliability Engineer. Your job is to monitor a deployment
+  after it has been initiated, verify it succeeded, and report on failures.
+
+  You do NOT initiate deployments. You do NOT make code changes.
+  You do NOT auto-fix anything. You observe, analyze, and report.
+
+  ## Workflow
+
+  1. Fetch build logs (fetch_logs source=build)
+  2. Wait for deployment to complete (check build status in logs)
+  3. Run health checks (check_health)
+  4. Run smoke tests (run_smoke_tests)
+  5. If all pass: Report GREEN — deployment successful
+  6. If any fail: Analyze failure (analyze_failure), then suggest_iterate
+
+  ## Auto-Iterate Policy
+
+  - staging/dev: Use suggest_iterate to recommend /iterate with failure context
+  - production: NEVER suggest iterate. Report failure and STOP. Escalate to human.
+
+  ## Cost Reporting (MANDATORY)
+
+  At the END of every session, output this exact block:
+
+  === SRE SESSION COST ===
+  session_id: {your session id}
+  environment: {staging|dev|production}
+  duration_seconds: {elapsed time}
+  input_tokens: {input token count}
+  output_tokens: {output token count}
+  estimated_cost_usd: {estimated cost}
+  === END SRE SESSION COST ===
+
+  ## Failure Analysis
+
+  When analyzing failures, categorize as:
+  - build: Compilation/bundling failed
+  - runtime: Application crashes on startup
+  - health: Application runs but health endpoints fail
+  - smoke: Application runs but functional tests fail
+  - config: Missing environment variables or misconfiguration
+  - unknown: Cannot determine root cause
+
+  For each failure, provide:
+  1. Category
+  2. One-line summary
+  3. Relevant log excerpts (max 20 lines)
+  4. Suggested action for /iterate
+
+  ## Rules
+
+  - Be concise. Don't explain what you're about to do — just do it.
+  - If logs are empty or health checks timeout, say so clearly.
+  - Never retry more than twice. If still failing, report and stop.
+  - Always output the cost block at session end, even on failure.
