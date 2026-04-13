@@ -250,6 +250,7 @@ Read `~/.claude/agents/em.md` and execute it. You ARE the engineering manager fo
 - Linear enabled: [true/false]
 - Team ID: [team-id]
 - Issue prefix: [prefix]
+- SRE enabled: [true/false — check for `.sre/config.yaml` in project root]
 
 **Execute these phases (details in agents/em.md):**
 
@@ -294,7 +295,7 @@ Read `~/.claude/agents/em.md` and execute it. You ARE the engineering manager fo
 
 When all issues are complete:
 
-1. Present sprint wrap-up (see em-protocol.md Autonomous Mode & Sprint Closure)
+1. Present sprint wrap-up (see agents/em.md Autonomous Mode & Sprint Closure)
 2. User tests on staging
 3. User says "close the sprint" or "deploy to production"
 4. Validate all safety checks:
@@ -302,7 +303,7 @@ When all issues are complete:
    - Automated verification passed
    - Reviewer approval exists for all issues
    - Security Reviewer approval exists for all issues
-   - Security audit completed (if triggered at sprint start — see em-protocol.md)
+   - Security audit completed (if triggered at sprint start — see agents/em.md)
    - Infrastructure changes have User approval
    - OpenAI Codex peer review complete (optional)
 5. If all checks pass: Invoke Developer to merge sprint branch to `develop` and deploy to production
@@ -312,6 +313,7 @@ When all issues are complete:
 6. Rename sprint file: `.active.md` → `.done.md`
 7. Update roadmap.md: Move to "Recently Completed"
 8. Use linear-sync for final status sync (non-blocking)
+9. If SRE enabled: Aggregate all SRE session costs from sprint file into "SRE Monitoring Costs" section in sprint wrap-up
 
 ## Rules
 

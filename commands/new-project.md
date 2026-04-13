@@ -4,7 +4,7 @@ description: Set up Claude Code documentation structure for a new project
 
 # New Project Setup
 
-This command sets up the documentation structure for a new project to work with Claude Code agents.
+This command sets up the documentation structure for a new project to work with the shared workflow across Claude, Gemini, and Codex.
 
 ## Documentation Structure
 
@@ -24,13 +24,13 @@ project/
 
 ### CLAUDE.md (Root)
 
-**Purpose:** Entry point for agents. How to operate on this project.
+**Purpose:** Project entry point. How to operate on this project.
 **Updates:** Rarely. Only when workflows or tooling change.
 
 **Contains:**
 - Quick start (points to PROJECT_STATE.md)
 - Running commands (dev server, tests)
-- Working with agents (/sprint workflow)
+- Workflow entrypoints (/sprint workflow)
 - Linear integration (team, issue prefix)
 - Before you commit checklist
 
@@ -40,6 +40,7 @@ project/
 - API endpoints (goes in PROJECT_STATE.md)
 - Key technical decisions (goes in PROJECT_STATE.md)
 - Known issues (goes in Linear)
+- Claude-specific runtime implementation details (global `agents/` files)
 
 ### docs/PROJECT_STATE.md
 
@@ -119,29 +120,31 @@ cd /path/to/project/frontend
 
 ---
 
-## Working with Agents
+## Working with the Workflow
 
-Use `/sprint` for autonomous execution. It handles all orchestration directly in the main conversation.
+Use `/sprint` for autonomous execution. It handles orchestration directly in the main conversation.
+
+`CLAUDE.md` is a project entrypoint, not the canonical home of global workflow logic. It should point to project docs and the workflow commands people actually run. On Claude, those commands may use agents internally. On Gemini and Codex, the same workflow is adapted into single-agent phases.
 
 ### Workflow
 \`\`\`
 USER (request/issue)
     ↓
-/sprint — orchestrates the full workflow inline
+/sprint — runs the workflow entrypoint inline
     ↓
-EXPLORER — analyzes → creates docs/technical-specs/{ISSUE_ID}.md
+EXPLORATION — analyzes → creates docs/technical-specs/{ISSUE_ID}.md
     ↓
-PLAN-WRITER — plans → updates docs/technical-specs/{ISSUE_ID}.md
+PLANNING — plans → updates docs/technical-specs/{ISSUE_ID}.md
     ↓
 USER (approves plan) ← CHECKPOINT
     ↓
-DEVELOPER — implements → reads spec file
+IMPLEMENTATION — reads spec file and makes changes
     ↓
-REVIEWER — validates
+REVIEW — validates before deploy
 \`\`\`
 
 ### Key Commands
-- **`/sprint`**: Autonomous execution — orchestrates all agents inline
+- **`/sprint`**: Autonomous execution — runs the workflow entrypoint
 - **`/iterate`**: Continue fixing bugs after testing on staging
 
 ---
@@ -181,7 +184,7 @@ linear_enabled: true
 
 > **Note:** Create these labels in Linear if they don't exist. Agent will apply them automatically.
 
-All task tracking happens in Linear. Agents post updates as comments on issues.
+All task tracking happens in Linear. The workflow posts updates as comments on issues.
 Use `docs/roadmap.md` as fallback when Linear is unavailable.
 
 ---
@@ -503,9 +506,9 @@ Copy the UUIDs into your project's CLAUDE.md under "Status UUIDs".
 
 ---
 
-## Agent Files (Global)
+## Claude Runtime Files (Global)
 
-These agents are configured globally in `~/.claude/agents/`:
+In Claude, these runtime files are configured globally in `~/.claude/agents/`:
 
 | Agent | File | Purpose |
 |-------|------|---------|
@@ -514,7 +517,7 @@ These agents are configured globally in `~/.claude/agents/`:
 | Developer | `developer.md` | Code implementation → reads/updates spec file |
 | Reviewer | `reviewer.md` | Code review |
 
-> **Note:** The EM protocol (`~/.claude/guides/em-protocol.md`) runs inline in the main conversation via `/sprint`, not as a separate agent.
+> **Note:** These files are Claude-specific runtime adapters, not the canonical project workflow. `CLAUDE.md` should not point projects directly at them as a required dependency.
 
 **Do not create project-specific agent files.** Use the global agents.
 
@@ -549,7 +552,7 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md`:
 | Content | CLAUDE.md | PROJECT_STATE.md | roadmap.md | Linear |
 |---------|-----------|------------------|------------|--------|
 | Run commands | ✓ | | | |
-| Agent workflow | ✓ | | | |
+| Workflow entrypoints | ✓ | | | |
 | Linear config | ✓ | | | |
 | File structure | | ✓ | | |
 | Database schema | | ✓ | | |

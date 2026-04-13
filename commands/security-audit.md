@@ -25,7 +25,7 @@ Run the Security Reviewer agent in **audit mode** — a thorough scan of the ful
 ```
 
 ### Auto-triggered by EM
-When EM determines a sprint touches security-sensitive areas (see `~/.claude/guides/em-protocol.md` Security Audit Trigger section), it invokes this at sprint end.
+When EM determines a sprint touches security-sensitive areas (see `~/.claude/agents/em.md` Security Audit Trigger section), it invokes this at sprint end.
 
 ## Output
 
