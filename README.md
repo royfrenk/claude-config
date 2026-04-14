@@ -250,6 +250,8 @@ project/
     │   └── {feature}.eval.md
     ├── technical-specs/         # Spec files per issue
     │   └── {ISSUE_ID}.md
+    ├── bug-reports/             # Bug report assets (screenshots) — created by /create-bug
+    │   └── {YYYYMMDD-slug}/
     └── sprints/                 # Sprint iteration tracking
         └── sprint-###-[name].md
 ```
@@ -318,6 +320,7 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 | `/design` | Invoke design skills with auto context detection |
 | `/review-prd` | PRD review and story extraction |
 | `/create-issue` | Quick issue capture |
+| `/create-bug` | Bug ticket capture with reproduction, environment, and screenshot handling |
 | `/new-project` | Setup guide and templates |
 | `/checkpoint` | Save work state to spec file |
 | `/security-audit` | Full-codebase security scan (also auto-triggered by EM for security-sensitive sprints) |
@@ -570,6 +573,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   ├── design.md          # /design
 │   ├── review-prd.md      # /review-prd
 │   ├── create-issue.md    # /create-issue
+│   ├── create-bug.md      # /create-bug
 │   ├── new-project.md     # /new-project
 │   ├── checkpoint.md      # /checkpoint
 │   ├── security-audit.md  # /security-audit
@@ -694,6 +698,16 @@ npm run test     # Tests
 | ID | Title | Priority | Est | Context | Spec |
 |----|-------|----------|-----|---------|------|
 | PROJ-## | [Title] | Low (P3) | 3d | [1-2 line summary] | [spec](technical-specs/PROJ-##.md) |
+
+---
+
+## Bugs
+
+> Filed by `/create-bug`. Separate from feature backlog. Bug priority scale is P0-P3 (Showstopper / Major / Regular / Minor).
+
+| ID | Title | Priority | Est | Context | Spec |
+|----|-------|----------|-----|---------|------|
+| PROJ-## | [Title] | Showstopper (P0) | — | [1-2 line summary] | [bug-reports](bug-reports/YYYYMMDD-slug/) |
 
 ---
 

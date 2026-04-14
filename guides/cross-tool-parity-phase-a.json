@@ -1,0 +1,270 @@
+{
+  "version": "phase-a.v1",
+  "status_tokens": [
+    "PASS",
+    "INTENTIONAL_DIFFERENCE",
+    "UNSUPPORTED",
+    "DEFERRED",
+    "FAIL"
+  ],
+  "report_path": "/tmp/sync-parity-report.json",
+  "limits": {
+    "codex_project_doc_max_bytes": 131072
+  },
+  "phase_a_scope": [
+    "change-process",
+    "context",
+    "create-bug",
+    "create-issue",
+    "iterate",
+    "learning-opportunity",
+    "new-project",
+    "sprint"
+  ],
+  "capabilities": {
+    "subagent_spawning": {
+      "claude": "supported",
+      "gemini": "unsupported",
+      "codex": "unsupported"
+    },
+    "multi_agent_orchestration": {
+      "claude": "supported",
+      "gemini": "single_agent_adaptation_only",
+      "codex": "single_agent_adaptation_only"
+    },
+    "linear_mcp": {
+      "claude": "supported",
+      "gemini": "limited",
+      "codex": "supported"
+    },
+    "hooks": {
+      "claude": "supported",
+      "gemini": "unsupported",
+      "codex": "unsupported"
+    },
+    "guide_import_resolution": {
+      "claude": "not_applicable",
+      "gemini": "supported",
+      "codex": "unsupported"
+    },
+    "monolithic_instruction_budget": {
+      "claude": "high",
+      "gemini": "unknown",
+      "codex": "bounded"
+    }
+  },
+  "commands": {
+    "change-process": {
+      "phase_a_scope": true,
+      "source": "commands/change-process.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "UNSUPPORTED",
+          "required_output": "commands/change-process.toml",
+          "warning_patterns": [
+            "~/.gemini/README.md",
+            "~/.gemini/commands/context.md",
+            "Use the Agent tool with:"
+          ]
+        },
+        "codex": {
+          "execution_model": "UNSUPPORTED",
+          "required_output": "skills/change-process/SKILL.md",
+          "warning_patterns": [
+            "~/.codex/README.md",
+            "~/.codex/skills/context.md",
+            "Use the Agent tool with:"
+          ]
+        }
+      }
+    },
+    "checkpoint": {
+      "phase_a_scope": false,
+      "source": "commands/checkpoint.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/checkpoint.toml"
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/checkpoint/SKILL.md"
+        }
+      }
+    },
+    "context": {
+      "phase_a_scope": true,
+      "source": "commands/context.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/context.toml",
+          "warning_patterns": [
+            "/sync-linear"
+          ]
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/context/SKILL.md",
+          "warning_patterns": [
+            "/sync-linear"
+          ]
+        }
+      }
+    },
+    "create-bug": {
+      "phase_a_scope": true,
+      "source": "commands/create-bug.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/create-bug.toml"
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/create-bug/SKILL.md"
+        }
+      }
+    },
+    "create-issue": {
+      "phase_a_scope": true,
+      "source": "commands/create-issue.md",
+      "manual_overrides": [
+        {
+          "platform": "codex",
+          "path": "skills/create-issue/SKILL.md",
+          "owner": "manual",
+          "reason": "Locally maintained Codex variant"
+        }
+      ],
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/create-issue.toml"
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/create-issue/SKILL.md"
+        }
+      }
+    },
+    "design": {
+      "phase_a_scope": false,
+      "source": "commands/design.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/design.toml"
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/design/SKILL.md"
+        }
+      }
+    },
+    "iterate": {
+      "phase_a_scope": true,
+      "source": "commands/iterate.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/iterate.toml",
+          "warning_patterns": [
+            "/sync-linear"
+          ]
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/iterate/SKILL.md",
+          "warning_patterns": [
+            "/sync-linear"
+          ]
+        }
+      }
+    },
+    "learning-opportunity": {
+      "phase_a_scope": true,
+      "source": "commands/learning-opportunity.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/learning-opportunity.toml"
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/learning-opportunity/SKILL.md"
+        }
+      }
+    },
+    "new-project": {
+      "phase_a_scope": true,
+      "source": "commands/new-project.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/new-project.toml",
+          "warning_patterns": [
+            "~/.gemini/agents/"
+          ]
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/new-project/SKILL.md",
+          "warning_patterns": [
+            "~/.codex/agents/"
+          ]
+        }
+      }
+    },
+    "post-mortem": {
+      "phase_a_scope": false,
+      "source": "commands/post-mortem.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/post-mortem.toml"
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/post-mortem/SKILL.md"
+        }
+      }
+    },
+    "review-prd": {
+      "phase_a_scope": false,
+      "source": "commands/review-prd.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/review-prd.toml"
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/review-prd/SKILL.md"
+        }
+      }
+    },
+    "sprint": {
+      "phase_a_scope": true,
+      "source": "commands/sprint.md",
+      "platforms": {
+        "gemini": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "commands/sprint.toml",
+          "warning_patterns": [
+            "linear-sync agent",
+            "/sync-roadmap"
+          ]
+        },
+        "codex": {
+          "execution_model": "SINGLE_AGENT_ADAPTATION",
+          "required_output": "skills/sprint/SKILL.md",
+          "warning_patterns": [
+            "linear-sync agent",
+            "/sync-roadmap"
+          ]
+        }
+      }
+    }
+  }
+}

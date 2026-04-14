@@ -56,6 +56,7 @@ COMMANDS=(
   change-process.md
   checkpoint.md
   context.md
+  create-bug.md
   create-issue.md
   design.md
   iterate.md

@@ -202,9 +202,9 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 
 **Skipped (Claude-only):** README, autonomous-sprint, codex-peer-review, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
 
-### Commands (11 of 16 synced)
+### Commands (12 of 17 synced)
 
-**Synced:** checkpoint, context, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process
+**Synced:** checkpoint, context, create-bug, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process
 
 **Skipped:** audit, sync-linear, sync-roadmap, v0-feature, v0-new-project
 
@@ -215,6 +215,7 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 | `change-process` | Yes | Claude-owned live workflow | Unsupported adapter | Unsupported adapter | `UNSUPPORTED` allowed on Gemini/Codex; `PASS` required for Claude source |
 | `checkpoint` | No | Standard command | Single-agent adaptation | Single-agent adaptation | `DEFERRED` allowed |
 | `context` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation | `PASS` required |
+| `create-bug` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation | `PASS` required |
 | `create-issue` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation with manual override | `PASS` or documented `INTENTIONAL_DIFFERENCE` |
 | `design` | No | Standard command | Single-agent adaptation | Single-agent adaptation | `DEFERRED` allowed |
 | `iterate` | Yes | Standard command | Single-agent adaptation | Single-agent adaptation | `PASS` required |
@@ -261,7 +262,7 @@ This means Phase A can start enforcing the sync layer without requiring every kn
 - machine-readable parity manifest exists and is valid
 - human-readable contract table matches the manifest decisions
 - sync script writes `/tmp/sync-parity-report.json`
-- Phase A commands (`change-process`, `context`, `create-issue`, `iterate`, `learning-opportunity`, `new-project`, `sprint`) have no `FAIL`
+- Phase A commands (`change-process`, `context`, `create-bug`, `create-issue`, `iterate`, `learning-opportunity`, `new-project`, `sprint`) have no `FAIL`
 - any `UNSUPPORTED` or `INTENTIONAL_DIFFERENCE` states are explicit and documented
 - repo mirroring happens only after local sync + parity validation pass
 
