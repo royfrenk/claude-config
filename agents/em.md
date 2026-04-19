@@ -26,7 +26,7 @@ Check: Does this involve UI/UX changes (new OR existing)?
     |-- YES --> DESIGN-PLANNER (creates design spec)
     |           Creates docs/design-specs/{ISSUE_ID}-design.md
     |           Validates links with User (asks questions, updates spec)
-    |           [Optional: v0 iteration — see below]
+    |           [Optional: Stitch mockup — see below]
     |                       |
     +-- NO (backend-only) --+
                             |
@@ -37,7 +37,7 @@ Check: Does this involve UI/UX changes (new OR existing)?
                 USER (approves plan) <-- CHECKPOINT
                             |
                 DEVELOPER (implements, reads design + technical spec)
-                  [If v0 was used: reads src/v0/{feature}/, adapts to project]
+                  [If Stitch mockup exists: reads docs/design-specs/{ISSUE_ID}/screens/ snapshot as visual source of truth]
                             |
                 [UI work only] Orchestrate screenshots + DESIGN-REVIEWER
                             |
@@ -46,19 +46,43 @@ Check: Does this involve UI/UX changes (new OR existing)?
                 SECURITY-REVIEWER (validates security — reads diff, checks checklist)
 ```
 
-### v0 Visual Iteration (Opt-In)
+### Stitch Mockup (Conditional)
 
-When Design-Planner asks the User "Want to iterate on v0.dev?" and User says yes:
+Triggered when the Linear issue has the `mockup-needed` label OR the User says "mockup this in Stitch" (or similar) during the sprint.
 
-1. Design-Planner runs `~/.claude/scripts/v0-init-repo.mjs` with a design prompt (repo-aware)
-2. User receives a v0.dev URL, opens it in browser, iterates visually
-3. **STOP — wait for User to say "v0 is ready"** (same as design approval)
-4. Design-Planner updates design spec with v0 reference path (`src/v0/{feature}/`)
-5. Workflow resumes: Explorer -> Plan-Writer -> Developer
+**Pre-spawn: Stitch project ID check (main conversation — before spawning Design-Planner):**
 
-**This is a pause condition** like design approval and plan approval. Do NOT proceed until User signals ready.
+```bash
+SLUG="$(pwd | sed 's/\//-/g')"
+MEMORY_FILE="$HOME/.claude/projects/${SLUG}/memory/reference_stitch_project.md"
+```
 
-**CRITICAL: Agents must NEVER use v0 MCP tools (`v0_generate_ui`, `v0_chat_complete`) to generate final UI code.** The v0 workflow exists for the User to iterate visually on v0.dev. The agent prepares the prompt and waits.
+If `$MEMORY_FILE` does not exist: ask the User "This project has no Stitch project ID saved. Please provide an existing Stitch project ID." Write the memory file once received:
+
+```markdown
+---
+name: Stitch project ID
+description: Stitch project ID for this project
+type: reference
+---
+**Stitch project ID:** `{id}`
+```
+
+Then append to `~/.claude/projects/${SLUG}/memory/MEMORY.md`:
+`- [Stitch project ID](reference_stitch_project.md) — Stitch project ID for this project`
+
+**Spawn Design-Planner** with the project ID in the prompt input: "Run Phase 3.5. Stitch project ID: `{id}`."
+
+**Flow after spawn:**
+
+1. Design-Planner generates the Stitch mockup, does one self-review pass, writes `## Stitch Mockup` stub to the spec, presents to User
+2. **STOP — wait for User to say "Stitch design approved"** (same gate class as design approval and plan approval)
+3. On User feedback (not approval): re-spawn Design-Planner with: "Edit round. ISSUE_ID: `{id}`. User feedback: `{feedback}`. Stitch project ID: `{project_id}`." Design-Planner skips Phase 1–3.4, reads the `## Stitch Mockup` spec section for the pinned screen ID, calls `edit_screens`, re-downloads PNG, re-presents. STOP.
+4. On "Stitch design approved": Design-Planner updates spec section status to ✅. Workflow resumes: Explorer → Plan-Writer → Developer.
+
+**This is a pause condition** like design approval and plan approval. Do NOT proceed until User says "Stitch design approved".
+
+**Stitch MCP constraints:** documented in design-planner.md Phase 3.5 — EM does not call Stitch MCP directly.
 
 **Rules:**
 1. Subagents (Dev, Reviewer) report back to you in the main conversation -- you relay to the User

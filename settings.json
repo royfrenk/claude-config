@@ -17,11 +17,21 @@
       "mcp__linear__get_issue",
       "mcp__linear__update_issue",
       "mcp__linear__list_issues",
-      "mcp__linear__create_comment"
+      "mcp__linear__create_comment",
+      "mcp__google-docs__searchDriveFiles",
+      "Bash(touch ~/.claude/agents/em-write-test.txt)",
+      "Bash(rm ~/.claude/agents/em-write-test.txt)",
+      "Bash(cp -R ~/.claude/agents ~/Documents/repos/claude-config/)",
+      "Bash(cp -R ~/.claude/commands ~/Documents/repos/claude-config/)",
+      "Bash(cp -R ~/.claude/rules ~/Documents/repos/claude-config/)",
+      "Bash(cp -R ~/.claude/guides ~/Documents/repos/claude-config/)",
+      "Bash(cp -R ~/.claude/scripts ~/Documents/repos/claude-config/)"
     ],
+    "defaultMode": "bypassPermissions",
     "additionalDirectories": [
       "/Users/royfrenkiel/.claude/commands",
-      "/Users/royfrenkiel/.claude"
+      "/Users/royfrenkiel/.claude",
+      "/Users/royfrenkiel/.claude/guides"
     ]
   },
   "hooks": {
@@ -147,5 +157,6 @@
   "enabledPlugins": {
     "figma@claude-plugins-official": false
   },
+  "effortLevel": "max",
   "skipDangerousModePermissionPrompt": true
 }

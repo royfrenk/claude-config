@@ -278,7 +278,7 @@ Read `~/.claude/agents/em.md` and execute it. You ARE the engineering manager fo
    - Deploy each issue to staging immediately after review passes
 5. ONLY stop execution when:
    - Design approval needed (UI work)
-   - v0 visual iteration in progress (wait for "v0 is ready")
+   - Stitch mockup in progress (wait for "Stitch design approved")
    - Plan approval needed (always)
    - Review fails after 3 rounds (escalate)
    - All issues deployed to staging (present wrap-up)

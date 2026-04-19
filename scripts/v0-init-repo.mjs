@@ -98,8 +98,12 @@ async function main() {
   console.error(`  Prompt: ${prompt.slice(0, 120)}${prompt.length > 120 ? '...' : ''}`)
 
   try {
-    // Step 1: Init chat from repo
+    // v0 chat init requires the `message` field in the same body as the repo init.
+    // A prior version of this script called /chats (init) then /chats/{id}/messages
+    // in two steps — that fails with 422 because the init endpoint itself validates
+    // `message` as required.
     const initBody = {
+      message: prompt,
       type: 'repo',
       repo: { url: repo, ...(branch ? { branch } : {}) },
       ...(projectId ? { projectId } : {}),
@@ -108,7 +112,8 @@ async function main() {
     const initResult = await v0Fetch('/chats', initBody)
 
     // Response may be { data: { id, webUrl, ... } } or { id, webUrl, ... }
-    const chat = initResult.data ?? initResult
+    const updatedChat = initResult.data ?? initResult
+    const chat = updatedChat
     const chatId = chat.id
 
     if (!chatId) {
@@ -118,14 +123,6 @@ async function main() {
     }
 
     console.error(`  Chat created: ${chatId}`)
-    console.error('  Sending design prompt...')
-
-    // Step 2: Send the design prompt as a message
-    const messageResult = await v0Fetch(`/chats/${chatId}/messages`, {
-      message: prompt,
-    })
-
-    const updatedChat = messageResult.data ?? messageResult
 
     // Extract URLs -- try multiple response shapes
     const webUrl = updatedChat.webUrl

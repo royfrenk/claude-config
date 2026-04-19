@@ -75,5 +75,5 @@ Then return to the stuck session — it should error out and become responsive a
 
 - Always verify processes are dead after killing (check count)
 - Use `pkill -9` only as fallback if graceful kill fails
-- Do not kill non-Linear MCP processes (v0, etc.)
+- Do not kill non-Linear MCP processes (Stitch, etc.)
 - After reset, test with a simple Linear call before resuming workflow

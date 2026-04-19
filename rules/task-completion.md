@@ -20,6 +20,24 @@ When pushing to `develop` (sprint end merge or non-sprint work), output:
   Changes: [1-line summary of what changed]
 ```
 
+When pushing to `main` (production), output the same format AND **close any referenced bug issues in Linear and `docs/roadmap.md`**:
+
+```
+✓ Commit: [short-hash] → main
+  Production: [URL from project's CLAUDE.md Deployment section]
+  Changes: [1-line summary of what changed]
+  Linear:  [RAB-## → Done, RAB-## → Done]  (or "no bug issues referenced")
+  Roadmap: [RAB-## → Recently Completed]    (or "no bug rows to move")
+```
+
+**Bug closure rule (push to `main`):**
+- Scan the merged commits and branch name for Linear issue references (e.g., `RAB-150`, `fix(RAB-150)`, `bug/RAB-150-*`).
+- For every referenced issue with a `bug` label (or filed via `/create-bug`):
+  1. **Linear:** call `mcp__linear__save_issue` with `state: <Done UUID from CLAUDE.md>`.
+  2. **Roadmap:** edit `docs/roadmap.md` — remove the row from `## Bugs` and append it to `## Recently Completed` (keep the ID and title; note the commit hash and date).
+- If unsure which issues the merge covers, list candidates and confirm with the user before closing.
+- Never leave a shipped bug issue in `Todo`, `In Progress`, or `In Review` in Linear, and never leave a closed bug under `## Bugs` in the roadmap after it hits `main`.
+
 Example (during sprint):
 ```
 ✓ Commit: 363f31d → sprint/sprint-019-admin-tabs

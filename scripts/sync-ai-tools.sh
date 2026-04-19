@@ -886,7 +886,7 @@ echo "    Manifest: $PARITY_MANIFEST"
 echo "    Report:   $PARITY_REPORT_PATH"
 echo ""
 echo "  Skipped (Claude-only):"
-echo "    Commands: audit, sync-linear, sync-roadmap, v0-feature, v0-new-project
+echo "    Commands: audit, sync-linear, sync-roadmap
     Rules:    managed-agents-decision-rule
     Other:    managed-agents/ (SRE), agents/sre.md, agents/em.md"
 echo "    Guides:   autonomous-sprint, codex-peer-review,"

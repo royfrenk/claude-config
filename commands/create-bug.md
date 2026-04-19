@@ -11,7 +11,7 @@ File a Linear bug ticket with:
 - Reproduction steps
 - Expected vs actual behavior
 - Environment (device, OS, browser, build, env, account)
-- Screenshots (auto-copied from `~/Desktop`; user never touches the file)
+- Screenshots (auto-grabbed from the macOS clipboard via `pngpaste`; user never touches the file)
 - Priority on the bug scale: P0 / P1 / P2 / P3
 - Labels: `bug` + `Area > X`
 - Status: Todo (unassigned)
@@ -40,9 +40,9 @@ Before doing anything, read the project's CLAUDE.md and resolve:
 - Status UUIDs (Backlog, Todo, In Progress)
 
 **Behavior:**
-- `linear_enabled: false` → Workflow A (roadmap.md + local bug-reports folder only)
+- `linear_enabled: false` → Workflow A (roadmap.md + local `docs/screenshots/` folder only)
 - `linear_enabled: true` and Team ID missing → Error: "Linear enabled but Team ID not found in CLAUDE.md"
-- `linear_enabled: true` and Team ID present → Workflow B (Linear + roadmap.md + local bug-reports folder)
+- `linear_enabled: true` and Team ID present → Workflow B (Linear + roadmap.md + local `docs/screenshots/` folder)
 
 Validate the directory prefix matches CLAUDE.md. Warn on mismatch.
 
@@ -68,7 +68,7 @@ Before creating the ticket, execute these in one parallel batch:
 4. **Active sprint**: `Glob docs/sprints/*.active.md`.
 5. **Projects + milestones** (only needed if P0/P1 "yes" branch is taken later).
 6. **Git root**: `git rev-parse --show-toplevel` → `$GIT_ROOT`.
-7. **Desktop screenshots**: `ls -lt ~/Desktop/Screen\ Shot*.png ~/Desktop/Screenshot*.png 2>/dev/null | head -5 || true` — covers both macOS naming patterns, graceful on zero matches.
+7. **Clipboard screenshot probe**: Run `pngpaste "$TMPDIR/claude-bug-probe.png" 2>/dev/null && file "$TMPDIR/claude-bug-probe.png" || echo "no image on clipboard"`. `pngpaste` exits non-zero if the clipboard doesn't hold an image. Do this **before** asking clarifying questions so the image is grabbed the moment the user invokes the command (clipboard is most likely to still hold the relevant screenshot at that instant). If `pngpaste` is not installed, surface a one-time hint: "Install with `brew install pngpaste` to enable screenshot capture." — then proceed without screenshots.
 
 ## Duplicate Detection
 
@@ -92,25 +92,12 @@ The folder is named by a stable slug, determined BEFORE any Linear call:
 1. Slug = `<YYYYMMDD>-<kebab-case-title>` truncated to ~60 chars.
    Example: `2026-04-14-feedback-silent-on-desktop`
 2. Target directory:
-   - If `$GIT_ROOT/docs/` exists → `$GIT_ROOT/docs/bug-reports/<slug>/`
-   - Else → `$GIT_ROOT/bug-reports/<slug>/`
+   - If `$GIT_ROOT/docs/` exists → `$GIT_ROOT/docs/screenshots/<slug>/`
+   - Else → `$GIT_ROOT/screenshots/<slug>/`
 3. **Collision rule:** if target directory exists and is non-empty, append `-2`, `-3`, etc., until an unused name is found. Never overwrite.
 4. The final directory is the value written into the ticket body's `Screenshots` path.
 
-If no screenshots were chosen and no files will be copied, skip the folder entirely (omit the Screenshots section from the ticket body).
-
-## Sensitive Content Gate
-
-Before any `cp` into the repo, ask:
-```
-⚠️ About to save screenshots to <GIT_ROOT>/docs/bug-reports/<slug>/
-These will be committed with the next commit. Review for:
- - Passwords, API keys, tokens
- - Personal info (phone, address, customer data)
- - Internal URLs or system details
-Proceed? (y/N)
-```
-Default is No. If user declines, skip the screenshot copy and omit the Screenshots section from the body.
+If no screenshot was captured (empty clipboard, or `pngpaste` missing), omit the Screenshots section from the ticket body entirely. The clipboard holds one image at a time — one grab per bug is the design. If the user wants to attach more, they can drop files into `docs/screenshots/<slug>/` manually after the ticket is filed.
 
 ## Fix Order (Preventing Orphans)
 
@@ -120,8 +107,8 @@ Default is No. If user declines, skip the screenshot copy and omit the Screensho
 4. Minimum viable gate check.
 5. Build the full body in memory (with the final folder path).
 6. **Create the ticket** via a SINGLE `save_issue` call (Workflow B) or update `roadmap.md` (Workflow A).
-7. **ON SUCCESS ONLY**: `mkdir -p <folder>` and `cp <sources> <folder>/screenshot-N.png`.
-8. **If cp fails** after ticket is live: surface explicitly — "Ticket RAB-150 filed successfully, but screenshot copy failed: <reason>. Retry manually: `cp ... <folder>/`." Do not retry silently.
+7. **ON SUCCESS ONLY**: `mkdir -p <folder>` and `mv "$TMPDIR/claude-bug-probe.png" "<folder>/screenshot.png"`. Use `mv` (not `cp`) — the temp file is throwaway.
+8. **If mv fails** after ticket is live: surface explicitly — "Ticket RAB-150 filed successfully, but screenshot move failed: <reason>. Source still at `$TMPDIR/claude-bug-probe.png` — retry manually with: `mv ... <folder>/`." Do not retry silently.
 
 Body references the folder path even though the folder is created after ticket creation. This is intentional — one agent owns both steps, failure is surfaced, and it eliminates webhook noise from a two-phase save.
 
@@ -130,13 +117,13 @@ Body references the folder path even though the folder is created after ticket c
 No Linear. Folder naming still uses the slug rule.
 
 1. Execute pre-flight + duplicate scan via roadmap grep (look for similar titles in `docs/roadmap.md` Bugs section).
-2. Ask sensitive-content question, then proceed with in-memory body.
+2. Proceed with in-memory body.
 3. Append to `docs/roadmap.md` under `## Bugs` subsection (create the section if missing):
    ```markdown
-   | <PREFIX>-## | [Title] | Showstopper (P0) | — | [1-2 line summary] | [bug-reports](bug-reports/<slug>/) |
+   | <PREFIX>-## | [Title] | Showstopper (P0) | — | [1-2 line summary] | [screenshots](screenshots/<slug>/) |
    ```
 4. If no CLAUDE.md prefix: use `bug-YYYYMMDD-HHMM` as the ticket ID.
-5. ON SUCCESS: mkdir + cp screenshots.
+5. ON SUCCESS: mkdir + mv screenshot from `$TMPDIR/claude-bug-probe.png`.
 
 Skip P0/P1 "start now" prompt in Workflow A (no Linear state to transition).
 
@@ -189,7 +176,7 @@ Bugs default to **Backlog**: pass `project: null, projectMilestone: null`. This 
 - Account: [user ID or email, if relevant]
 
 ## Screenshots
-docs/bug-reports/<slug>/
+docs/screenshots/<slug>/
 
 ## Notes
 [Any logs, error messages, extra context]
@@ -299,7 +286,7 @@ Add the bug to the `## Bugs` subsection in `docs/roadmap.md` (create the section
 
 | ID | Title | Priority | Est | Context | Spec |
 |----|-------|----------|-----|---------|------|
-| RAB-150 | [Title] | Showstopper (P0) | — | [1-2 line summary] | [bug-reports](bug-reports/<slug>/) |
+| RAB-150 | [Title] | Showstopper (P0) | — | [1-2 line summary] | [screenshots](screenshots/<slug>/) |
 ```
 
 Priority labels use the verbose format, matching existing roadmap convention:
@@ -312,13 +299,13 @@ Priority labels use the verbose format, matching existing roadmap convention:
 
 After asking clarifying questions, execute the following in a SINGLE response with parallel tool calls where possible. Do not pause mid-flow.
 
-1. Pre-flight (parallel): list labels, list issues (duplicate scan), glob active sprint, check git root, list Desktop screenshots.
+1. Pre-flight (parallel): list labels, list issues (duplicate scan), glob active sprint, check git root, probe clipboard with `pngpaste` into `$TMPDIR/claude-bug-probe.png`.
 2. Duplicate confirm.
 3. Build body in memory.
-4. Sensitive content gate.
+4. Build area label (if needed).
 5. Create `bug` label if needed.
 6. `save_issue` (Workflow B) or `Edit roadmap.md` (Workflow A).
-7. ON SUCCESS: mkdir + cp screenshots.
+7. ON SUCCESS: mkdir + mv screenshot from `$TMPDIR/claude-bug-probe.png` to `<folder>/screenshot.png`.
 8. Edit roadmap.md to add Bugs row (Workflow B).
 9. P0/P1 prompt + branch behavior.
 
@@ -328,13 +315,27 @@ After asking clarifying questions, execute the following in a SINGLE response wi
 - Keep questions brief. One message with 2-3 targeted questions beats a series.
 - Total exchange target: under 2 min for P2/P3, slightly longer for P0/P1 due to "start now" prompt.
 - Never investigate root cause at filing time unless user answered `yes` to P0/P1 and chose to proceed. Root cause is `/debug`'s job (future command).
-- Never touch the user's Desktop screenshots — `cp`, not `mv`.
-- Never fail silently. Every failure (label creation, screenshot copy, ticket save) surfaces a specific message.
+- Clipboard images are captured via `pngpaste` into `$TMPDIR` (throwaway). On ticket success, `mv` them into `docs/screenshots/<slug>/`. Never write directly into the repo before the ticket exists — prevents orphaned folders.
+- Never fail silently. Every failure (label creation, screenshot capture, ticket save) surfaces a specific message.
 
-## Known v1 Limitations
+## Closure
 
-- **Desktop-only screenshot source.** If screenshots are elsewhere (e.g., `/tmp`, Finder drag), pass a path as an argument or skip and attach manually.
+When a bug filed via this command is fixed and the fix is merged to `main`, the executing agent **MUST** close the bug in both Linear and `docs/roadmap.md`.
+
+- **Trigger:** push/merge lands on `main` (production).
+- **Linear action:** `mcp__linear__save_issue` with `state: <Done UUID>` for every RAB-## referenced in the merge's commit messages or branch name.
+- **Roadmap action:** in `docs/roadmap.md`, remove the bug's row from `## Bugs` and append it to `## Recently Completed` (preserve ID + title; note the commit hash and date).
+- **Scope:** applies regardless of how the fix was delivered — `/sprint`, `/iterate`, or ad-hoc commit.
+- **No partial states:** do not leave shipped bug issues in `Todo`, `In Progress`, or `In Review` in Linear, and do not leave closed bugs under `## Bugs` in the roadmap. If unsure which issues are covered by a merge, list candidates and confirm with the user before closing.
+
+This rule is enforced in `~/.claude/rules/task-completion.md` (push-to-`main` step). The instruction here is the command's lifecycle contract; the rule is the auto-loaded reminder agents see when pushing.
+
+## Known Limitations
+
+- **Clipboard holds one image at a time.** One grab per bug, captured at pre-flight. If more screenshots are needed, drop them into `docs/screenshots/<slug>/` manually after the ticket is filed.
+- **Requires `pngpaste`.** macOS only. Install with `brew install pngpaste`. Without it, screenshots are skipped with a hint.
+- **Inline-pasted images in chat are unreachable.** Images pasted into the Claude Code input box exist in the conversation context only; they can't be written to disk from a tool. The clipboard is the only reliable bridge. If the user pastes an image into chat AND keeps it on the clipboard, `pngpaste` will still grab it.
 - **No OCR / secret detection.** The sensitive content warning relies on user judgment.
 - **No cross-repo dedup.** Duplicate scan only looks at the current Linear team.
 - **Fix Checklist is reminder-only.** Does not block closing the ticket.
-- **Screenshots live in the repo** and are committed. Cloud storage (Drive, Supabase) is deferred to v2.
+- **Screenshots live in the repo** at `docs/screenshots/<slug>/` and are committed. Cloud storage (Drive, Supabase) is deferred.

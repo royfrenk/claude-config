@@ -248,29 +248,89 @@ Once clarified, present the exact changes:
 [Continue for all affected files]
 ```
 
-After outputting the proposed changes, transition automatically to Phase 5.5. Do NOT ask the user for approval yet — the audit runs first.
+### Create tracking file
 
-**Determine change type** before Phase 5.5: scan the proposed changes list and set `CHANGE_TYPE` flags:
-- If any file in `~/.claude/agents/` is touched → `subagent`
-- If any file in `~/.claude/managed-agents/` is touched → `managed-runtime`
-- If any file in `~/.claude/commands/` is touched → `workflow`
-- Multiple flags can be active simultaneously
+After presenting proposed changes, create a tracking file at `~/.claude/change-process/NNN-description.md`.
 
-## Phase 5.5: Independent Plan Audit
+**NNN numbering:** Glob `~/.claude/change-process/???-*`, match only files starting with 3 digits + hyphen, extract highest number, add 1. Default to `001` if directory is empty or no matching files exist. Create the directory if it doesn't exist.
 
-**This phase is mandatory for every /change-process run.** It exists because the agent proposing the plan and the agent auditing the plan cannot be the same — Sprint 032 proved that self-review misses orphaning, silent defaults, and cross-file contradictions. A fresh subagent with no investment in the plan catches what the author missed.
+**Tracking file format (v2 schema; files created before this change use different field names and are not validated against this schema):**
 
-### Spawn the reviewer
+```markdown
+---
+name: NNN-description
+date: YYYY-MM-DD
+status: in-progress | complete | redesign-required
+infra_audit_rounds: 0
+change_review_rounds: 0
+---
+
+## Proposed Plan
+
+[Phase 5 proposed changes pasted here]
+
+## User Review
+
+**Feedback:** [user's feedback from Phase 5 gate, or "Approved without changes"]
+**Changes made:** [revisions based on user feedback, or "None"]
+```
+
+Additional sections are appended during Phase 5.5 (see below).
+
+### HARD STOP — User reviews proposed changes (Gate 1)
+
+**STOP AND WAIT.** Present the proposed changes to the user and ask:
+
+"Here are the proposed changes. Please review and let me know if you'd like any adjustments before I run the audit."
+
+On user approval:
+1. Log user feedback in the tracking file under `## User Review`
+2. If the user requested changes, revise the plan and update the tracking file's `## Proposed Plan` section
+3. **Determine change type:** Scan the proposed changes list and set `CHANGE_TYPE` flags:
+   - If any file in `~/.claude/agents/` is touched → `subagent`
+   - If any file in `~/.claude/managed-agents/` is touched → `managed-runtime`
+   - If any file in `~/.claude/commands/` is touched → `workflow`
+   - Multiple flags can be active simultaneously
+4. Proceed to Phase 5.5
+
+## Phase 5.5: Two-Layer Plan Audit
+
+**This phase is mandatory for every /change-process run.** It has two layers that run sequentially. Both must pass before the plan reaches the user for final approval.
+
+**Flow overview:**
+```
+User approved plan (Gate 1, Phase 5)
+    ↓
+Layer 1: Infrastructure Audit (existing)
+    ├─ SAFE TO EXECUTE → proceed to Layer 2
+    ├─ FIX BEFORE EXECUTE → fix + re-audit (max 3 rounds, autonomous)
+    └─ REDESIGN REQUIRED → escalate to user
+    ↓
+Layer 2: Change Review (NEW, autonomous)
+    ├─ SAFE TO EXECUTE → loop ends
+    ├─ FIX BEFORE EXECUTE → revise + re-review (max 3 rounds, autonomous)
+    └─ REDESIGN REQUIRED → escalate to user
+    ↓
+Present final plan to User (Gate 2)
+    ↓
+Phase 6: Execute
+```
+
+### Layer 1: Infrastructure Audit
+
+Sprint 032 proved that self-review misses orphaning, silent defaults, and cross-file contradictions. A fresh subagent with no investment in the plan catches what the author missed.
+
+#### Spawn the infrastructure auditor
 
 Use the Agent tool with:
 - `subagent_type: "general-purpose"`
-- `description: "Independent plan audit"`
+- `description: "Infrastructure plan audit"`
 - `prompt`: Build the prompt from the template below, injecting the Phase 5 plan text and the active `CHANGE_TYPE` flags
-- **Timeout:** If the subagent does not return within 5 minutes, retry once. If the retry also fails, fall back to presenting the plan directly to the user with a warning: "Phase 5.5 audit failed — manual review required before Phase 6."
+- **Timeout:** If the subagent does not return within 5 minutes, retry once. If the retry also fails, fall back to presenting the plan directly to the user with a warning: "Layer 1 audit failed — manual review required before Phase 6."
 
-### The reviewer prompt template
+#### Infrastructure auditor prompt template
 
-Build the reviewer prompt by concatenating these sections. Inject `{{PLAN_TEXT}}` and `{{CHANGE_TYPE}}` at the marked locations.
+Build the prompt by concatenating these sections. Inject `{{PLAN_TEXT}}` and `{{CHANGE_TYPE}}` at the marked locations.
 
 ```
 You are an independent skeptical reviewer auditing a proposed change to
@@ -372,33 +432,154 @@ classes not run). End with:
 Report must be under 800 words. Be blunt — no diplomatic hedges.
 ```
 
-### Handle the verdict
+#### Handle Layer 1 verdict
 
-Parse the reviewer subagent's return for one of three verdict tokens:
+Parse the subagent's return for one of three verdict tokens. Use `infra_audit_round` counter (starts at 1).
 
 **SAFE TO EXECUTE:**
-- Present verdict summary to the user
-- Ask: "The plan passed independent audit. Does this look right? Any adjustments before I make the changes?"
-- On user approval → proceed to Phase 6
+- Append `## Infrastructure Audit` section to tracking file with verdict and findings summary
+- Proceed to Layer 2
 
 **FIX BEFORE EXECUTE:**
-- Present the numbered gap list to the user
-- Increment round counter (starts at 1)
-- If round counter ≤ 3: revise the plan to address each gap, then re-run Phase 5.5 with the revised plan
-- If round counter > 3: auto-promote to REDESIGN REQUIRED
+- Increment `infra_audit_round`
+- Append findings to tracking file under `## Infrastructure Audit Round N`
+- If `infra_audit_round` ≤ 3: revise the plan to address each gap, log changes in tracking file, re-run Layer 1 with revised plan. **No user interaction.**
+- If `infra_audit_round` > 3: auto-promote to REDESIGN REQUIRED
 
 **REDESIGN REQUIRED:**
 - Present the reviewer's rationale to the user
-- Ask: "The reviewer found fundamental structural issues. Options: (a) revise scope and restart from Phase 1, (b) override the reviewer and proceed anyway (not recommended), (c) abandon the change."
+- Ask: "The infrastructure audit found fundamental structural issues. Options: (a) revise scope and restart from Phase 1, (b) override and proceed anyway (not recommended), (c) abandon the change."
 - Wait for user decision
+
+### Layer 2: Change Review (autonomous loop)
+
+After Layer 1 passes, the change-reviewer loop provides a second layer of scrutiny focused on the plan's logic, completeness, and practicality. This loop is **fully autonomous** — it runs without user interaction until it converges or hits the round cap.
+
+#### Spawn the change-reviewer
+
+Use the Agent tool with:
+- `subagent_type: "general-purpose"`
+- `description: "Change review — punch holes in the plan"`
+- `prompt`: Build the prompt from the change-reviewer template below, injecting the current plan text
+
+#### Change-reviewer prompt template
+
+```
+You are a skeptical critic reviewing a proposed process change to
+the user's Claude Code configuration. Your job is to punch holes
+in the plan — find what won't work, what's ambiguous, and what's
+missing.
+
+## The proposed plan
+
+{{PLAN_TEXT}}
+
+## Your job
+
+Find problems in these categories:
+
+1. **Dead-end files/sections** — Does the plan create or reference
+   files/sections that nothing else will read? A file nobody reads
+   is a file that doesn't exist.
+
+2. **Ambiguity** — Are there instructions that two different agents
+   (or two different runs of the same agent) could interpret
+   differently? Vague words like "should," "consider," "may" in
+   process instructions are red flags.
+
+3. **Won't work at runtime** — Does the plan assume tool access,
+   file loading, or context visibility that won't actually be
+   available? Does it assume a subagent can read a file that isn't
+   in its context?
+
+4. **Missing steps or edge cases** — What happens on the unhappy
+   path? First run? Empty directory? Concurrent runs? Context
+   compaction mid-loop?
+
+5. **Contradictions** — Does anything in the plan contradict
+   existing process files? Does the plan contradict itself?
+
+## How to work
+
+You have Read, Grep, Glob, and Bash. Do NOT Edit or Write.
+Read the affected files as they currently exist. Compare current
+state + plan to predict what will actually happen.
+
+## Output format
+
+For each category, list findings or state "Clean."
+End with:
+
+- **Verdict:** SAFE TO EXECUTE / FIX BEFORE EXECUTE / REDESIGN
+  REQUIRED
+- **Issues** (numbered, only if verdict is not SAFE TO EXECUTE)
+
+Under 600 words. Be blunt.
+```
+
+#### Handle Layer 2 verdict
+
+Parse the subagent's return for one of three verdict tokens. Use `change_review_round` counter (starts at 1).
+
+**SAFE TO EXECUTE:**
+- Append `## Change Review Round N` to tracking file with verdict: SAFE TO EXECUTE
+- Proceed to Gate 2
+
+**FIX BEFORE EXECUTE:**
+- Increment `change_review_round`
+- Append `## Change Review Round N` to tracking file with: reviewer findings + changes made in response
+- If `change_review_round` ≤ 3: revise the plan to address each issue, re-spawn change-reviewer with revised plan. **No user interaction.**
+- If `change_review_round` > 3: auto-promote to REDESIGN REQUIRED
+
+**REDESIGN REQUIRED:**
+- Present the reviewer's rationale to the user
+- Ask: "The change reviewer found fundamental problems. Options: (a) revise scope and restart from Phase 1, (b) override and proceed anyway (not recommended), (c) abandon the change."
+- Wait for user decision
+
+### Gate 2: Final user approval
+
+After both layers pass (SAFE TO EXECUTE), present the final audited plan to the user:
+
+"Both the infrastructure audit and change review passed. Here is the final plan after all revisions:"
+
+[Present the final plan, noting any changes from the original Phase 5 proposal]
+
+Append `## Final User Approval` to tracking file with the user's decision.
+
+On user approval → proceed to Phase 6.
 
 ### Audit log
 
-The reviewer's full report is saved to `/tmp/change-process-audit-{timestamp}.md` (timestamp format: `YYYYMMDD-HHMMSS`). This persists the detailed findings so the user can inspect them after the subagent returns.
+Each reviewer report is saved to `/tmp/change-process-audit-{timestamp}.md` (timestamp format: `YYYYMMDD-HHMMSS`). Layer 1 and Layer 2 reports use separate files. This persists the detailed findings so the user can inspect them after the subagents return.
 
-### Iteration state
+### Tracking file sections appended during Phase 5.5
 
-Change-process runs that span multiple audit rounds should save state to `~/.claude/change-process/NNN-description.md` so context can be recovered if the conversation is lost. Each round's findings and plan revisions are appended to the iteration file.
+The tracking file created in Phase 5 is updated throughout Phase 5.5:
+
+```markdown
+## Infrastructure Audit
+
+**Round:** [N]
+**Verdict:** [SAFE TO EXECUTE / FIX BEFORE EXECUTE]
+**Findings:** [summary of auditor report]
+**Changes made:** [what was revised in response, or "None — plan passed"]
+
+## Change Review Round 1
+
+**Verdict:** [SAFE TO EXECUTE / FIX BEFORE EXECUTE]
+**Findings:** [summary of reviewer report]
+**Changes made:** [what was revised in response, or "None — plan passed"]
+
+## Change Review Round 2
+...
+
+## Final User Approval
+
+**Approved:** [yes/no]
+**Notes:** [any final user comments]
+```
+
+Update the tracking file's `status` field to `complete` on approval or `redesign-required` on escalation. Update `infra_audit_rounds` and `change_review_rounds` counters in frontmatter after each round.
 
 ## Phase 6: Execute
 
@@ -406,21 +587,7 @@ Only after Phase 5.5 returns SAFE TO EXECUTE and the User confirms the audited p
 1. Make all changes to `~/.claude/` (the live config)
 2. Verify consistency across files
 3. Summarize what was changed
-4. **Sync to repo and push:**
-   ```bash
-   # Copy shareable files to repo
-   cp -R ~/.claude/agents ~/Documents/repos/claude-config/
-   cp -R ~/.claude/commands ~/Documents/repos/claude-config/
-   cp -R ~/.claude/rules ~/Documents/repos/claude-config/
-   cp -R ~/.claude/guides ~/Documents/repos/claude-config/
-   cp -R ~/.claude/scripts ~/Documents/repos/claude-config/
-   cp ~/.claude/README.md ~/Documents/repos/claude-config/
-   cp ~/.claude/settings.json ~/Documents/repos/claude-config/
-
-   # Commit and push
-   cd ~/Documents/repos/claude-config
-   git add -A && git commit -m "process: [description]" && git push origin main
-   ```
+4. Do NOT mirror to `~/Documents/repos/claude-config/` yet. Phase 7 must pass first.
 
 **What gets synced:**
 - `agents/` - Agent definitions
@@ -434,27 +601,36 @@ Only after Phase 5.5 returns SAFE TO EXECUTE and the User confirms the audited p
 **Never synced (stays in ~/.claude/ only):**
 - `.credentials.json` - OAuth tokens
 - `settings.local.json` - Local overrides
+- `change-process/` - Iteration tracking (session state, may contain sensitive feedback)
 - `history.jsonl`, `todos/`, `projects/`, etc. - Session state
 
 ## Phase 7: Sync to Gemini and Codex
 
-After Phase 6 completes (changes made to `~/.claude/` and synced to claude-config repo), propagate the changes to Gemini CLI and Codex CLI.
+After Phase 6 completes (changes made to `~/.claude/`), propagate the changes to Gemini CLI and Codex CLI and run the Claude-owned parity gate before mirroring or pushing the repo.
 
 1. **Read the cross-tool sync guide:**
-   Read `~/.claude/guides/cross-tool-sync.md` for platform differences and adaptation rules.
+   Read:
+   - `~/.claude/guides/cross-tool-sync.md`
+   - `~/.claude/guides/cross-tool-parity-phase-a.json`
 
 2. **Run the sync script:**
    ```bash
    ~/.claude/scripts/sync-ai-tools.sh
    ```
 
-3. **Verify output:**
+3. **Verify sync outputs exist:**
    - Check that `~/.gemini/GEMINI.md` has correct `@imports`
    - Check that `~/.codex/AGENTS.md` was regenerated
    - If new commands were added: verify TOML and SKILL.md were generated
-   - If rules were modified: verify adaptations are correct (spot-check one file)
+   - Verify `/tmp/sync-parity-report.json` exists
 
-4. **Report sync status:**
+4. **Run the parity gate:**
+   - Read `/tmp/sync-parity-report.json`
+   - Confirm there are no `FAIL` statuses for Phase A commands
+   - Confirm any `UNSUPPORTED` or `INTENTIONAL_DIFFERENCE` statuses are expected and documented in `cross-tool-sync.md`
+   - If the report is missing, malformed, or contains a `FAIL` for any Phase A command: STOP. Do not mirror or push the repo.
+
+5. **Report sync status:**
    ```
    ## Cross-Tool Sync Complete
 
@@ -463,10 +639,41 @@ After Phase 6 completes (changes made to `~/.claude/` and synced to claude-confi
    | Gemini (~/.gemini/) | [N] rules, [M] guides, [K] commands | OK |
    | Codex (~/.codex/) | AGENTS.md regenerated, [K] skills | OK |
 
-   Changes propagated to all three platforms.
+   Parity report: /tmp/sync-parity-report.json
+   Phase A gate: PASS
    ```
 
-**If sync script is not found:** Warn the user and skip. This is non-blocking -- the user can run the script manually later.
+**If sync script or parity report is missing:** STOP. This is blocking in Phase A.
+
+## Phase 8: Sync Repo Mirror and Push
+
+Only after Phase 7 passes:
+1. Copy shareable files to `~/Documents/repos/claude-config/`
+   ```bash
+   cp -R ~/.claude/agents ~/Documents/repos/claude-config/
+   cp -R ~/.claude/commands ~/Documents/repos/claude-config/
+   cp -R ~/.claude/rules ~/Documents/repos/claude-config/
+   cp -R ~/.claude/guides ~/Documents/repos/claude-config/
+   cp -R ~/.claude/scripts ~/Documents/repos/claude-config/
+   cp ~/.claude/README.md ~/Documents/repos/claude-config/
+   cp ~/.claude/settings.json ~/Documents/repos/claude-config/
+   ```
+2. Commit and push:
+   ```bash
+   cd ~/Documents/repos/claude-config
+   git add -A && git commit -m "process: [description]" && git push origin main
+   ```
+3. Report that the live source, derived targets, and mirror repo are now aligned.
+
+## Phase A Completion Checks
+
+Before marking the process change complete, confirm:
+- `~/.claude/guides/cross-tool-parity-phase-a.json` is valid
+- `~/.claude/guides/cross-tool-sync.md` matches the manifest decisions
+- `/tmp/sync-parity-report.json` exists from the latest sync run
+- Phase A commands (`change-process`, `context`, `create-issue`, `iterate`, `learning-opportunity`, `new-project`, `sprint`) have no `FAIL`
+- Any `UNSUPPORTED` or `INTENTIONAL_DIFFERENCE` statuses are expected and documented
+- The mirror repo was updated only after local sync and parity validation passed
 
 ## Rules
 
@@ -475,10 +682,11 @@ After Phase 6 completes (changes made to `~/.claude/` and synced to claude-confi
 - **Challenge gently** - The User might have missed something, help them see it
 - **Be thorough** - Read every file, don't skip
 - **Be specific** - Vague changes lead to inconsistency
-- **Inline execution** - Never spawn relay/messenger subagents after asking questions. End your turn and wait for the user's next message. The only permitted subagent spawn is the Explore agent in Phase 2 (if >20 files) and the reviewer agent in Phase 5.5.
-- **Audit before execute** - Every /change-process run MUST complete Phase 5.5 (Independent Plan Audit) with verdict SAFE TO EXECUTE before proceeding to Phase 6. No exceptions — even for "trivial" changes. Trivial changes are where process failures hide.
-- **Audit loop cap** - Maximum 3 audit rounds per /change-process invocation. If round 3 still returns FIX BEFORE EXECUTE, auto-promote to REDESIGN REQUIRED and escalate to the user.
-- **Save iteration state** - For multi-round changes, save state to `~/.claude/change-process/NNN-description.md` so context survives compaction or session loss.
+- **Inline execution** - Never spawn relay/messenger subagents after asking questions. End your turn and wait for the user's next message. The only permitted subagent spawns are: the Explore agent in Phase 2 (if >20 files), the infrastructure auditor in Phase 5.5 Layer 1, and the change-reviewer in Phase 5.5 Layer 2. The Layer 1 and Layer 2 loops are autonomous (no user interaction during iterations), but human gates exist before (Phase 5) and after (Gate 2) the loops.
+- **Audit before execute** - Every /change-process run MUST complete Phase 5.5 (both Layer 1 infrastructure audit AND Layer 2 change review) with verdict SAFE TO EXECUTE before proceeding to Phase 6. No exceptions — even for "trivial" changes. Trivial changes are where process failures hide.
+- **Audit loop caps** - Maximum 3 rounds per loop, independently counted. `infra_audit_round` caps at 3 for Layer 1. `change_review_round` caps at 3 for Layer 2. If either hits round 4, auto-promote to REDESIGN REQUIRED and escalate to the user.
+- **Track everything** - Every /change-process run MUST create a tracking file at `~/.claude/change-process/NNN-description.md` in Phase 5. All user feedback, infrastructure audit findings, change-reviewer findings, and plan revisions are logged in this file. This is the single source of truth for how the plan evolved.
+- **Parity before publish** - Never mirror or push `~/Documents/repos/claude-config/` until Phase 7 sync and parity validation pass locally.
 
 ## Anti-patterns to Watch For
 
@@ -490,6 +698,7 @@ Flag these if you see them:
 - Making changes that only apply to one project but are in global files
 - Skipping Phase 5.5 "because the change is small" — trivial changes are exactly where orphaning and silent-default bugs hide (Sprint 032 evidence)
 - Spawning relay/messenger subagents to pass user answers between phases — causes death-loop failures (Sprint 032 evidence)
+- Running the change-reviewer loop with user interaction on each round — the loop is autonomous by design; user gates are before and after, not during
 
 ---
 

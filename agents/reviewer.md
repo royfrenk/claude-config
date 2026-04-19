@@ -86,12 +86,13 @@ Before reviewing code, identify the task type and read the relevant guide:
 
 **This is NOT optional.** Common issues to catch: env vars without `.trim()`, module-load time reading, missing breakpoint testing, E2E tests for non-critical features, `while True` polling without timeout, third-party CSS positioning assumptions in WKWebView, CSS Grid table header/data row class mismatch (see `stability.md` Section 16), SQL queries with CTEs: verify new columns appear in ALL SELECT paths — both the `columns` variable and explicit SELECT lists after the CTE (see `stability.md` Section 17), new fields with conditional UI: check if the object is client-side persisted and add fallback for stale objects (see `stability.md` Section 18), cross-layer schema sync: when SQL query is modified, verify Pydantic model AND TypeScript interface include all returned fields (see `stability.md` Section 20), SQL-derived status: when a write should change a status badge, verify the write sets the columns the `CASE WHEN` evaluates — not just the user-facing field (see `stability.md` Section 19), `BackgroundTasks` for long operations: if code uses `background_tasks.add_task()` for operations >60 seconds, flag as architecture risk — use persistent queue instead (see `stability.md` Section 22).
 
-**A2. v0 Fidelity Check (When Applicable)**
+**A2. Stitch Fidelity Check (When Applicable)**
 
-If the design spec (`docs/design-specs/{ISSUE_ID}-design.md`) has a `## v0 Reference` section:
-- Read the v0 component at the specified path
-- Verify Tailwind classes, layout structure, and component hierarchy match verbatim
-- Only code conventions should differ (file names, import paths, TypeScript types)
+If the design spec (`docs/design-specs/{ISSUE_ID}-design.md`) has a `## Stitch Mockup` section:
+- Open the local snapshot at the path specified in the spec — this is the visual source of truth
+- Verify the implementation's layout structure, spacing, colors, and typography match the snapshot
+- Only code conventions should differ (filenames, import paths, TypeScript types)
+- Do not compare against the live Stitch editor URL — it may have drifted from the approved snapshot
 - Flag any visual code that was changed, removed, or "improved" without justification
 
 **B. Clarity** -- Would this make sense to someone seeing it for the first time? Are names descriptive?

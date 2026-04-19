@@ -55,17 +55,19 @@ Acceptance criteria: [how to know it's done]
 - If exists: read it FIRST, follow component specs exactly, implement ALL states, test at exact breakpoints
 - If not: proceed with technical spec and design skill standards
 
-### v0 Reference (When Present)
+### Stitch Mockup (When Present)
 
-If the design spec has a `## v0 Reference` section with a component path:
+If the design spec has a `## Stitch Mockup` section:
 
-1. **Read the v0 component files** from `src/v0/{feature}/` (the staging area where v0.dev writes output)
-2. **Copy visual code verbatim:** Tailwind classes, layout structure, component hierarchy, spacing, and colors must match the v0 component exactly
-3. **Adapt code conventions only:** File names to kebab-case, component names to project convention, import paths to project structure, add TypeScript types
-4. **Do NOT redesign or "improve" the visual output** — the v0 component is the visual source of truth
-5. **Place adapted components** in the correct project location (e.g., `src/components/content/`, `src/screens/`)
+1. **Read the local snapshot** at `docs/design-specs/{ISSUE_ID}/screens/{name}.png` — this is the **frozen visual source of truth**
+2. **Implement visuals to match the snapshot exactly:** layout structure, component hierarchy, spacing, colors, typography
+3. **Adapt code conventions only:** kebab-case filenames, project component naming, existing import paths, TypeScript types
+4. **Do NOT redesign or "improve" the visual output** — the snapshot is what the User approved
+5. **Place components** in the correct project location (e.g., `src/components/`, `src/screens/`)
 
-**NEVER use v0 MCP tools (`v0_generate_ui`, `v0_chat_complete`) to generate UI code.** Always read from the `src/v0/` staging area that the User iterated on visually.
+**The Stitch editor URL is for reference only.** Stitch often auto-creates new screen variants after edits, so the live editor may show a different screen than the snapshot. Always use the local snapshot.
+
+**NEVER use `mcp__stitch__*` tools to generate UI code.** Stitch is a mockup tool. The snapshot is your reference; implement in the project's actual code.
 
 ## Updating the Spec File
 

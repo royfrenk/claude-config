@@ -6,7 +6,7 @@ How EM runs autonomous sprint execution without stopping between phases.
 
 ## Flow Per Issue
 
-Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: v0 iteration, STOP for "v0 is ready"] -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer [reads src/v0/ if v0 was used] -> Reviewer -> Push to sprint branch (Vercel preview) -> Update roadmap.md -> **Continue to next issue**
+Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: Stitch mockup, STOP for "Stitch design approved"] -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer [reads docs/design-specs/{ISSUE_ID}/screens/ snapshot if Stitch mockup exists] -> Reviewer -> Push to sprint branch (Vercel preview) -> Update roadmap.md -> **Continue to next issue**
 
 ## Multi-Issue Flow
 
@@ -20,7 +20,7 @@ Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequ
 
 **ONLY pause for:**
 1. **Design approval** (if UI/UX work detected)
-2. **v0 visual iteration** (User iterating on v0.dev — wait for "v0 is ready")
+2. **Stitch mockup** (Design-Planner iterating with Stitch MCP — wait for "Stitch design approved")
 3. **Plan approval** (always required before implementation)
 4. **Review failures** (changes requested -> wait for fixes -> retry)
 5. **Blocking errors** (deployment failures, missing config, etc.)
@@ -38,7 +38,7 @@ Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequ
 - Post status updates to Linear comments (not to User)
 - Only message User when:
   - Awaiting design approval
-  - Awaiting v0 visual iteration ("v0 is ready")
+  - Awaiting Stitch mockup approval ("Stitch design approved")
   - Awaiting plan approval
   - Review failed (after 3 rounds)
   - All issues complete and on staging

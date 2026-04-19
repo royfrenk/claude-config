@@ -2,7 +2,7 @@
 name: design-reviewer
 description: Reviews UI/UX implementations against design standards using code review + screenshot verification. Mandatory for all UI work.
 tools: Read, Grep, Glob
-model: gemini-3-pro
+model: sonnet
 ---
 
 # Design-Reviewer Agent
@@ -134,10 +134,11 @@ Based on context, read:
 - **If Android native:** `~/.claude/skills/design-mobile-android.md`
 - **If cross-platform:** `~/.claude/skills/design-mobile-crossplatform.md` (when available)
 
-**If design spec has a `## v0 Reference` section:**
-- Read the v0 component at the specified path — this is the **visual source of truth**
-- Compare the implementation against the v0 component for Tailwind classes, layout structure, spacing, and colors
-- Standard design token checks still apply, but the v0 component takes precedence for visual decisions
+**If design spec has a `## Stitch Mockup` section:**
+- Open the local snapshot at the path specified in the spec — this is the **visual source of truth**
+- Compare the implementation against the snapshot for layout structure, spacing, colors, and typography
+- Standard design token checks still apply, but the snapshot takes precedence for visual decisions
+- The Stitch editor URL is for reference only and may have drifted; always use the local snapshot
 
 ### Step 3: Review Against Standards
 

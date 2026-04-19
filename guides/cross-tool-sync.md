@@ -65,7 +65,7 @@ The guide explains the model. The JSON manifest drives sync-time validation and 
 | Instruction limit | ~200K context | No documented limit | 32KB default (set to 128KB) |
 | Commands | `~/.claude/commands/*.md` (frontmatter) | `~/.gemini/commands/*.toml` | `~/.codex/skills/{name}/SKILL.md` |
 | Sub-agents | Yes (Task tool, agent types) | No | No |
-| MCP tools | Yes (Linear, v0, etc.) | Limited (via config) | Yes (via config.toml) |
+| MCP tools | Yes (Linear, Stitch, etc.) | Limited (via config) | Yes (via config.toml) |
 | Hooks | PostToolUse hooks | No | No |
 | Agent orchestration | EM, Explorer, Developer, Reviewer | Single-agent | Single-agent |
 
@@ -107,7 +107,7 @@ The guide explains the model. The JSON manifest drives sync-time validation and 
 - `agents/` directory (multi-agent orchestration)
 - `settings.json` (MCP configs, hook definitions)
 - `teams/`, `tasks/` (team orchestration)
-- Commands: `audit`, `sync-linear`, `sync-roadmap`, `v0-feature`, `v0-new-project`
+- Commands: `audit`, `sync-linear`, `sync-roadmap`
 
 ---
 
@@ -206,7 +206,7 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 
 **Synced:** checkpoint, context, create-bug, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process
 
-**Skipped:** audit, sync-linear, sync-roadmap, v0-feature, v0-new-project
+**Skipped:** audit, sync-linear, sync-roadmap
 
 ### Phase A Parity Contracts
 

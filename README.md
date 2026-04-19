@@ -324,8 +324,6 @@ For iteration tracking: `docs/sprints/sprint-001-auth.md`
 | `/new-project` | Setup guide and templates |
 | `/checkpoint` | Save work state to spec file |
 | `/security-audit` | Full-codebase security scan (also auto-triggered by EM for security-sensitive sprints) |
-| `/v0-new-project` | Init v0.dev chat from current repo (v0 sees all files) |
-| `/v0-feature` | Add feature chat to existing v0 project |
 
 > **How commands work:** Command files live in `~/.claude/commands/`. Claude Code discovers them automatically. Each command is a markdown file with instructions. In Claude, commands may invoke agents. In Gemini and Codex, the same workflow is adapted into single-agent commands/skills.
 
@@ -600,9 +598,7 @@ This repo is meant to be **cloned into `~/.claude`** and updated occasionally wi
 │   └── design-dashboards.md      # Dashboard/data viz design
 ├── scripts/
 │   ├── codex-review.sh            # OpenAI Codex peer review
-│   ├── external-model-call.sh     # External model API caller
-│   ├── v0-init-repo.mjs             # v0 chat from GitHub repo (repo-aware)
-│   └── v0-feature-chat.mjs          # v0 feature chat in existing project
+│   └── external-model-call.sh     # External model API caller
 ├── managed-agents/
 │   └── sre/
 │       ├── agent-config.yaml      # Anthropic Agent resource config (target-agnostic)

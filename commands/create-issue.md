@@ -14,6 +14,10 @@ Create a complete Linear issue with:
 - Relevant files that need touching (max 3)
 - Risk/notes if applicable
 - Proper type/priority/effort labels
+- **Feature area label** (from the `Area > X` label group — scan existing, create new if needed)
+- **Project + milestone** (current sprint's project + milestone, if active)
+- **`blockedBy` relationships** (use Linear's native dependency field — never write "Depends on QUO-XX" in the description)
+- **Screenshot** (auto-grabbed from the macOS clipboard via `pngpaste`; user never touches the file)
 
 ## How to Get There
 
@@ -42,6 +46,68 @@ Before creating the Linear issue, check project configuration:
 3. **Validate prefix match:**
    - Check current directory against issue prefix in CLAUDE.md
    - If mismatch detected: Warn user "Creating issue for wrong project? Current: [dir], Prefix: [PREFIX]"
+
+### Feature Area Label (Area > X)
+
+Every issue MUST be labeled with a feature area so issues can be grouped and filtered by feature in Linear.
+
+**Before creating the issue:**
+
+1. **List existing `Area > X` child labels** using `mcp__linear__list_issue_labels` with the team ID
+   - Look for the `Area` parent group (isGroup: true)
+   - Collect all children — these are the existing feature areas (e.g., `Access Control`, `Address Entry`, `Deal Analysis`)
+
+2. **Match the issue to an existing area:**
+   - If the feature fits an existing area → reuse that label
+   - If no existing area matches → ask the user briefly: *"No existing Area label fits this. Create a new `Area > [Name]` label? Suggested: [name]"* — then create it via `mcp__linear__create_issue_label` with `parent: "<Area group ID>"` and `teamId: <team>`
+
+3. **Apply the area label** when saving the issue (in the `labels` array).
+
+**Never apply a generic "Feature" label** — always the specific `Area > X` child.
+
+### Project + Milestone (Active Sprint)
+
+Every issue should be attached to the current active sprint's Linear project + milestone, unless the user explicitly says otherwise.
+
+**Before creating the issue:**
+
+1. **Check for an active sprint** — look for `docs/sprints/*.active.md` or ask the user which sprint this belongs to
+2. **Resolve the Linear project** — the active sprint file should reference a Linear project name/ID. If unclear, use `mcp__linear__list_projects` filtered by team and ask the user
+3. **Resolve the milestone** — list project milestones via `mcp__linear__list_milestones` and match to the sprint (e.g., "Sprint 1 [ACCESS]"). If none match, ask the user
+4. **Apply both** — pass `project: <id>` and `projectMilestone: <id>` to `save_issue`
+
+**If no active sprint exists** (ad-hoc bug/idea capture) → skip project + milestone, and add to backlog in roadmap.md instead.
+
+### Blocked By Relationships
+
+When the user mentions a dependency ("this depends on QUO-79", "needs X to ship first", "blocked by the data model work"):
+
+1. **Use Linear's native `blockedBy` field** — pass `blockedBy: ["QUO-79"]` to `save_issue`
+2. **Never write "Depends on QUO-XX" or "Requires QUO-XX" in the description** — the dependency lives on the issue relationship, not in prose
+3. **If the blocking issue doesn't exist yet**, create it first, then pass its ID when creating the dependent issue
+4. **`blockedBy` is append-only** — to remove a dependency, the user must do it manually in Linear (no MCP clear)
+
+### Screenshot Capture (Clipboard)
+
+The user captures screenshots to the macOS clipboard (Cmd+Shift+Ctrl+4), not to disk. Grab the clipboard image once, at pre-flight, before asking clarifying questions. One grab per issue — do NOT ask the user for more screenshots.
+
+**Pre-flight probe:**
+```
+pngpaste "$TMPDIR/claude-issue-probe.png" 2>/dev/null && file "$TMPDIR/claude-issue-probe.png" || echo "no image on clipboard"
+```
+- Exits non-zero if the clipboard holds no image — proceed without screenshots, omit the Screenshots section.
+- If `pngpaste` is not installed, surface a one-time hint: "Install with `brew install pngpaste` to enable screenshot capture." — then proceed without screenshots.
+
+**Folder:**
+- Slug: `<YYYYMMDD>-<kebab-case-title>` truncated to ~60 chars.
+- Target: `$GIT_ROOT/docs/screenshots/<slug>/` (or `$GIT_ROOT/screenshots/<slug>/` if no `docs/`).
+- Collision: append `-2`, `-3`, etc. if the target exists and is non-empty.
+
+**Fix order (preventing orphans):**
+1. Build body in memory (with the final folder path).
+2. Create the issue via `save_issue` (Workflow B) or update roadmap.md (Workflow A).
+3. **ON SUCCESS ONLY**: `mkdir -p <folder>` and `mv "$TMPDIR/claude-issue-probe.png" "<folder>/screenshot.png"`.
+4. If `mv` fails after the issue is live: surface explicitly — "Issue filed successfully, but screenshot move failed: <reason>. Source still at `$TMPDIR/claude-issue-probe.png` — retry manually with: `mv ... <folder>/`." Do not retry silently.
 
 **Search for context** only when helpful:
 - Web search for best practices if it's a complex feature
@@ -101,26 +167,74 @@ Execute in ONE response:
 
 ### Workflow B: Linear + Roadmap.md (linear_enabled: true)
 
-Execute in ONE response:
+**Pre-flight checks** (execute in ONE parallel batch BEFORE creating the issue):
+
 ```
 <function_calls>
-<invoke name="mcp__linear__create_issue">
-  <!-- Include team parameter from CLAUDE.md -->
+<invoke name="mcp__linear__list_issue_labels">
+  <parameter name="team">[Team ID]</parameter>
+  <!-- Use this to find the Area group + existing children -->
+</invoke>
+<invoke name="mcp__linear__list_projects">
+  <parameter name="team">[Team ID]</parameter>
+  <!-- Find the active sprint's project -->
+</invoke>
+<invoke name="Glob">
+  <parameter name="pattern">docs/sprints/*.active.md</parameter>
+  <!-- Detect active sprint -->
+</invoke>
+<invoke name="Bash">
+  <parameter name="command">pngpaste "$TMPDIR/claude-issue-probe.png" 2>/dev/null && file "$TMPDIR/claude-issue-probe.png" || echo "no image on clipboard"</parameter>
+  <!-- Grab clipboard screenshot once. Non-zero exit = no image; proceed without screenshots. -->
+</invoke>
+</function_calls>
+```
+
+Then, if a new Area label is needed, create it first:
+
+```
+<function_calls>
+<invoke name="mcp__linear__create_issue_label">
+  <parameter name="name">[Feature Area Name]</parameter>
+  <parameter name="parent">[Area group ID]</parameter>
+  <parameter name="teamId">[Team ID]</parameter>
+</invoke>
+</function_calls>
+```
+
+Then create the issue + set status + update roadmap in ONE response:
+
+```
+<function_calls>
+<invoke name="mcp__linear__save_issue">
   <parameter name="team">[Team ID from CLAUDE.md]</parameter>
   <parameter name="title">...</parameter>
   <parameter name="description">...</parameter>
-  <parameter name="labels">["agent", "technical"]</parameter>
-  ...
-</invoke>
-<invoke name="mcp__linear__update_issue">
-  <!-- Set status to Todo -->
-  <parameter name="id">[issue ID from create response]</parameter>
+  <parameter name="labels">["Access Control"]</parameter>  <!-- Area > X child label -->
+  <parameter name="project">[Active sprint project ID, if any]</parameter>
+  <parameter name="projectMilestone">[Sprint milestone ID, if any]</parameter>
+  <parameter name="blockedBy">["QUO-79"]</parameter>  <!-- If dependencies exist -->
+  <parameter name="priority">...</parameter>
   <parameter name="state">[Todo UUID from CLAUDE.md]</parameter>
 </invoke>
 <invoke name="Edit">...</invoke> <!-- Update sync status -->
 <invoke name="Edit">...</invoke> <!-- Add to backlog/sprint -->
 </function_calls>
 ```
+
+**ON SUCCESS** (only if a screenshot was captured), move it into the repo:
+
+```
+<function_calls>
+<invoke name="Bash">
+  <parameter name="command">mkdir -p "<GIT_ROOT>/docs/screenshots/<slug>" && mv "$TMPDIR/claude-issue-probe.png" "<GIT_ROOT>/docs/screenshots/<slug>/screenshot.png"</parameter>
+</invoke>
+</function_calls>
+```
+
+If `mv` fails: surface explicitly — "Issue filed, but screenshot move failed: <reason>. Source still at `$TMPDIR/claude-issue-probe.png` — retry manually." Do not retry silently.
+
+**Note:** `save_issue` supports `state` directly — no separate update call needed.
 
 **Do NOT:**
 - Create the issue and wait for the response before continuing
@@ -155,9 +269,16 @@ Execute in ONE response:
 - `path/to/file1.ts` - [why relevant]
 - `path/to/file2.ts` - [why relevant]
 
+<!-- Optional — only rendered if a screenshot was captured from the clipboard -->
+## Screenshots
+docs/screenshots/<slug>/
+
 ## Notes
 [Any risks, dependencies, or considerations - omit if none]
 ```
+
+**Template rules:**
+- `## Screenshots` is omitted if no screenshot was captured from the clipboard.
 
 ## Acceptance Criteria Guidelines
 
