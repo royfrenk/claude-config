@@ -889,7 +889,7 @@ echo "  Skipped (Claude-only):"
 echo "    Commands: audit, sync-linear, sync-roadmap
     Rules:    managed-agents-decision-rule
     Other:    managed-agents/ (SRE), agents/sre.md, agents/em.md"
-echo "    Guides:   autonomous-sprint, codex-peer-review,"
+echo "    Guides:   codex-peer-review,"
 echo "              parallel-review, retroactive-review,"
 echo "              screenshot-orchestration, visual-verification"
 echo ""

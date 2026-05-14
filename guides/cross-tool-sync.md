@@ -192,7 +192,7 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 | `testing.md` | Agent refs -> generic, path refs |
 | `infrastructure.md` | Path refs, agent refs -> generic |
 
-### Guides (17 of 24 synced)
+### Guides (17 of 23 synced)
 
 **Verbatim:** autonomous-iteration, design, external-model-delegation, legal, project-state-update, rtl-i18n-checklist, testing-patterns, security-patterns
 
@@ -200,7 +200,7 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 
 **Structural adaptation:** deployment-protocol, review-submission, roadmap-management
 
-**Skipped (Claude-only):** README, autonomous-sprint, codex-peer-review, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
+**Skipped (Claude-only):** README, codex-peer-review, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
 
 ### Commands (12 of 17 synced)
 

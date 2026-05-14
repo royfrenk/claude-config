@@ -268,15 +268,76 @@ Before closing the sprint, aggregate all SRE session costs from the sprint file.
 
 ## Autonomous Mode & Sprint Closure
 
-**Read `~/.claude/guides/autonomous-sprint.md`** when running autonomous sprint execution. It contains:
-- Flow per issue and multi-issue continuous execution
-- When to pause vs continue (5 pause conditions, 4 continue conditions)
-- Reporting during execution (sprint file, not User)
+### Flow Per Issue
+
+Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: Stitch mockup, STOP for "Stitch design approved"] -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer [reads docs/design-specs/{ISSUE_ID}/screens/ snapshot if Stitch mockup exists] -> Reviewer -> Push to sprint branch (Vercel preview) -> Update roadmap.md -> **Continue to next issue**
+
+### Multi-Issue Flow
+
+Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequence"), execute ALL issues continuously:
+- Issue 1: Implement -> Review -> Push to sprint branch
+- Issue 2: Implement -> Review -> Push to sprint branch
+- Issue 3: Implement -> Review -> Push to sprint branch
+- **Then STOP:** Present sprint wrap-up, ask User to test on Vercel preview URL
+
+### When to Pause
+
+**ONLY pause for:**
+1. **Design approval** (if UI/UX work detected)
+2. **Stitch mockup** (Design-Planner iterating with Stitch MCP — wait for "Stitch design approved")
+3. **Plan approval** (always required before implementation)
+4. **Review failures** (changes requested -> wait for fixes -> retry)
+5. **Blocking errors** (deployment failures, missing config, etc.)
+6. **Sprint completion** (all issues deployed to staging -> await User testing)
+
+**DO NOT pause for:**
+- Starting implementation (just do it)
+- Completing implementation (proceed to review)
+- Passing review (deploy to staging immediately)
+- Between issues in same sprint (continue to next issue)
+
+### Reporting During Execution
+
+- Post checkpoints to sprint file (not to User)
+- Post status updates to Linear comments (not to User)
+- Only message User when:
+  - Awaiting design approval
+  - Awaiting Stitch mockup approval ("Stitch design approved")
+  - Awaiting plan approval
+  - Review failed (after 3 rounds)
+  - All issues complete and on staging
+  - Blocking error occurred
 - **Update Phase Timeline table** when each issue transitions phases (Explore, Plan, Implement, Review, Deploy)
-- Sprint closure pre-deploy checks (6 mandatory checks)
-- Sprint completion flow (rename, move, sort)
-- Review summary protocol (before sprint wrap-up)
-- Communication formats (daily update, sprint wrap-up)
+
+### Sprint Closure & Production Deployment
+
+**"Close the sprint" = deploy to production approval.**
+
+**Pre-deploy checks (MANDATORY):**
+1. Acceptance criteria all passed (else ask User)
+2. Staging checks passed (else BLOCK)
+3. **Reviewer approval** (BLOCKING): Query Linear comments for "Review: Approved" per issue. If missing/stale -> STOP, invoke Reviewer retroactively, post to Linear. This should be redundant if staging gate worked.
+4. Infrastructure changes (email/DB/auth/payment): Require BOTH Reviewer + User approval (else STOP, request User approval).
+5. Codex peer review: Request, implement if Reviewer accepts, else proceed (don't block on tooling failures).
+6. Multi-issue sprints: Check all complete (else ask User).
+
+**If passed:** Developer merges sprint branch to `develop` -> merges `develop` to `main` -> deletes sprint branch -> rename sprint `.done.md` -> update roadmap.md (Recently Completed) -> update Linear (Done).
+
+### Sprint Completion Flow
+
+Merge sprint branch to `develop` -> Delete sprint branch -> Rename `.active.md` -> `.done.md` -> Move issues to "Recently Completed" (top of table, action-oriented Outcome) -> Remove from P0/P1/P2 -> Sort backlog by priority.
+
+### Review Summary (Before Sprint Wrap-Up)
+
+Read sprint file -> extract issue IDs -> read each spec's "Review Tracking" -> categorize (Approved/Pending/Not Reviewed) -> output table + summary.
+
+**If NOT reviewed:** BLOCK closure, post to Linear, invoke Reviewer retroactively.
+
+### Communication Formats
+
+**Daily Update:** Completed / In Progress / Blocked / Decisions / Suggested / Next Steps (owner)
+
+**Sprint Wrap-Up:** Deployments / Project State / Completed / Acceptance Criteria / What's Next / Next Steps
 
 ## N-Iteration Circuit Breaker
 
