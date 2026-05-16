@@ -133,6 +133,7 @@ Based on context, read:
 - **If iOS native:** `~/.claude/skills/design-mobile-ios.md`
 - **If Android native:** `~/.claude/skills/design-mobile-android.md`
 - **If cross-platform:** `~/.claude/skills/design-mobile-crossplatform.md` (when available)
+- **If `docs/!project/DESIGN.md` exists and `## Component Library` has content:** read that section — it defines the project's canonical component specs and will be used in Phase A5.
 
 **If design spec has a `## Stitch Mockup` section:**
 - Open the local snapshot at the path specified in the spec — this is the **visual source of truth**
@@ -283,6 +284,25 @@ Waiting for element list before proceeding.
 - Hover state too slow (> 150ms) or too fast (< 100ms)
 - Focus ring invisible or same color as background
 - Disabled state still shows hover effects
+
+#### Phase A5: Component Library Compliance (Conditional)
+
+**Run only if `docs/!project/DESIGN.md` `## Component Library` was loaded in Step 2.**
+
+For each component visible in the implementation that has an entry in `## Component Library`, verify:
+
+| Check | What to Verify |
+|-------|----------------|
+| **Correct variant** | Implementation uses the variant the spec defines for this context (e.g., primary vs secondary button) |
+| **All required states** | Every state listed in the spec is implemented (default, hover, active, disabled, loading, etc.) |
+| **Usage rules** | No usage rule violations (e.g., "never use more than one per view") |
+| **Visual properties** | Key visual properties (color, radius, spacing) match the spec entry |
+
+Report format:
+```
+### Component Library Compliance: [✅ / ⚠️ / ❌]
+- [ComponentName]: [✅ Matches spec / ⚠️ Missing [state] / ❌ Wrong variant — spec says X, found Y]
+```
 
 ---
 

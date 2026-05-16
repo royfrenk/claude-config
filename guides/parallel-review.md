@@ -1,5 +1,9 @@
 # Parallel Review Guide
 
+> **Scope:** This guide covers reviewing **multiple Developer submissions** simultaneously (parallel waves of work). For multi-angle review of a **single submission** by parallel narrow-focused agents (Rule Compliance, Wiring & Dead Code, Regressions, A11y & UI Behavior), see the Review Orchestration § of `~/.claude/agents/em.md`.
+>
+> **Known limitation:** This guide instructs Reviewer to "use the Task tool" but Reviewer's frontmatter (`tools: Read, Grep, Glob, Bash`) does not include Task. Multi-developer parallel review via sub-Reviewers spawned from within Reviewer is not currently functional. Tracked separately from the multi-angle change.
+
 Protocol for reviewing multiple Developer submissions simultaneously during parallel execution waves.
 
 ---

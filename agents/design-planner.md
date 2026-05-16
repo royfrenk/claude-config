@@ -54,7 +54,12 @@ You are invoked by Engineering Manager when:
    ls .claude/design-system.md
    ```
 
-3. **If redesigning existing UI, review current implementation:**
+3. **Check DESIGN.md for existing screen and design system ID:**
+   If `docs/!project/DESIGN.md` exists:
+   - Read the `## Screen Inventory` section. If the table has a Feature column, search it for a row matching the current issue's feature area (case-insensitive substring match against issue title). If match found: note the screen ID — Phase 3.5 will use this screen instead of generating.
+   - Read the `## Design System` section. If `**Stitch Design System ID:**` is populated (not blank/placeholder): note it for use in Phase 3.5 generation.
+
+4. **If redesigning existing UI, review current implementation:**
    ```bash
    # Find existing component/page files
    grep -r "ComponentName" views/
@@ -449,17 +454,19 @@ Please answer these questions so I can finalize the design specification.
 
 ### Phase 3.5: Stitch Mockup (Conditional)
 
-**Trigger:** This phase activates when EITHER condition is true:
+**Trigger:** This phase activates when ANY condition is true:
 - (a) The Linear issue has the `mockup-needed` label (check `mcp__linear__get_issue({id}).labels[].name` in Phase 1 — if found, set a mental note to run Phase 3.5), OR
-- (b) The User said "mockup this in Stitch" (or similar) during the sprint.
+- (b) The User said "mockup this in Stitch" (or similar) during the sprint, OR
+- (c) **Re-check at Phase 3.5 start:** `docs/!project/DESIGN.md` `## Screen Inventory` has a row whose Feature column matches the current issue's feature area. If this condition is true: use the **existing-screen path** (skip Step 4 generation).
 
-If neither trigger fires, skip this phase and proceed to Phase 4.
+If no trigger fires, skip this phase and proceed to Phase 4.
 
 **Step 1 — Check Stitch MCP availability.**
 Call `mcp__stitch__list_projects`. If it errors, log: "Stitch MCP unavailable — falling back to text-only design spec." Then skip to Phase 4. Do not block the sprint.
 
 **Step 2 — Get the Stitch project ID.**
-EM passes the project ID in your prompt input (e.g., "Run Phase 3.5. Stitch project ID: `{id}`."). Use that value directly. If EM did not pass an ID (edit round where it was already saved), read the `## Stitch Mockup` section of the current spec for the project ID.
+Priority order: (1) EM passes the project ID in your prompt input — use directly. (2) Read `**Stitch Project ID:**` preamble from `docs/!project/DESIGN.md` `## Screen Inventory`. (3) Read the `## Stitch Mockup` section of the current spec.
+If triggered by condition (c) (existing screen match), skip Step 3 and Step 4 — proceed directly to Step 5 using the screen ID noted in Phase 1.
 
 **Step 3 — Gather real project content.**
 Before generating, extract real data to avoid Stitch placeholder output:
@@ -496,6 +503,11 @@ Update the `## Stitch Mockup` section in `docs/design-specs/{ISSUE_ID}-design.md
 - Local snapshot path
 - Stitch editor URL
 - Status: 🔄 In Review
+
+Also, update `## Component Library` in `docs/!project/DESIGN.md` if that file exists:
+- Read the `## Component Library` section first to check what components are already documented.
+- For each component visible in the Stitch screen that is not yet documented: append a brief spec entry (component name, variants seen, states visible, key visual properties).
+- Skip any component already present in the section. Silent no-op if section is absent.
 
 **Step 8 — Present to the User and STOP.**
 

@@ -179,6 +179,47 @@ Or if satisfied:
 
 ---
 
+## Phase D.5: Stitch Mockup Generation (Opt-In)
+
+**When:** User says "looks good" and PRD contains UI features.
+
+**Before extracting stories**, identify any UI screens described in the PRD. Ask the user once:
+
+> "I see [N] UI screens in this PRD: [list feature names]. Should I generate Stitch mockups for these before extracting stories? (You can skip this and generate them during the sprint instead.)"
+
+If the user declines or there are no UI screens → skip to Phase E.
+
+**If the user says yes**, for each UI feature:
+
+1. Call `mcp__stitch__generate_screen_from_text` with a description derived from the PRD's relevant section. **Generate only — do not run a self-review edit pass in this phase.**
+
+2. On success, call `mcp__stitch__get_screen(screenId)` to get a fresh screenshot URL.
+
+3. Ensure `docs/!project/DESIGN.md` exists. If not, create it from this template:
+   ```markdown
+   <!-- same template as new-project.md item 14 — update both if changed -->
+   ## Design System
+   **Stitch Design System ID:** (add when known — optional)
+
+   ## Component Library
+
+   ## Screen Inventory
+   **Stitch Project ID:** (add project ID)
+
+   | Feature | Screen Name | Screen ID | Status |
+   |---------|-------------|-----------|--------|
+   ```
+
+4. Append a row to `## Screen Inventory` in DESIGN.md:
+   `| {Feature} | {Screen Name} | {screenId} | ✅ Current |`
+   (If `get_screen` fails for a screen, omit that row rather than writing a placeholder.)
+
+5. In the PRD draft, annotate the story or stories corresponding to this UI feature with: `Visual reference: see DESIGN.md — {Feature}`
+
+After all screens are processed, say: "Mockups generated and added to `docs/!project/DESIGN.md`. Proceeding to story extraction."
+
+---
+
 ## Phase E: Extract Stories
 
 Once Q&A is complete, extract actionable stories from the PRD.

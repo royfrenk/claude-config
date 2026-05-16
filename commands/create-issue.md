@@ -187,6 +187,18 @@ Execute in ONE response:
   <parameter name="command">pngpaste "$TMPDIR/claude-issue-probe.png" 2>/dev/null && file "$TMPDIR/claude-issue-probe.png" || echo "no image on clipboard"</parameter>
   <!-- Grab clipboard screenshot once. Non-zero exit = no image; proceed without screenshots. -->
 </invoke>
+<invoke name="Read">
+  <parameter name="file_path">docs/!project/DESIGN.md</parameter>
+  <!--
+    If this file exists and ## Screen Inventory has rows with a Feature column:
+    - Search Feature values case-insensitively as substring of the issue title.
+    - Exactly 1 match → note screen ID and screen name for Visual Reference.
+    - 2+ matches → take the first row whose Feature value equals the issue title exactly (case-insensitive); if none qualifies, skip silently.
+    - 0 matches → skip silently.
+    If the file is missing or ## Screen Inventory has no rows → proceed without.
+    When a match is found: call mcp__stitch__get_screen(screenId) to get a fresh screenshot URL. Append ## Visual Reference to the issue body.
+  -->
+</invoke>
 </function_calls>
 ```
 
@@ -273,12 +285,19 @@ If `mv` fails: surface explicitly — "Issue filed, but screenshot move failed: 
 ## Screenshots
 docs/screenshots/<slug>/
 
+<!-- Optional — only rendered if a matching row was found in docs/!project/DESIGN.md ## Screen Inventory -->
+## Visual Reference
+- **Screen:** [Screen Name from DESIGN.md]
+- **Stitch ID:** `[screenId]`
+- **Snapshot:** [screenshot URL from mcp__stitch__get_screen]
+
 ## Notes
 [Any risks, dependencies, or considerations - omit if none]
 ```
 
 **Template rules:**
 - `## Screenshots` is omitted if no screenshot was captured from the clipboard.
+- `## Visual Reference` is omitted if no matching row was found in `docs/!project/DESIGN.md` `## Screen Inventory`.
 
 ## Acceptance Criteria Guidelines
 

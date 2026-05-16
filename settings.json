@@ -34,6 +34,7 @@
       "/Users/royfrenkiel/.claude/guides"
     ]
   },
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -42,16 +43,6 @@
           {
             "type": "command",
             "command": "START_FILE=\"/tmp/claude-session-start\"; if [ ! -f \"$START_FILE\" ]; then date +%s > \"$START_FILE\"; fi"
-          }
-        ]
-      },
-      {
-        "matcher": "tool matches '^mcp__linear__'",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "pkill -f 'mcp-remote.*linear' 2>/dev/null; sleep 2",
-            "statusMessage": "Resetting Linear MCP connection..."
           }
         ]
       }
@@ -125,8 +116,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sleep 1 && pkill -f 'mcp-remote.*linear' 2>/dev/null || true",
-            "statusMessage": "Cleaning up Linear processes...",
+            "command": "bash ~/.claude/scripts/cleanup-linear-mcp.sh 2>/dev/null || true",
+            "statusMessage": "Linear MCP cleanup check...",
             "async": true
           }
         ]
@@ -155,8 +146,13 @@
     ]
   },
   "enabledPlugins": {
-    "figma@claude-plugins-official": false
+    "figma@claude-plugins-official": false,
+    "frontend-design@claude-plugins-official": true,
+    "playground@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true,
+    "chrome-devtools-mcp@claude-plugins-official": true
   },
-  "effortLevel": "max",
   "skipDangerousModePermissionPrompt": true
 }

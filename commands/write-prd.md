@@ -175,6 +175,8 @@ After user provides stories, suggest theme groupings (e.g., Discovery, Evaluatio
 
 **Important:** These are user stories, NOT engineering tasks. `/review-prd` will extract engineering-sized stories later.
 
+**DESIGN.md annotation (best-effort, silent no-op if no match):** After drafting the stories, if `docs/!project/DESIGN.md` exists and `## Screen Inventory` has rows: for each story, check if any Feature value in the Screen Inventory table appears as a case-insensitive substring in the story's theme name, story title, or story description. If a match is found, append to that story: `Visual reference: see DESIGN.md — {Feature}`. If no match, leave the story unchanged.
+
 ### Section 7: Versions / Milestones
 
 **Ask:**

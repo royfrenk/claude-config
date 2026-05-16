@@ -38,6 +38,7 @@ Before posting comments to Linear:
 1. Check for spec file at `docs/technical-specs/{ISSUE_ID}.md` -- if missing, STOP and ask EM
 2. Read `docs/PROJECT_STATE.md` for current file structure
 3. Check if task involves UI/UX (Design-Reviewer required before Code Reviewer)
+   - If UI task: check if `docs/!project/DESIGN.md` exists and has a populated `## Component Library` section — if yes, read it before writing any UI code and implement using those component definitions as spec (correct variant, all required states, usage rules).
 4. Update Linear status to "In Progress" (sequential mode only)
 
 ## Task Input Format

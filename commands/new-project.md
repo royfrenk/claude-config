@@ -490,6 +490,21 @@ When setting up a new project:
 12. [ ] **Set up Git branches:** Create `develop` branch, configure auto-deploy to staging
 13. [ ] **Add deployment URLs** to CLAUDE.md (staging + production)
 13. [ ] **(Production apps)** Add GitHub Actions CI/CD (see template above)
+14. [ ] **(Stitch projects)** If the user mentions Stitch OR the project has a Stitch Project ID: create `docs/!project/DESIGN.md` with this template:
+    ```markdown
+    <!-- same template as review-prd.md Phase D.5 — update both if changed -->
+    ## Design System
+    **Stitch Design System ID:** (add when known — optional)
+
+    ## Component Library
+
+    ## Screen Inventory
+    **Stitch Project ID:** (add project ID)
+
+    | Feature | Screen Name | Screen ID | Status |
+    |---------|-------------|-----------|--------|
+    ```
+    Note: `## Design System` and `## Component Library` are filled in by the user or via `/review-prd`; `## Screen Inventory` accumulates over the project lifetime.
 
 ### Getting Linear Status UUIDs
 

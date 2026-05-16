@@ -121,7 +121,7 @@ while True:
     await asyncio.sleep(3)
 ```
 
-**Linear MCP:** A PreToolUse hook auto-kills stale MCP processes before every `mcp__linear__*` call. No manual action needed. Use `/reset-linear` if calls still hang.
+**Linear MCP:** A PostToolUse hook checks process count after each `mcp__linear__*` call and runs `~/.claude/scripts/cleanup-linear-mcp.sh` (kills when >5 accumulate). No manual action needed. Use `/reset-linear` if calls still hang.
 
 ---
 

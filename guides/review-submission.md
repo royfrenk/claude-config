@@ -64,6 +64,10 @@ Update the spec file with review round:
 
 When Reviewer requests changes, fix all issues then resubmit:
 
+> **Note on Round 1 multi-angle findings:** Round 1 review feedback may include scored multi-angle findings prefixed `[NN]` (e.g., `[100] file:line — Wiring: button has no onClick`). The score is the reviewer's confidence (0/25/50/75/100; `[—]` if scorer was unavailable). On Round 2+, Reviewer runs single-pass only — multi-angle parallel review is Round 1 only.
+>
+> **In your re-submission, reference issues by their ordinal number (e.g., `1.`, `2.`, `3.`), NOT by the `[NN]` score tag.** The ordinal is unambiguous; the score is metadata.
+
 ### Format
 
 ```

@@ -105,11 +105,23 @@ If the design spec (`docs/design-specs/{ISSUE_ID}-design.md`) has a `## Stitch M
 
 **F. Revertibility** -- Can this be safely reverted without data migration?
 
+### Step 4.5: Incorporate Multi-Angle Findings (Round 1 Only)
+
+Multi-angle findings are pre-computed by EM (per `~/.claude/agents/em.md` Review Orchestration §). You consume them; you do NOT spawn agents.
+
+**Three input states to handle:**
+
+1. **Findings present with `[NN]` scores** (normal Round 1) — sort high→low by score. Findings ≥75 typically warrant inclusion in CHANGES REQUESTED. Lower scores are advisory.
+2. **Findings present without `[NN]` scores** (degraded mode — scorer unavailable, rows show `[—]`) — present in original order. Note "scorer was unavailable; confidence not available" in your feedback.
+3. **No `## Multi-Angle Findings (pre-scored)` section in input** (Round 2+ or empty-diff skip) — skip this step entirely.
+
+**Snapshot drift advisory:** Multi-angle findings reference the diff at EM's snapshot time. If Dev pushed new commits after EM's snapshot, findings may reference stale lines. Verify against current git state if a finding looks suspicious; treat unverifiable findings as advisory.
+
 ### Step 5: Decide
 
 **APPROVED** if: All tests pass, new code has tests, scope is correct, code is clear and simple. (Security reviewed separately by Security Reviewer.)
 
-**CHANGES REQUESTED** if: Fixable issues exist that Developer can address without architectural changes.
+**CHANGES REQUESTED** if: Fixable issues exist that Developer can address without architectural changes. **Foundational findings** (verification report failures, missing tests, AC gaps, scope/clarity issues from Step 4) remain gating. **Multi-angle findings ≥75** typically warrant CHANGES REQUESTED — use judgment; lower scores are advisory.
 
 **BLOCKED** if: Architectural problem needing EM/User input, scope creep needing task redefinition. (Security vulnerabilities are caught by Security Reviewer.)
 
@@ -117,15 +129,28 @@ If the design spec (`docs/design-specs/{ISSUE_ID}-design.md`) has a `## Stitch M
 
 Be specific. Vague feedback wastes cycles. Post ALL feedback to Linear as a comment.
 
-```markdown
-## Review: Changes Requested (Round [1/2/3])
+**Round 1 format** (foundational + multi-angle findings):
 
-### Issues
+```markdown
+## Review: Changes Requested (Round 1)
+
+### Issues (Foundational)
 
 1. **`[file:line]`** -- [what's wrong]
    -> [what to do]
 
 2. **`[file:line]`** -- [what's wrong]
+   -> [what to do]
+
+### Issues (Multi-Angle, sorted by confidence)
+
+3. **[100] `[file:line]`** -- [Angle: what's wrong]
+   -> [what to do]
+
+4. **[75] `[file:line]`** -- [Angle: what's wrong]
+   -> [what to do]
+
+5. **[50] `[file:line]`** -- [Angle: what's wrong] (advisory)
    -> [what to do]
 
 ### Questions
@@ -134,6 +159,28 @@ Be specific. Vague feedback wastes cycles. Post ALL feedback to Linear as a comm
 ---
 Awaiting fixes before staging approval.
 ```
+
+**Round 2+ format** (foundational only — multi-angle is Round 1 only):
+
+```markdown
+## Review: Changes Requested (Round [2/3])
+
+### Issues
+
+1. **`[file:line]`** -- [what's wrong]
+   -> [what to do]
+
+### Questions
+- [anything needing clarification]
+
+---
+Awaiting fixes before staging approval.
+```
+
+**Notes:**
+- Ordinals (`1.`, `2.`, `3.`) are continuous across both Issues sections so Developer can cite them unambiguously in re-submission.
+- `[NN]` is the multi-angle confidence score (0/25/50/75/100). On degraded mode (scorer unavailable), use `[—]` and add a note.
+- On Round 2+ omit the Multi-Angle section entirely.
 
 ## Re-Review Process
 

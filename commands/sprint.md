@@ -139,6 +139,8 @@ Status: [status from sprint file]
 
 **CONTINUE** - Use this sprint file for all subsequent work, delegate to EM (step 3)
 
+If the sprint file contains a plan checkpoint (a `## Checkpoint` section with task details for the sprint's issues), skip Phase 1 (Explorer + Plan-Writer) and go directly to presenting the existing plan for approval.
+
 #### If no active sprint found
 
 **Determine next sprint number:**
@@ -268,7 +270,8 @@ Read `~/.claude/agents/em.md` and execute it. You ARE the engineering manager fo
 **PHASE 1 — Exploration & Planning:**
 1. Spawn Explorer(s) to analyze scope (skip for trivial fixes)
 2. Spawn Plan-Writer to create implementation plan
-3. Present plan to User for approval ← CHECKPOINT
+3. Write plan to sprint file (checkpoint with task list, wave, dependencies per issue), then present to User for approval ← CHECKPOINT
+   (Sprint file is the handoff for new context windows — plan must be there before pausing)
 
 **PHASE 2 — Execution:**
 4. Once approved: Execute ALL issues CONTINUOUSLY without stopping

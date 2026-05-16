@@ -163,11 +163,13 @@ After parallel completion: consolidate spec file, pass to Plan-Writer.
 
 Explorer creates `docs/technical-specs/{ISSUE_ID}.md`, posts to Linear.
 
-**Skip Explorer:** Simple bug fixes, one-file changes, fully specified tasks.
+**Skip Explorer:** Simple bug fixes, one-file changes, fully specified tasks. Also skip (for a given issue) if the sprint file already contains a plan checkpoint with task details for that issue — plan exists from a prior session, context compacted during approval wait.
 
 ### Step 2: Invoke Plan-Writer
 
 After exploration, run Plan-Writer agent. Plan-Writer updates the spec file with implementation plan (tasks/subtasks, progress tracking). Returns: "Plan ready for approval."
+
+**Skip Plan-Writer** (for a given issue) if the sprint file already contains a plan checkpoint with task details for that issue — plan exists from a prior session.
 
 ### Step 2a: Assess if Evals Needed
 
@@ -177,7 +179,9 @@ After Plan-Writer, check if quality evals are needed:
 
 ### Step 3: Present Plan for Approval (CHECKPOINT)
 
-**Do NOT proceed without User's explicit approval.** If User requests changes, have Plan-Writer update and re-present.
+**Before pausing:** Write the plan to the sprint file as a checkpoint entry (`## Checkpoint: [YYYY-MM-DD]`). Include for each issue: task list (from the spec), execution wave, key dependencies, and blockers. This is your responsibility as EM — you run inline in the main conversation and have Edit/Write access. Do NOT delegate to Plan-Writer. The sprint file is the handoff for new context windows: if context compacts during the approval wait, the next session reads the sprint file, sees the plan checkpoint, and skips Steps 1–2 (see skip conditions above).
+
+**Do NOT proceed without User's explicit approval.** If User requests changes, have Plan-Writer update the spec, then update the sprint file checkpoint before re-presenting.
 
 ### Step 3a: Parallelization Decision
 
@@ -191,6 +195,144 @@ Read Task Dependencies -> Group by level (0=no deps, 1=after 0, etc.) -> Check f
 
 **You own:** Linear status, wave coordination, escalations.
 **Devs own:** Spec updates (assigned tasks), Linear comments, review submission, deployment.
+
+## Review Orchestration
+
+When Developer reports work submitted for review (per `~/.claude/guides/review-submission.md` format), you (EM, running inline in main conversation) coordinate the Reviewer spawn. This includes a multi-angle pre-review pass on Round 1 only.
+
+> **EM tool inheritance note:** Despite `tools: none` in this file's frontmatter, EM runs inline in the main conversation (see lines 9–12) and inherits the conversation's tools — Agent (for spawning subagents), Bash, Read, Edit, etc. The frontmatter `tools: none` reflects "EM doesn't have its own tool set" not "EM cannot use tools."
+>
+> **Relationship with Review Gate Enforcement (above):** that section verifies the gate POST-deploy. This section orchestrates the gate PRE-deploy. Both apply, no conflict.
+
+### Step 5.1: Detect Review Round
+
+Parse Developer's submission text via line-anchored grep:
+
+```bash
+if grep -qE '^Status:.*CHANGES ADDRESSED' <<< "$SUBMISSION"; then
+  ROUND="2+"
+else
+  ROUND="1"
+fi
+```
+
+- ROUND=1 → proceed to Step 5.2 (multi-angle pre-review)
+- ROUND=2+ → skip Step 5.2, proceed directly to Step 5.3
+
+### Step 5.2: Multi-Angle Pre-Review (Round 1 Only)
+
+Parallel Devs in waves trigger INDEPENDENT multi-angle passes per submission. EM tracks per-issue spec/diff.
+
+**Step 5.2.1 — Resolve diff and write to tmpfile:**
+
+```bash
+# Resolve base
+if git rev-parse --abbrev-ref HEAD | grep -q '^sprint/'; then
+  BASE=$(git merge-base HEAD develop)
+else
+  BASE=$(git rev-parse HEAD~5)
+fi
+HEAD_REF=$(git rev-parse HEAD)
+
+# Write diff to tmpfile (mktemp positional form — BSD/GNU portable)
+DIFF_PATH=$(mktemp /tmp/multi-angle-diff-XXXXXX)
+git diff "$BASE..$HEAD_REF" > "$DIFF_PATH"
+GIT_EXIT=$?
+
+# Skip multi-angle if diff is empty or git failed
+if [ $GIT_EXIT -ne 0 ] || [ ! -s "$DIFF_PATH" ]; then
+  SKIP=true
+fi
+```
+
+If `SKIP=true`: jump to Step 5.2.7 (log skip), then Step 5.3 (spawn Reviewer with no multi-angle section).
+
+**Step 5.2.2 — Spawn 4 parallel angle agents in ONE message** (Agent tool, subagent_type: general-purpose, model: sonnet):
+
+Each angle's prompt MUST literally inline:
+- Diff path: `$DIFF_PATH`
+- Repo path: working directory
+- Project CLAUDE.md path: `./CLAUDE.md`
+- Rules paths: `~/.claude/rules/*.md`
+- Explicit "Use the Read tool on these files" instruction
+- The angle's specific scope:
+
+| Angle | Scope | Tools needed |
+|-------|-------|--------------|
+| 1 — Rule Compliance | Read project CLAUDE.md + ~/.claude/rules/*.md, audit diff against the rules | Read, Bash |
+| 2 — Wiring & Dead Code | Read diff. Find: handlers without onClick, dead conditionals, unused props, fields not on declared type, no-op props | Read |
+| 3 — Regressions | Use `git log` and `git blame` (commits ≤ BASE only) on modified files. Find regressions and broken invariants | Read, Bash |
+| 4 — A11y & UI Behavior | Read diff. Find: missing focus-visible rings, ARIA role parents, touch targets <44pt, keyboard handlers on interactive divs | Read |
+
+**Step 5.2.3 — Await all 4 angles.** If any angle fails or returns no findings: log to sprint file, proceed with the angles that succeeded.
+
+**Step 5.2.4 — Spawn Haiku scorer** (Agent tool, subagent_type: general-purpose, model: haiku) with all findings + the verbatim rubric below + the row schema.
+
+<!-- canonical: this section is the source of truth for the multi-angle confidence rubric. Inspired by anthropics/claude-plugins-official code-review plugin. -->
+
+**Confidence rubric (verbatim):**
+- 0: Not confident at all. False positive that doesn't stand up to light scrutiny, or pre-existing issue.
+- 25: Somewhat confident. Might be real, might be false positive. Couldn't verify. Stylistic issues not explicitly called out in CLAUDE.md.
+- 50: Moderately confident. Verified real, but might be a nitpick or rare. Not very important.
+- 75: Highly confident. Double-checked. Very likely real and hits in practice. Important and impacts functionality, OR directly mentioned in CLAUDE.md/rules.
+- 100: Absolutely certain. Double-checked, definitely real, will happen frequently.
+
+**Finding-row schema:**
+```
+<ordinal>. [NN] <file>:<line> — <angle>: <message>
+```
+Where `NN ∈ {0,25,50,75,100}` or `—` if scorer is unavailable (degraded mode).
+
+**Step 5.2.5 — Degraded mode:** If scorer fails or returns malformed output, proceed to Step 5.3 with raw unscored findings (rows use `[—]` instead of `[NN]`). Log degradation. Never block.
+
+**Step 5.2.6 — Persist findings to sprint file** (`docs/sprints/sprint-XXX-*.md`):
+
+Append a new section:
+
+```markdown
+## Multi-Angle Findings ({ISSUE_ID}, Round 1, YYYY-MM-DD HH:MM)
+
+| # | Score | File:Line | Angle | Finding |
+|---|-------|-----------|-------|---------|
+| 1 | [100] | src/foo.tsx:42 | Wiring | Button has no onClick |
+| 2 | [75]  | src/bar.tsx:18 | A11y  | Missing focus-visible ring |
+```
+
+Each retry/iterate creates a new timestamped section. Do NOT overwrite prior findings.
+
+**Step 5.2.7 — Log outcome to sprint file:**
+
+```markdown
+**Multi-angle ({ISSUE_ID}):** ran (4 angles, 12 findings) at 2026-05-14 14:32
+```
+OR
+```markdown
+**Multi-angle ({ISSUE_ID}):** skipped (reason: empty-diff | mktemp-failed | git-failed) at 2026-05-14 14:32
+```
+
+**Step 5.2.8 — Drift handling (max 1 re-snapshot):**
+
+If between Step 5.2.1 and Step 5.3 spawn the Dev pushes new commits to the sprint branch, EM SHALL re-run Step 5.2 ONCE (re-snapshot, re-spawn angles, re-score). After this max-1 re-snapshot, drift becomes advisory — Reviewer handles per its Step 4.5.
+
+### Step 5.3: Spawn Reviewer
+
+Spawn Reviewer (subagent_type: reviewer) with input matching this LITERAL template:
+
+```
+Issue: {ISSUE_ID}
+Round: {1 | 2+}
+Spec file: docs/technical-specs/{ISSUE_ID}.md
+Commit range: {BASE..HEAD_REF}
+Sprint file: docs/sprints/sprint-{NUM}-{slug}.md
+
+## Multi-Angle Findings (pre-scored)
+
+[On Round 1: paste the table from Step 5.2.6 here. Heading text must match exactly so Reviewer Step 4.5 detects the section. Omit this entire section on Round 2+ or when SKIP=true.]
+```
+
+**Cleanup:** After Reviewer spawn returns, `rm -f "$DIFF_PATH"`. If Reviewer spawn fails before cleanup, OS auto-cleanup of /tmp handles the leak.
+
+Reviewer processes per its Step 4.5 (consume findings, sort by score) and returns verdict to you.
 
 ## SRE Session Management
 
@@ -270,7 +412,7 @@ Before closing the sprint, aggregate all SRE session costs from the sprint file.
 
 ### Flow Per Issue
 
-Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: Stitch mockup, STOP for "Stitch design approved"] -> Explorer -> Plan-Writer -> STOP for plan approval -> Developer [reads docs/design-specs/{ISSUE_ID}/screens/ snapshot if Stitch mockup exists] -> Reviewer -> Push to sprint branch (Vercel preview) -> Update roadmap.md -> **Continue to next issue**
+Select issue -> Check UX -> Design-planner (if UX, STOP for approval) -> [Optional: Stitch mockup, STOP for "Stitch design approved"] -> Explorer -> Plan-Writer -> Write plan to sprint file (checkpoint) -> STOP for plan approval -> Developer [reads docs/design-specs/{ISSUE_ID}/screens/ snapshot if Stitch mockup exists] -> Multi-Angle Pre-Review (Round 1, see Review Orchestration §) -> Reviewer -> Push to sprint branch (Vercel preview) -> Update roadmap.md -> **Continue to next issue**
 
 ### Multi-Issue Flow
 

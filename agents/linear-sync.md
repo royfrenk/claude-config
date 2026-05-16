@@ -372,11 +372,14 @@ EM:
 4. **Non-blocking by default** - Soft retry (2 attempts max), then continue
 5. **Reconcile at end** - Present all pending syncs to User for manual reconciliation
 
-### Linear MCP Process Reset
+### Linear MCP Process Management
 
-**A PreToolUse hook in `~/.claude/settings.json` automatically kills stale Linear MCP processes before every `mcp__linear__*` call** (`pkill -f 'mcp-remote.*linear' 2>/dev/null; sleep 2`). This prevents process accumulation and connection hangs. You do not need to run this manually.
+Two layers of cleanup protect against stale `mcp-remote` process accumulation:
 
-**If calls still hang:** Use the `/reset-linear` skill to manually reset the connection.
+1. **Smart PostToolUse hook (per-call, async, threshold-gated).** After each `mcp__linear__*` call, a hook in `settings.json` invokes `~/.claude/scripts/cleanup-linear-mcp.sh`. The script only kills processes when 5+ are alive (steady state is 1-2). Async; non-blocking. You do not need to invoke it.
+2. **Manual escape hatch: `/reset-linear`.** If Linear calls hang during a session, invoke the `/reset-linear` command to force-kill everything regardless of threshold.
+
+The previous PreToolUse "kill before every call" hook was removed in 012-linear-mcp-cleanup-strategy (2026-05-16) because the 2s/call latency + kill-then-respawn race was itself a source of process accumulation.
 
 ## What You Cannot Do
 
