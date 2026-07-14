@@ -335,6 +335,15 @@ Platform: [Vercel/Railway/etc]
 > **Updated by:** EM Agent when tasks change status
 > **Fallback:** Use this when Linear is unavailable
 
+**Issue prefix:** XXX
+**Highest ticket:** XXX-0
+
+<!--
+For projects WITHOUT Linear (`linear_enabled: false`): `/create-issue` and `/review-prd`
+mint local IDs from the two fields above (see ~/.claude/guides/roadmap-management.md).
+`**Highest ticket:**` always holds the most recently allocated ID.
+-->
+
 ---
 
 ## Sync Status
@@ -381,11 +390,11 @@ Platform: [Vercel/Railway/etc]
 
 Sort by priority (High → Medium → Low), then by issue number.
 
-| Priority | Issue | Title | Added | Notes |
-|----------|-------|-------|-------|-------|
-| High | XXX-## | [Title] | YYYY-MM-DD | [brief context] |
-| Medium | XXX-## | [Title] | YYYY-MM-DD | [brief context] |
-| Low | XXX-## | [Title] | YYYY-MM-DD | [brief context] |
+| Priority | Issue | Title | Added | Spec | Notes |
+|----------|-------|-------|-------|------|-------|
+| High | XXX-## | [Title] | YYYY-MM-DD | [spec](technical-specs/XXX-##.md) | [brief context] |
+| Medium | XXX-## | [Title] | YYYY-MM-DD | [spec](technical-specs/XXX-##.md) | [brief context] |
+| Low | XXX-## | [Title] | YYYY-MM-DD | [spec](technical-specs/XXX-##.md) | [brief context] |
 
 ---
 
@@ -546,6 +555,8 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md`:
 ┌─────────────────────────────────────────────────────────┐
 │ docs/technical-specs/{ISSUE_ID}.md                      │
 ├─────────────────────────────────────────────────────────┤
+│ ## Product Requirements (by /create-issue or /review-prd│
+│                          on no-Linear projects)         │
 │ ## Summary                                              │
 │ ## Exploration (by Explorer)                            │
 │ ## Implementation Plan (by Plan-Writer)                 │
@@ -555,8 +566,8 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md`:
 ```
 
 **Flow:**
-1. Explorer creates the file with exploration findings
-2. Plan-Writer adds implementation plan to the same file
+1. The file is created by Explorer, **or** — on a no-Linear project — earlier by `/create-issue` / `/review-prd` with a `## Product Requirements` section (Explorer then appends its exploration, preserving that section)
+2. Plan-Writer adds the implementation plan to the same file
 3. Developer updates progress (🟥→🟨→🟩) as they work
 4. EM updates `docs/roadmap.md` to reflect status
 

@@ -105,7 +105,7 @@ pngpaste "$TMPDIR/claude-issue-probe.png" 2>/dev/null && file "$TMPDIR/claude-is
 
 **Fix order (preventing orphans):**
 1. Build body in memory (with the final folder path).
-2. Create the issue via `save_issue` (Workflow B) or update roadmap.md (Workflow A).
+2. Create the issue via `save_issue` (Workflow B) or write the spec file + roadmap row (Workflow A).
 3. **ON SUCCESS ONLY**: `mkdir -p <folder>` and `mv "$TMPDIR/claude-issue-probe.png" "<folder>/screenshot.png"`.
 4. If `mv` fails after the issue is live: surface explicitly — "Issue filed successfully, but screenshot move failed: <reason>. Source still at `$TMPDIR/claude-issue-probe.png` — retry manually with: `mv ... <folder>/`." Do not retry silently.
 
@@ -155,15 +155,66 @@ When adding issue to roadmap.md:
    - If `linear_enabled: false` → Execute workflow A (roadmap.md only)
    - If `linear_enabled: true` → Execute workflow B (Linear + roadmap.md)
 
-### Workflow A: Roadmap.md Only (linear_enabled: false)
+### Local ID Allocation (Workflow A only)
 
-Execute in ONE response:
+When Linear is disabled there is no issue-number generator, so mint a local ID from `docs/roadmap.md`.
+
+**1. Resolve the issue prefix (first match wins):**
+- CLAUDE.md `Issue Prefix` field, if present.
+- Else the roadmap header `**Issue prefix:**` line — take the **first whitespace-delimited token** after the label (so `**Issue prefix:** GBG (local IDs — …)` yields `GBG`, not the parenthetical).
+- Else ask the user once for a prefix, then **persist** it as an `**Issue prefix:** <PREFIX>` line in the roadmap header (so the next run doesn't ask again).
+
+**2. Allocate the ID:**
+- Read the roadmap header `**Highest ticket:** PREFIX-N` field.
+- If the field is **missing** (legacy roadmap): scan the whole roadmap for `PREFIX-\d+`, take the **numeric** max (`PREFIX-16` > `PREFIX-9`; `0` if none found), and write a new `**Highest ticket:** PREFIX-N` line **immediately after the `**Issue prefix:**` line**.
+- New issue ID = `PREFIX-(N+1)`.
+- The `**Highest ticket:**` field always stores the **just-allocated** ID (so two `/create-issue` runs before a sync don't collide).
+
+### Workflow A: Roadmap.md + Spec File (linear_enabled: false)
+
+Because there's no Linear issue to hold the full body, the depth lives in a spec file. Build the issue body in memory (same **Issue Body Format** below that Workflow B would send to Linear, including the optional `## Visual Reference` block if a DESIGN.md match was found), then execute this **atomic block in ONE response**:
+
 ```
 <function_calls>
-<invoke name="Edit">...</invoke> <!-- Update sync status in roadmap.md -->
-<invoke name="Edit">...</invoke> <!-- Add to backlog/sprint in roadmap.md -->
+<invoke name="Write">...</invoke> <!-- docs/technical-specs/{ISSUE_ID}.md (spec template below) -->
+<invoke name="Edit">...</invoke> <!-- Add row to the roadmap (see placement + columns below) -->
+<invoke name="Edit">...</invoke> <!-- Update **Highest ticket:** to the just-allocated ID + sync status -->
 </function_calls>
 ```
+
+**Roadmap row placement + columns:**
+- Append the row to the **first** roadmap heading matching `## Backlog` (case-insensitive prefix match — so `## Backlog — v2` counts). If the roadmap has no `## Backlog*` heading, create a `## Backlog` section before `## Recently Completed`.
+- **Match the roadmap's existing column shape** for that table, and include a **Spec** cell linking to `technical-specs/{ISSUE_ID}.md`. Keep the roadmap Context cell as the 1–2 line summary (full detail lives in the spec).
+
+**Spec file template** (`docs/technical-specs/{ISSUE_ID}.md`):
+```markdown
+# {ISSUE_ID}: [Title]
+
+**Created:** [date]
+**Status:** Requirements Captured
+**Source:** /create-issue (no Linear) on [date]
+
+---
+
+## Product Requirements
+
+[The exact Issue Body Format content — TL;DR, Current State, Expected Outcome,
+Acceptance Criteria, Relevant Files, Screenshots (if any), Visual Reference (if any), Notes]
+
+---
+
+## Exploration
+
+_To be added by Explorer during sprint work_
+
+---
+
+## Implementation Plan
+
+_To be added by Plan-Writer_
+```
+
+The `## Exploration` and `## Implementation Plan` placeholders must be written **exactly** as shown — Explorer replaces the Exploration line in place, and Plan-Writer replaces the Implementation Plan section. Do not omit them.
 
 ### Workflow B: Linear + Roadmap.md (linear_enabled: true)
 

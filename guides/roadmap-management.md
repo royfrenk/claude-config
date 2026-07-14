@@ -78,6 +78,24 @@ Assign multiple small tasks to Dev simultaneously. One large task at a time.
 
 ---
 
+## Local ID Allocation (no-Linear projects)
+
+When `linear_enabled: false` there's no issue-number generator, so `/create-issue` and `/review-prd` mint local IDs from `docs/roadmap.md` and store each story's full depth in a spec file (there's no Linear issue to hold it).
+
+**Prefix resolution (first match wins):** CLAUDE.md `Issue Prefix` → roadmap header `**Issue prefix:**` (take the **first whitespace-delimited token** after the label) → else ask the user once and persist an `**Issue prefix:** <PREFIX>` line to the roadmap header.
+
+**ID allocation:**
+- Read the roadmap header `**Highest ticket:** PREFIX-N`. If the field is missing (legacy roadmap), scan the roadmap for `PREFIX-\d+`, take the **numeric** max (`PREFIX-16` > `PREFIX-9`; `0` if none), and write the field immediately after the `**Issue prefix:**` line.
+- `/create-issue`: new ID = `PREFIX-(N+1)`; the field is updated to that just-allocated ID.
+- `/review-prd` (batch of k approved stories): allocate `PREFIX-(N+1) … PREFIX-(N+k)` in presentation order, set the field once to `PREFIX-(N+k)`.
+- Write the spec file(s), roadmap row(s), and the `**Highest ticket:**` update in **one atomic response** — the scan fallback keys off roadmap rows, so a partial write would let a re-run re-allocate the same IDs.
+
+**Spec files:** carry a `## Product Requirements` section (the full issue body that Linear would otherwise hold) with `**Status:** Requirements Captured`, plus `## Exploration` and `## Implementation Plan` placeholders. Explorer later appends its exploration and advances the status, preserving Product Requirements. These `Requirements Captured` specs sit **outside** `audit.md`'s orphan/stale checks by design (those only flag `In Progress` / `Exploration Complete`) — they're expected to persist until a sprint claims them.
+
+**Note on EM Permissions:** the "CANNOT add items to Backlog" rule above governs the **autonomous EM**. These backlog rows come from **user-invoked** `/create-issue` and post-approval `/review-prd` (Phase F), so they don't violate it.
+
+---
+
 ## Linear Sync Strategy (if enabled)
 
 Use `/sync-roadmap` for bidirectional sync at 3 touchpoints:

@@ -275,18 +275,45 @@ Wait for User to approve stories.
 
 ---
 
-## Phase G: Create Linear Issues
+## Phase G: Create Issues
 
-After approval, create Linear issues for each approved story.
+After approval, persist each approved story. First check whether Linear is enabled, then follow the matching branch.
 
 ### Step 1: Read Project Config
 
-Read the project's `CLAUDE.md` to get:
+Read the project's `CLAUDE.md`:
+- `linear_enabled` (**default: false if the field is missing** — identical to `/create-issue`)
 - Issue prefix (e.g., `RAB`, `QUO`)
-- Team ID
-- Status UUIDs
+- Team ID + Status UUIDs (only needed when Linear is enabled)
 
-### Step 2: Create Issues
+**Branch:**
+- `linear_enabled: false` (or missing) → **Branch A (no Linear)** below.
+- `linear_enabled: true` → Steps 2–5 (Linear + roadmap), unchanged.
+
+---
+
+### Branch A: No Linear — Local IDs + Product Requirements specs
+
+When Linear is disabled, each approved story becomes a local ticket whose full depth lives in a spec file (there's no Linear issue to hold it).
+
+**1. Resolve the prefix** (same rule as `/create-issue`, inlined here because this command doesn't load create-issue.md at runtime):
+- CLAUDE.md `Issue Prefix` → else roadmap `**Issue prefix:**` header, taking the **first whitespace-delimited token** after the label → else ask the user once and persist an `**Issue prefix:** <PREFIX>` line to the roadmap header.
+
+**2. Allocate IDs as a sequential batch** (avoids the collision of reading the same `N` for every story):
+- Read the roadmap `**Highest ticket:** PREFIX-N` field. If missing, scan the roadmap for `PREFIX-\d+`, take the **numeric** max (`0` if none), and plan to write the field right after the `**Issue prefix:**` line.
+- For the **k approved stories in presentation order**, assign `PREFIX-(N+1) … PREFIX-(N+k)`.
+- The `**Highest ticket:**` field is set **once** to `PREFIX-(N+k)` (the highest just-allocated ID).
+
+**3. Write everything ATOMICALLY in ONE response** (the scan fallback keys off roadmap rows, not spec files — a partial write would let a re-run re-allocate the same IDs and overwrite specs):
+- `Write` k spec files `docs/technical-specs/{ISSUE_ID}.md`, each using the `/create-issue` spec template: header with `**Status:** Requirements Captured` and `**Source:** /review-prd (no Linear) on [date]`, a `## Product Requirements` section (story description, acceptance criteria, `Source PRD:` link), then the exact `## Exploration` placeholder (`_To be added by Explorer during sprint work_`) and `## Implementation Plan` placeholder (`_To be added by Plan-Writer_`).
+- `Edit` the roadmap: append k rows to the **first** heading matching `## Backlog` (case-insensitive prefix match; create a `## Backlog` before `## Recently Completed` if none exists), matching that roadmap's existing column shape and including a **Spec** cell linking each `technical-specs/{ISSUE_ID}.md`.
+- `Edit` the roadmap header: set `**Highest ticket:** PREFIX-(N+k)`.
+
+**4. Record the mapping** (Step 3 format) using the local IDs, then present the Step 5 summary. Skip Steps 2 and 4's Linear-specific calls entirely.
+
+---
+
+### Step 2: Create Issues (Linear enabled)
 
 For each approved story:
 
@@ -301,13 +328,13 @@ mcp_linear_create_issue(
 
 ### Step 3: Record Mapping
 
-Track the mapping from tmp IDs to real Linear IDs:
+Track the mapping from tmp IDs to real issue IDs (Linear IDs when enabled, local `PREFIX-N` IDs in Branch A):
 
 ```markdown
 ## Issues Created
 
-| Temp ID | Linear ID | Title |
-|---------|-----------|-------|
+| Temp ID | Issue ID | Title |
+|---------|----------|-------|
 | tmp-1 | RAB-15 | [Title] |
 | tmp-2 | RAB-16 | [Title] |
 | tmp-3 | RAB-17 | [Title] |
@@ -315,16 +342,9 @@ Track the mapping from tmp IDs to real Linear IDs:
 
 ### Step 4: Update Roadmap
 
-Add new issues to `docs/roadmap.md` Backlog section:
+Add new issues to the `docs/roadmap.md` Backlog. **Match the roadmap's actual backlog table columns** (they vary per project — e.g. `| ID | Title | Priority | Est | Context | Spec |`) rather than imposing a fixed shape, and include a **Spec** cell when the project keeps specs (Branch A always does). Append to the first `## Backlog*` heading; note the source PRD in the Context/Notes cell.
 
-```markdown
-## Backlog
-
-| Issue | Title | Added | Notes |
-|-------|-------|-------|-------|
-| RAB-15 | [Title] | 2026-01-24 | From PRD: [PRD name] |
-| RAB-16 | [Title] | 2026-01-24 | From PRD: [PRD name] |
-```
+_(Branch A already writes these rows atomically in its own Step 3 — this step covers the Linear-enabled path.)_
 
 ### Step 5: Summary
 
@@ -353,7 +373,7 @@ Present final summary:
 ## What This Command Does NOT Do
 
 - **Does not modify the PRD** — PRD is a point-in-time artifact
-- **Does not create spec files** — That happens when Explorer runs on individual issues
+- **Does not create spec files (Linear-enabled runs)** — That happens when Explorer runs on individual issues. _Exception:_ in **Branch A (no Linear)**, Phase G writes a `Requirements Captured` spec per story so the story depth isn't lost; Explorer later appends its exploration to that same file.
 - **Does not start implementation** — Issues go to Backlog, normal workflow takes over
 
 ---

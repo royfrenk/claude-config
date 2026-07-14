@@ -265,7 +265,13 @@ Eng Manager will consolidate all Explorer sections before passing to Plan-Writer
 
 ## File Template
 
-Create `docs/technical-specs/{ISSUE_ID}.md` with this structure:
+**Guard — pre-existing Product Requirements spec:** If `docs/technical-specs/{ISSUE_ID}.md` already exists **and** contains a `## Product Requirements` section, it was created by `/create-issue` or `/review-prd` on a no-Linear project. In that case:
+- **Preserve** the `## Product Requirements` section and the file header verbatim — never overwrite or remove them.
+- Otherwise proceed **normally**: add a `## Summary` under the title if one isn't already present, and **replace the exact placeholder line** `_To be added by Explorer during sprint work_` (under `## Exploration`) with your exploration content — do **not** append a second `## Exploration` section.
+- Update the header `**Status:**` to `Exploration Complete` as usual.
+- Leave the `## Implementation Plan` placeholder (`_To be added by Plan-Writer_`) untouched for Plan-Writer.
+
+Otherwise (no pre-existing spec), create `docs/technical-specs/{ISSUE_ID}.md` fresh with this structure:
 
 ```markdown
 # {ISSUE_ID}: [Issue Title]
