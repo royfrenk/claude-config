@@ -42,3 +42,4 @@ Read the relevant section (by number) when a row below applies to your current t
 | **Pipeline Blind Building** (Section 24) | Does this feature depend on a pipeline? Is it healthy? | Verify pipeline health before building; "all N failed" = root-cause, not UX fix |
 | **Unfamiliar Domain Cascade** (Section 25) | Has the agent worked in this domain before? | Research all constraints BEFORE fixing; build checklist; don't serial-discover |
 | **Generated File Verification** (Section 26) | Was actual file content inspected? | Download + inspect output (pdftotext, render image); HTTP 200 is not enough |
+| **No Path to Investigate** (Section 27) | If this misbehaves, can I SEE what it did? | Build designed-in observability (structured events / exportable trace) BEFORE the bug — reactive instrumentation costs rounds of guessing |

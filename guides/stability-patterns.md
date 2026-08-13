@@ -400,3 +400,36 @@ file output.png  # verify it's actually an image, not an error HTML page
 ```
 
 Never mark a file generation feature complete without inspecting the actual output.
+
+## 27. No Path to Investigate (Observability by Design)
+
+**Symptom:** a subsystem misbehaves and nobody can say *what it actually did*. Diagnosis
+becomes rounds of hypotheses, each one only settled by stopping to build an instrument.
+
+**Real case (Gutenberg sprint-002):** an OCR capture loop shipped with no diagnostics. The
+page-skip bug burned three batches of guessing before per-press event capture was added; a
+downloadable run log came later still; and a second skip could not be attributed to a press
+*at all* until the text advance path was finally instrumented many batches after the symptom
+appeared. The bug ultimately shipped a book with silently missing chapters, caught only when a
+human read the output.
+
+**Rule:** any subsystem that acts on state it cannot fully see — a capture/automation loop, an
+OCR or ML pass, anything driving external UI, a queue, a scraper, a multi-step pipeline —
+must ship with a path to investigate, **designed in from the start**:
+
+- **Structured events, not prose logs.** Record what was attempted, what was observed, and the
+  decision taken — as fields, so they can be counted and diffed across runs.
+- **Exportable.** The user (or you) must be able to hand you the trace. A log you cannot
+  retrieve from a real failure is not observability.
+- **Record the decision inputs.** The signal the code keyed on (hash, counter, element,
+  press) — not just the outcome. "It didn't work" is unactionable; "we pressed A and B, and
+  our change-signal never moved" names the bug.
+- **Ships with the feature.** Not a follow-up ticket. Reactive instrumentation costs multiple
+  wasted iterations per bug and lets real defects reach the user.
+
+**Design/plan gate:** if the answer to *"when this misbehaves in the user's hands, how will I
+see what happened?"* is "I'd add logging then," the design is incomplete.
+
+**Related:** Section 24 (Instrument Before Building) is the pipeline-health sibling of this —
+24 says verify the pipeline is healthy before building on it; 27 says build the means to see
+your own subsystem before you need it.

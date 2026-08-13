@@ -58,6 +58,7 @@ COMMANDS=(
   context.md
   create-bug.md
   create-issue.md
+  deep-research.md
   design.md
   iterate.md
   learning-opportunity.md
@@ -532,6 +533,73 @@ write_unsupported_codex_skill() {
   } > "${skill_dir}/SKILL.md"
 }
 
+# deep-research relies on Claude Code's Workflow tool (multi-agent
+# orchestration, subagent spawning with Bash access for the podcast-relay
+# curl calls) — per cross-tool-sync.md's Platform Differences table, Gemini
+# and Codex have no equivalent. Dedicated (not reused/generalized from the
+# change-process writers above) to avoid touching that already-working,
+# process-critical special-case while adding this one — accepted duplication
+# tradeoff, see change-process/007 tracking file for the reasoning.
+write_unsupported_gemini_deep_research() {
+  local target_file="$1"
+  {
+    echo 'description = "deep-research relies on Claude Code'\''s Workflow tool (multi-agent orchestration), unsupported on this platform in Phase A."'
+    echo ""
+    echo 'prompt = """'
+    echo 'Parse any arguments provided: {{args}}'
+    echo ""
+    echo "# Deep Research"
+    echo ""
+    echo "This command is unsupported on Gemini in Phase A."
+    echo ""
+    echo "\`/deep-research\` on Claude runs a multi-agent Workflow: fan-out web search across"
+    echo "complementary angles, adversarial 3-vote claim verification, and — for named public"
+    echo "figures — podcast/interview transcription via Bash-capable subagents calling Recap"
+    echo "Rabbit's relays. This depends on Claude Code's Workflow tool and subagent spawning,"
+    echo "which Gemini does not support in Phase A."
+    echo ""
+    echo "Single-agent approximation on this platform: do a direct web search on the question,"
+    echo "read the top few sources yourself, and write up findings with sources cited — without"
+    echo "the multi-angle fan-out, adversarial verification, or podcast transcription Claude's"
+    echo "version provides."
+    echo ""
+    echo "If you need to inspect the shared process model first, read:"
+    echo "- \`~/.gemini/guides/cross-tool-sync.md\`"
+    echo '- \`~/.gemini/guides/podcast-transcript-extraction.md\` (the underlying mechanism, for reference)'
+    echo '"""'
+  } > "$target_file"
+}
+
+write_unsupported_codex_deep_research_skill() {
+  local skill_dir="$1"
+  mkdir -p "$skill_dir"
+  {
+    echo "---"
+    echo "name: deep-research"
+    echo "description: deep-research relies on Claude Code's Workflow tool (multi-agent orchestration), unsupported on this platform in Phase A."
+    echo "---"
+    echo ""
+    echo "# Deep Research"
+    echo ""
+    echo "This command is unsupported on Codex in Phase A."
+    echo ""
+    echo "\`/deep-research\` on Claude runs a multi-agent Workflow: fan-out web search across"
+    echo "complementary angles, adversarial 3-vote claim verification, and — for named public"
+    echo "figures — podcast/interview transcription via Bash-capable subagents calling Recap"
+    echo "Rabbit's relays. This depends on Claude Code's Workflow tool and subagent spawning,"
+    echo "which Codex does not support in Phase A."
+    echo ""
+    echo "Single-agent approximation on this platform: do a direct web search on the question,"
+    echo "read the top few sources yourself, and write up findings with sources cited — without"
+    echo "the multi-angle fan-out, adversarial verification, or podcast transcription Claude's"
+    echo "version provides."
+    echo ""
+    echo "If you need to inspect the shared process model first, read:"
+    echo "- \`~/.codex/guides/cross-tool-sync.md\`"
+    echo "- \`~/.codex/guides/podcast-transcript-extraction.md\` (the underlying mechanism, for reference)"
+  } > "${skill_dir}/SKILL.md"
+}
+
 # Apply single-agent transformation to sprint/iterate commands.
 # Replaces multi-agent orchestration with sequential single-agent phases.
 apply_single_agent_transform() {
@@ -824,6 +892,9 @@ for cmd in "${COMMANDS[@]}"; do
   if [ "$cmd_name" = "change-process" ]; then
     write_unsupported_gemini_command "$GEMINI_DIR/commands/${cmd_name}.toml"
     log_ok "Gemini commands/${cmd_name}.toml (unsupported adapter)"
+  elif [ "$cmd_name" = "deep-research" ]; then
+    write_unsupported_gemini_deep_research "$GEMINI_DIR/commands/${cmd_name}.toml"
+    log_ok "Gemini commands/${cmd_name}.toml (unsupported adapter)"
   else
     convert_to_toml "$TEMP_CMD" "$GEMINI_DIR/commands/${cmd_name}.toml"
     log_ok "Gemini commands/${cmd_name}.toml"
@@ -835,6 +906,10 @@ for cmd in "${COMMANDS[@]}"; do
     log_skip "Codex skills/create-issue (manually maintained)"
   elif [ "$cmd_name" = "change-process" ]; then
     write_unsupported_codex_skill "$CODEX_DIR/skills/$cmd_name"
+    log_ok "Codex skills/${cmd_name}/SKILL.md (unsupported adapter)"
+    CODEX_SKILLS=$((CODEX_SKILLS + 1))
+  elif [ "$cmd_name" = "deep-research" ]; then
+    write_unsupported_codex_deep_research_skill "$CODEX_DIR/skills/$cmd_name"
     log_ok "Codex skills/${cmd_name}/SKILL.md (unsupported adapter)"
     CODEX_SKILLS=$((CODEX_SKILLS + 1))
   else

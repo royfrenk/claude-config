@@ -202,11 +202,15 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 
 **Skipped (Claude-only):** README, codex-peer-review, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
 
-### Commands (12 of 17 synced)
+### Commands (13 of ~18 synced)
 
-**Synced:** checkpoint, context, create-bug, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process
+**Synced:** checkpoint, context, create-bug, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process, deep-research
+
+**Synced as unsupported adapters (Claude-only infrastructure, no broken partial translation):** change-process (depends on the live `~/.claude/` write path and this sync step itself), deep-research (depends on the Workflow tool — multi-agent orchestration, subagent Bash access for podcast transcription — which Gemini/Codex don't have)
 
 **Skipped:** audit, sync-linear, sync-roadmap
+
+**Note:** this count only reflects commands present when this section was last updated (Aug 12, 2026) — several newer commands (`app-store-opportunity-research`, `argue`, `reset-linear`, `security-audit`, `ux-audit`, `write-prd`) exist in `~/.claude/commands/` but aren't yet in the sync script's `COMMANDS` array or this list. Pre-existing drift, not introduced by this change — worth a dedicated `/change-process` pass to reconcile.
 
 ### Phase A Parity Contracts
 

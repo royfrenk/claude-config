@@ -34,7 +34,7 @@
       "/Users/royfrenkiel/.claude/guides"
     ]
   },
-  "model": "opus",
+  "model": "sonnet",
   "hooks": {
     "PreToolUse": [
       {
@@ -154,5 +154,6 @@
     "supabase@claude-plugins-official": true,
     "chrome-devtools-mcp@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "effortLevel": "max"
 }

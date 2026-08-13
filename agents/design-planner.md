@@ -300,6 +300,28 @@ Reference design tokens if available (`docs/design-specs/DESIGN-TOKENS.md`).
 
 ---
 
+## Observability — Path to Investigate
+
+**REQUIRED SECTION. State how this feature will be observed and debugged when it misbehaves
+in the user's hands.** See `~/.claude/guides/stability-patterns.md` Section 27.
+
+- **What to record:** the decision INPUTS (the signal the code keyed on — hash, counter,
+  element, response, press), what was attempted, and the decision taken — as structured
+  fields, not prose.
+- **How it is retrieved:** an exportable trace / downloadable log the user can hand over. A
+  log you cannot get out of a real failure is not observability.
+- **Ships WITH the feature**, never as a follow-up ticket.
+
+**Mandatory for** any feature acting on state it cannot fully see: capture/automation loops,
+OCR or ML passes, anything driving external UI or services, queues, scrapers, multi-step
+pipelines, background jobs.
+
+**Gate:** if the answer to *"when this misbehaves for the user, how will I see what
+happened?"* is *"I'd add logging then"* — the design is incomplete. Do not hand it to
+Plan-Writer.
+
+---
+
 ## Implementation Notes
 
 **For Developer:**

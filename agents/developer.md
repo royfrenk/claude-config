@@ -107,6 +107,15 @@ Work in small commits. Order: schema --> backend logic --> backend tests --> fro
 
 **Before writing code, check `~/.claude/rules/stability.md` quick reference table** for patterns relevant to your task type (e.g., polling loops, CTE columns, persisted data, schema sync).
 
+**A feature is not done until it can be INVESTIGATED.** If the spec has an `## Observability`
+section (or the plan an observability task), implement that diagnostic path as PART of this
+feature — structured events recording the decision inputs plus an exportable trace — never as a
+follow-up. Mandatory for anything acting on state it cannot fully see: capture/automation loops,
+OCR/ML passes, code driving external UI or services, queues, scrapers, multi-step pipelines,
+background jobs. If you cannot answer *"when this misbehaves for the user, how will I see what
+happened?"*, stop and build that first — reactive instrumentation costs rounds of guessing and
+lets real defects reach the user. See `~/.claude/guides/stability-patterns.md` Section 27.
+
 ### Phase 3: Verification Loop
 
 Run full verification before submitting. **Do not submit until all checks pass.**

@@ -222,6 +222,15 @@ Ready for User to review and approve.
    - Why the dependency exists
    - Files to modify (for conflict detection)
    - Parallelization analysis
+8. **Observability task** - For any non-trivial subsystem, include a first-class **diagnostics
+   task** delivered ALONGSIDE the feature, never deferred to a follow-up: structured events
+   recording the decision INPUTS (the signal the code keyed on) plus an exportable trace the
+   user can hand over. Carry the design's `## Observability` section into a real task with
+   files and acceptance criteria — it is not "logging polish".
+   - **Mandatory for:** capture/automation loops, OCR/ML passes, anything driving external UI
+     or services, queues, scrapers, multi-step pipelines, background jobs.
+   - **Test:** if a failure in this subsystem would be diagnosable only by guessing, the plan
+     is incomplete. See `~/.claude/guides/stability-patterns.md` Section 27.
 
 ## Iteration Verification Mode
 
