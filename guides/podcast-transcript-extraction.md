@@ -1,6 +1,6 @@
 # Podcast Transcript Extraction — Using Recap Rabbit's Pipeline
 
-**SOURCE OF TRUTH** for the relay endpoints, request shapes, and known limitations used by the global `deep-research` workflow (`~/.claude/workflows/deep-research.js`'s `PODCAST_FETCH_PROMPT`) and command (`~/.claude/commands/deep-research.md`). If any endpoint, token, or limitation changes, update this file, that script, and `Companies/Andela/Podcast-Transcript-Extraction-Guide.md` (a project-history pointer copy) together.
+**SOURCE OF TRUTH** for the relay endpoints, request shapes, and known limitations used by the global `deep-research` workflow (`~/.claude/workflows/deep-research.js`'s `PODCAST_FETCH_PROMPT`), the global `transcribe` workflow (`~/.claude/workflows/transcribe.js`), and their commands (`~/.claude/commands/deep-research.md`, `~/.claude/commands/transcribe.md`). If any endpoint, token, or limitation changes, update this file, those two scripts, and `Companies/Andela/Podcast-Transcript-Extraction-Guide.md` (a project-history pointer copy) together — 4 files total.
 
 **Purpose:** Roy's own project, **Recap Rabbit** (`/Users/royfrenkiel/Documents/repos/recap-rabbit` — a podcast knowledge-graph/summarization app), already runs several always-on transcript-extraction services. This guide documents how to call them directly for **ad-hoc research** (e.g., pulling a source's public podcast appearance for background research) without touching the app's database or UI at all — usable from any project, not just the one this was first built for.
 
@@ -14,8 +14,10 @@
 |---|---|
 | YouTube video | **§1 yt_relay** — fast, pulls existing captions, no transcription needed |
 | Podcast with a direct audio/MP3 URL | **§2 whisper_relay** — downloads + transcribes locally (whisper large-v3) |
+| **Local audio file** (voice memo, meeting/conversation recording) | **§2a local-file serving** — briefly served over Tailscale to whisper_relay, then torn down |
 | Podcast you're subscribed to in Apple Podcasts on the Mac mini | **§3 Apple transcript scripts** — free, pulls Apple's own pre-made transcript, but "opportunistic-only" |
 | Want it permanently searchable/summarized in the app | **§4 full ingestion pipeline** — overkill for a one-off, use for anything you'll want to query again |
+| Just want a transcript + TL;DR summary of any of the above, one command | **§7 `/transcribe`** — wraps §1/§2/§2a for you |
 
 All of §1–§3 run on Roy's Mac mini, reachable via Tailscale at `100.65.52.72` (user `joshuabot195`), independent of the recap-rabbit app/database. They can be called from any machine on the Tailnet (or, for yt_relay, from anywhere — it's tunneled publicly).
 
@@ -69,6 +71,30 @@ If you hit a 403 from this relay and the above hasn't been re-verified recently:
 
 ---
 
+## 2a. Local audio files — serving over Tailscale to `whisper_relay`
+
+`whisper_relay` only accepts a URL it downloads server-side (§2) — it has no upload endpoint for a local file. For a **local recording** (voice memo, meeting/conversation recording) on the machine running Claude Code, the mechanism is: briefly serve the file yourself, over Tailscale, so the Mac mini can pull it.
+
+**Confirmed live, Aug 12, 2026:** the machine running Claude Code has its own working Tailscale identity — check via `ifconfig | grep -A1 utun | grep 'inet '` (no `tailscale` CLI needed or necessarily present; the daemon runs as a background service/app). That day it was `100.119.141.120`, and it successfully reached the Mac mini bidirectionally (`ping 100.65.52.72` succeeded with a real round-trip). **Don't assume this IP is stable — always re-check fresh**, and don't assume every machine this might run on is even on the same tailnet; if `ifconfig` shows no `utun`/Tailscale-shaped interface, this mechanism isn't available and local-file transcription should fail cleanly with that explanation.
+
+**The mechanism, all within ONE Bash tool invocation (critical — see below):**
+1. Determine this machine's own Tailscale IP via `ifconfig` (never hardcode it).
+2. Create an isolated scratch temp directory (`mktemp -d`) and copy *only* the target file into it — never serve the file's real parent directory, which would leak sibling files to anyone else on the tailnet during the brief window the server is up.
+3. Start `python3 -m http.server <port> --bind <tailscale-ip> --directory <scratch-dir>` in the background, capture its PID.
+4. Immediately `trap 'kill $PID; rm -rf <scratch-dir>' EXIT` as a cleanup backstop.
+5. Health-check `whisper_relay` (§2), then `POST /transcribe` with `audio_url` pointing at `http://<tailscale-ip>:<port>/<filename>`.
+6. Kill the server explicitly (belt-and-suspenders with the trap).
+
+**Why "ONE Bash tool invocation" is load-bearing, not stylistic:** per the Bash tool's own documented behavior, working directory persists across separate Bash calls but shell state does not — a server backgrounded in one Bash call cannot be reliably killed via its PID in a separate, later Bash call, even within the same agent turn. The entire start→transcribe→kill sequence must be one continuous shell script (chained with `;`/`&&`/heredoc) passed to a single Bash tool call. Request an extended timeout on that call (used: 540000ms/9min) — transcription of a long recording can run well past the tool's 120s default.
+
+**Residual risk, accepted, not fully solved:** if the tool's own timeout enforcement ever kills that Bash call via SIGKILL rather than SIGTERM, the `trap` will not fire and the server could linger briefly on the Tailscale interface, unauthenticated, serving that one scratch-dir file. No external watchdog process is in scope for this workflow — this is a known, documented tradeoff, not an oversight. The exposure window is short (server torn down on normal completion) and the tailnet is Roy's own personal network, not public.
+
+**No auth needed and no recap-rabbit infra changes required** — this deliberately avoids recap-rabbit's authenticated `POST /upload` endpoint (`backend/app/routers/episodes.py`), which would require the user's account JWT and permanently ingest the note into the app's database. Use §4 instead if permanent ingestion is actually wanted.
+
+Used by `~/.claude/workflows/transcribe.js` — see §7.
+
+---
+
 ## 3. Apple Podcasts native transcripts — `ap_relay` / `ingest-apple-transcripts.py` / `apple-podcasts-transcript-sync.py`
 
 - **Only works for:** shows already subscribed to in the **Apple Podcasts app on the Mac mini**, where Apple has already generated its own transcript (Apple auto-transcribes many shows now).
@@ -108,7 +134,23 @@ If you hit a 403 from this relay and the above hasn't been re-verified recently:
 
 ## 6. Used by `/deep-research`
 
-The global `deep-research` workflow (`~/.claude/workflows/deep-research.js`) calls §1 and §2 automatically: its Scope step adds a "podcast/interview appearances" search angle when the research subject is a specific named public figure plausibly giving interviews, and its Fetch step routes any search result that looks like a podcast episode or video (by host or title pattern) through a dedicated extraction prompt using the mechanism documented above, instead of scraping the page as text. Extraction failures are surfaced explicitly in the final report's caveats rather than silently dropped. See `~/.claude/commands/deep-research.md` for the command itself.
+The global `deep-research` workflow (`~/.claude/workflows/deep-research.js`) calls §1 and §2 automatically: its Scope step adds a "podcast/interview appearances" search angle when the research subject is a specific named public figure plausibly giving interviews, and its Fetch step routes any search result that looks like a podcast episode or video (by host or title pattern) through a dedicated extraction prompt using the mechanism documented above, instead of scraping the page as text. Extraction failures are surfaced explicitly in the final report's caveats rather than silently dropped.
+
+It also handles **direct references**: if `args` (the whole trimmed string, not a substring within a longer question) is itself a bare local file path, direct audio URL, or YouTube link/ID, it's transcribed first via a nested call to `transcribe.js` (§7) and folded into the research as a primary source, with a synthesized research question derived from the content. Mixing a natural-language question with a separate reference in one call isn't supported — call `/transcribe` separately first for that. See `~/.claude/commands/deep-research.md` for the command itself.
+
+**Invocation note:** `scriptPath` does NOT expand `~` — it's treated as a literal path segment relative to the caller's cwd, not the home directory. Always use the absolute path (`/Users/royfrenkiel/.claude/workflows/deep-research.js`). This broke the shipped command until caught and fixed, Aug 12, 2026, while building §7.
+
+---
+
+## 7. `/transcribe` — standalone transcript + summary command
+
+`~/.claude/workflows/transcribe.js` wraps §1 (YouTube captions), §2 (direct audio URL), and §2a (local files) behind one command: give it a local file path, a direct audio URL, or a YouTube URL/bare video ID, and it returns a full transcript plus a TL;DR + numbered Key Points summary (style modeled on `Companies/Andela/Interviews/Call with Udi Milo - Summary (English).md`), and — in standalone mode — saves both to `./transcriptions/<slug>.md` relative to the caller's cwd (creates the directory if needed; on a slug collision, appends `-2`, `-3`, etc. rather than overwriting).
+
+**YouTube without captions:** falls back to a local `yt-dlp` download + §2a-style serving — but `yt-dlp`/`youtube-dl` were **confirmed absent** on the machine running Claude Code as of Aug 12, 2026 (`which yt-dlp youtube-dl` → neither found). The workflow checks for this itself and fails with a clear message rather than attempting a download that would fail; re-check fresh, since this may change if the tool gets installed later.
+
+**Dual-mode design:** `args` always arrives as a plain string regardless of what's passed at the call site — object-shaped `args` do **not** survive as objects (empirically confirmed, not assumed: `typeof args` came back `"string"` even when an object literal was passed). So the nested-mode flag (used when `deep-research.js` calls this workflow internally, to suppress the summary/file-write side effects a research caller doesn't want) is encoded as `JSON.stringify({source, mode: "nested"})`; the script attempts `JSON.parse(args)` and falls through to standalone mode (treating the whole string as the bare source) if that fails, which is the normal path for any real file path or URL.
+
+See `~/.claude/commands/transcribe.md` for the command itself.
 
 ---
 
@@ -117,4 +159,5 @@ The global `deep-research` workflow (`~/.claude/workflows/deep-research.js`) cal
 - These are Roy's personal home-lab services, not disposable infra — code changes to recap-rabbit are out of scope for other projects' sessions unless the user explicitly directs otherwise. Default to that repo's own sprint workflow (EM → Explorer → Plan-Writer → Developer → Reviewer; see recap-rabbit's root `CLAUDE.md`) or filing a ticket, not patching inline on your own initiative.
 - Always `curl .../health` before assuming a relay is reachable — the Mac mini has to be powered on and the Tailscale path up.
 - If a podcast host 403s the whisper relay, check whether it's the Cloudflare/UA issue (§2) before concluding the content is unextractable — it usually isn't, and by the time you're reading this it may already be fixed and deployed. Verify, don't assume either way.
-- No local whisper-cli/mlx_whisper/tailscale CLI was found in PATH on the machine running Claude Code (as of Aug 12, 2026) — the Mac-mini relay (§2) is the more reliably reachable path from a fresh session than assuming local tooling exists.
+- No local whisper-cli/mlx_whisper/`tailscale` CLI **binary** was found in PATH on the machine running Claude Code (as of Aug 12, 2026) — but the Tailscale *daemon* is running regardless (confirmed via `ifconfig`, see §2a) and this machine successfully reaches the Mac mini bidirectionally. Don't conflate "no CLI in PATH" with "not on the tailnet" — check `ifconfig` for a `utun`/100.x.x.x interface, not `which tailscale`. The Mac-mini relay (§2/§2a) is the more reliably reachable path from a fresh session than assuming other local tooling exists.
+- `yt-dlp`/`youtube-dl` also confirmed absent (as of Aug 12, 2026) — relevant for `/transcribe`'s YouTube-no-captions fallback (§7). Re-check fresh; don't assume either way without checking.

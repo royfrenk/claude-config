@@ -141,6 +141,21 @@
         }
       }
     },
+    "transcribe": {
+      "phase_a_scope": false,
+      "source": "commands/transcribe.md",
+      "notes": "Depends on Claude Code's Workflow tool (multi-agent orchestration, subagent Bash access) for briefly serving local audio files over Tailscale and calling Recap Rabbit's relays. No Gemini/Codex equivalent exists, so both platforms get explicit unsupported adapters rather than a broken partial translation, following the same pattern as change-process and deep-research. Added change-process 008.",
+      "platforms": {
+        "gemini": {
+          "execution_model": "UNSUPPORTED",
+          "required_output": "commands/transcribe.toml"
+        },
+        "codex": {
+          "execution_model": "UNSUPPORTED",
+          "required_output": "skills/transcribe/SKILL.md"
+        }
+      }
+    },
     "create-issue": {
       "phase_a_scope": true,
       "source": "commands/create-issue.md",

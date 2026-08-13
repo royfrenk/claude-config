@@ -66,6 +66,7 @@ COMMANDS=(
   post-mortem.md
   review-prd.md
   sprint.md
+  transcribe.md
 )
 
 # Commands to remove from Gemini (Claude-only, previously ported)
@@ -600,6 +601,70 @@ write_unsupported_codex_deep_research_skill() {
   } > "${skill_dir}/SKILL.md"
 }
 
+# transcribe relies on the same Claude-only infrastructure as deep-research above (the
+# Workflow tool, subagent Bash access — this time for briefly serving local audio files over
+# Tailscale and calling Recap Rabbit's relays) — no Gemini/Codex equivalent. Dedicated
+# functions, same accepted-duplication tradeoff as deep-research's, added change-process 008.
+write_unsupported_gemini_transcribe() {
+  local target_file="$1"
+  {
+    echo 'description = "transcribe relies on Claude Code'\''s Workflow tool (multi-agent orchestration), unsupported on this platform in Phase A."'
+    echo ""
+    echo 'prompt = """'
+    echo 'Parse any arguments provided: {{args}}'
+    echo ""
+    echo "# Transcribe"
+    echo ""
+    echo "This command is unsupported on Gemini in Phase A."
+    echo ""
+    echo "\`/transcribe\` on Claude runs a Workflow that detects a local audio file, direct audio URL,"
+    echo "or YouTube link, transcribes it via Recap Rabbit's relays (local files are briefly served"
+    echo "over Tailscale to a Mac-mini whisper relay via a Bash-capable subagent), and writes a"
+    echo "TL;DR + Key Points summary alongside the full transcript. This depends on Claude Code's"
+    echo "Workflow tool and subagent spawning, which Gemini does not support in Phase A."
+    echo ""
+    echo "Single-agent approximation on this platform: there is no way to serve a local file to a"
+    echo "remote relay without subagent-dispatched Bash. For a YouTube video, you may be able to"
+    echo "fetch its transcript through whatever tools this platform has for that; for a local"
+    echo "recording, this capability is simply unavailable here."
+    echo ""
+    echo "If you need to inspect the shared process model first, read:"
+    echo "- \`~/.gemini/guides/cross-tool-sync.md\`"
+    echo '- \`~/.gemini/guides/podcast-transcript-extraction.md\` (the underlying mechanism, for reference)'
+    echo '"""'
+  } > "$target_file"
+}
+
+write_unsupported_codex_transcribe_skill() {
+  local skill_dir="$1"
+  mkdir -p "$skill_dir"
+  {
+    echo "---"
+    echo "name: transcribe"
+    echo "description: transcribe relies on Claude Code's Workflow tool (multi-agent orchestration), unsupported on this platform in Phase A."
+    echo "---"
+    echo ""
+    echo "# Transcribe"
+    echo ""
+    echo "This command is unsupported on Codex in Phase A."
+    echo ""
+    echo "\`/transcribe\` on Claude runs a Workflow that detects a local audio file, direct audio URL,"
+    echo "or YouTube link, transcribes it via Recap Rabbit's relays (local files are briefly served"
+    echo "over Tailscale to a Mac-mini whisper relay via a Bash-capable subagent), and writes a"
+    echo "TL;DR + Key Points summary alongside the full transcript. This depends on Claude Code's"
+    echo "Workflow tool and subagent spawning, which Codex does not support in Phase A."
+    echo ""
+    echo "Single-agent approximation on this platform: there is no way to serve a local file to a"
+    echo "remote relay without subagent-dispatched Bash. For a YouTube video, you may be able to"
+    echo "fetch its transcript through whatever tools this platform has for that; for a local"
+    echo "recording, this capability is simply unavailable here."
+    echo ""
+    echo "If you need to inspect the shared process model first, read:"
+    echo "- \`~/.codex/guides/cross-tool-sync.md\`"
+    echo "- \`~/.codex/guides/podcast-transcript-extraction.md\` (the underlying mechanism, for reference)"
+  } > "${skill_dir}/SKILL.md"
+}
+
 # Apply single-agent transformation to sprint/iterate commands.
 # Replaces multi-agent orchestration with sequential single-agent phases.
 apply_single_agent_transform() {
@@ -895,6 +960,9 @@ for cmd in "${COMMANDS[@]}"; do
   elif [ "$cmd_name" = "deep-research" ]; then
     write_unsupported_gemini_deep_research "$GEMINI_DIR/commands/${cmd_name}.toml"
     log_ok "Gemini commands/${cmd_name}.toml (unsupported adapter)"
+  elif [ "$cmd_name" = "transcribe" ]; then
+    write_unsupported_gemini_transcribe "$GEMINI_DIR/commands/${cmd_name}.toml"
+    log_ok "Gemini commands/${cmd_name}.toml (unsupported adapter)"
   else
     convert_to_toml "$TEMP_CMD" "$GEMINI_DIR/commands/${cmd_name}.toml"
     log_ok "Gemini commands/${cmd_name}.toml"
@@ -910,6 +978,10 @@ for cmd in "${COMMANDS[@]}"; do
     CODEX_SKILLS=$((CODEX_SKILLS + 1))
   elif [ "$cmd_name" = "deep-research" ]; then
     write_unsupported_codex_deep_research_skill "$CODEX_DIR/skills/$cmd_name"
+    log_ok "Codex skills/${cmd_name}/SKILL.md (unsupported adapter)"
+    CODEX_SKILLS=$((CODEX_SKILLS + 1))
+  elif [ "$cmd_name" = "transcribe" ]; then
+    write_unsupported_codex_transcribe_skill "$CODEX_DIR/skills/$cmd_name"
     log_ok "Codex skills/${cmd_name}/SKILL.md (unsupported adapter)"
     CODEX_SKILLS=$((CODEX_SKILLS + 1))
   else

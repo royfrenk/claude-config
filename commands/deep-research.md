@@ -14,7 +14,7 @@ If the question is underspecified for a good answer (e.g. missing budget/region/
 
 Call:
 ```
-Workflow({ scriptPath: "~/.claude/workflows/deep-research.js", args: "<refined research question>" })
+Workflow({ scriptPath: "/Users/royfrenkiel/.claude/workflows/deep-research.js", args: "<refined research question>" })
 ```
 
 `scriptPath` is used deliberately (not `name`) — it's documented to take precedence and doesn't depend on any directory-resolution behavior for named workflows.

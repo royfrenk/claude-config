@@ -1,8 +1,8 @@
 export const meta = {
   name: 'deep-research',
-  description: 'Deep research harness — fan-out web searches, fetch sources, adversarially verify claims, synthesize a cited report. Automatically searches and transcribes podcast/interview appearances for named public figures.',
-  whenToUse: 'When the user wants a deep, multi-source, fact-checked research report on any topic. BEFORE invoking, check if the question is specific enough to research directly — if underspecified (e.g., "what car to buy" without budget/use-case/region), ask 2-3 clarifying questions to narrow scope. Then pass the refined question as args, weaving the answers in. If the subject is a specific named public figure, podcast/interview appearances are automatically searched and transcribed when found (via Recap Rabbit relays) — no extra action needed.',
-  phases: [{"title":"Scope","detail":"Decompose question (from args) into 4-6 search angles (conditionally includes a podcast/interview angle for named public figures)"},{"title":"Search","detail":"Parallel WebSearch agents, one per angle"},{"title":"Fetch","detail":"URL-dedup, fetch top 15 sources, extract falsifiable claims (podcast/video sources are transcribed via Recap Rabbit relays instead of WebFetch)"},{"title":"Verify","detail":"3-vote adversarial verification per claim (need 2/3 refutes to kill)"},{"title":"Synthesize","detail":"Merge semantic dupes, rank by confidence, cite sources"}],
+  description: 'Deep research harness — fan-out web searches, fetch sources, adversarially verify claims, synthesize a cited report. Automatically searches and transcribes podcast/interview appearances for named public figures. If args is itself a local file/audio URL/YouTube reference, transcribes it directly and folds it in as a primary source.',
+  whenToUse: 'When the user wants a deep, multi-source, fact-checked research report on any topic. BEFORE invoking, check if the question is specific enough to research directly — if underspecified (e.g., "what car to buy" without budget/use-case/region), ask 2-3 clarifying questions to narrow scope. Then pass the refined question as args, weaving the answers in. If the subject is a specific named public figure, podcast/interview appearances are automatically searched and transcribed when found (via Recap Rabbit relays) — no extra action needed. If args is ENTIRELY a bare local file path, direct audio URL, or YouTube link/ID (no separate question text), it is transcribed directly via transcribe.js and folded in as a primary source — mixing a question with a separate reference in one call is not supported, call /transcribe separately first for that.',
+  phases: [{"title":"Scope","detail":"Decompose question (from args) into 4-6 search angles (conditionally includes a podcast/interview angle for named public figures); transcribes args directly first if it's a bare file/URL reference"},{"title":"Search","detail":"Parallel WebSearch agents, one per angle"},{"title":"Fetch","detail":"URL-dedup, fetch top 15 sources, extract falsifiable claims (podcast/video sources are transcribed via Recap Rabbit relays instead of WebFetch)"},{"title":"Verify","detail":"3-vote adversarial verification per claim (need 2/3 refutes to kill)"},{"title":"Synthesize","detail":"Merge semantic dupes, rank by confidence, cite sources"}],
 }
 
 // deep-research: Scope → pipeline(Search → URL-dedup → Fetch+Extract) → 3-vote Verify → Synthesize
@@ -11,9 +11,14 @@ export const meta = {
 // transcribed via Recap Rabbit's relays (Bash/curl, agentType:'general-purpose') instead of
 // WebFetch — see ~/.claude/guides/podcast-transcript-extraction.md, the SOURCE OF TRUTH for
 // the relay endpoints/limitations used in PODCAST_FETCH_PROMPT below. Keep that guide, this
-// script, and Companies/Andela/Podcast-Transcript-Extraction-Guide.md in sync if any relay
-// endpoint, token, or known limitation changes.
-// Invoke via: Workflow({ scriptPath: "~/.claude/workflows/deep-research.js", args: "<question>" })
+// script, transcribe.js, and Companies/Andela/Podcast-Transcript-Extraction-Guide.md in sync
+// if any relay endpoint, token, or known limitation changes.
+// If args is itself a bare file/URL reference (see REFERENCE_PATTERN below), it's transcribed
+// directly via a nested call to transcribe.js before Scope runs — see change-process 008
+// (~/.claude/change-process/008-transcribe-command.md) for the full design/audit trail.
+// Invoke via: Workflow({ scriptPath: "/Users/royfrenkiel/.claude/workflows/deep-research.js", args: "<question>" })
+// NOTE: scriptPath does NOT expand "~" — always use the absolute path (confirmed live Aug 12
+// 2026; this broke the command until fixed the same day).
 
 const VOTES_PER_CLAIM = 3
 const REFUTATIONS_REQUIRED = 2
@@ -106,10 +111,80 @@ const REPORT_SCHEMA = {
 
 // ─── Phase 0: Scope — decompose question into search angles ───
 phase("Scope")
-const QUESTION = (typeof args === "string" && args.trim()) || ""
-if (!QUESTION) {
-  return { error: "No research question provided. Pass it as args: Workflow({scriptPath: \"~/.claude/workflows/deep-research.js\", args: '<question>'})." }
+const RAW_ARGS = (typeof args === "string" && args.trim()) || ""
+if (!RAW_ARGS) {
+  return { error: "No research question provided. Pass it as args: Workflow({scriptPath: \"/Users/royfrenkiel/.claude/workflows/deep-research.js\", args: '<question>'})." }
 }
+
+// ─── Direct file/URL reference detection ───
+// Deliberately conservative: only triggers when the ENTIRE trimmed args string (not a
+// substring within a longer question) is a bare local path, direct URL, or audio-extension
+// reference, AND it contains no whitespace (a real research question will have spaces; a bare
+// path/URL won't). Mixing a natural-language question with a separate reference in one call is
+// explicitly out of scope — that falls through unchanged to normal research-question handling.
+const REFERENCE_PATTERN = /^(https?:\/\/\S+|\/\S+|~\/\S+|\.\/\S+|\S+\.(mp3|m4a|wav|ogg|flac))$/i
+const isDirectReference = !/\s/.test(RAW_ARGS) && REFERENCE_PATTERN.test(RAW_ARGS)
+
+let QUESTION = RAW_ARGS
+let preTranscribedSource = null
+let preTranscribeFailureNote = null
+if (isDirectReference) {
+  log("Direct file/URL reference detected — transcribing via transcribe.js before research: " + RAW_ARGS.slice(0, 80))
+  // args always arrives as a string regardless of what's passed (empirically verified Aug 12
+  // 2026 — see change-process 008); the nested-mode flag is encoded via JSON.stringify, which
+  // transcribe.js JSON.parses to detect nested vs. standalone mode.
+  const nested = await workflow(
+    { scriptPath: "/Users/royfrenkiel/.claude/workflows/transcribe.js" },
+    JSON.stringify({ source: RAW_ARGS, mode: "nested" })
+  )
+  if (nested && nested.ok && nested.transcript) {
+    const extraction = await agent(
+      "## Claim Extractor (pre-transcribed direct reference)\n\n" +
+      "This transcript was provided directly (not found via web search), from: " + RAW_ARGS + "\n\n" +
+      "## Transcript\n" + nested.transcript.slice(0, 20000) + "\n\n" +
+      "## Task\nExtract 2-5 FALSIFIABLE claims from this transcript. Each claim must be a concrete, " +
+      "checkable statement, include a direct quote, and be rated central/supporting/tangential. Since " +
+      "this is primary source material itself (a direct recording/video, not secondhand reporting), " +
+      "rate sourceQuality as \"primary\" unless the transcript is clearly reporting on someone else's " +
+      "claims (in which case rate accordingly). Also return a 1-sentence description of what this " +
+      "recording/video is about, to use as a research question.\n\nStructured output only.",
+      {
+        label: "extract:pre-transcribed", phase: "Fetch",
+        schema: {
+          type: "object", required: ["claims", "sourceQuality", "topicSummary"],
+          properties: {
+            sourceQuality: { enum: ["primary", "secondary", "blog", "forum", "unreliable"] },
+            topicSummary: { type: "string" },
+            claims: { type: "array", maxItems: 5, items: {
+              type: "object", required: ["claim", "quote", "importance"],
+              properties: {
+                claim: { type: "string" },
+                quote: { type: "string" },
+                importance: { enum: ["central", "supporting", "tangential"] },
+              },
+            }},
+          },
+        },
+      }
+    )
+    if (extraction) {
+      QUESTION = "Provide background research and context on: " + extraction.topicSummary
+      preTranscribedSource = {
+        url: RAW_ARGS, title: nested.title || RAW_ARGS, angle: "direct-reference",
+        sourceQuality: extraction.sourceQuality, publishDate: null,
+        claims: extraction.claims.map(c => ({ ...c, sourceUrl: RAW_ARGS, sourceQuality: extraction.sourceQuality })),
+      }
+    } else {
+      QUESTION = "Provide background research and context on the content referenced by: " + RAW_ARGS
+      preTranscribeFailureNote = "Direct reference " + RAW_ARGS + " was transcribed, but claim extraction returned no result. Proceeding with a generic research question."
+    }
+  } else {
+    QUESTION = "Provide background research and context on the content referenced by: " + RAW_ARGS
+    preTranscribeFailureNote = "Direct reference " + RAW_ARGS + " was provided but transcription failed: " +
+      ((nested && nested.failureReason) || "no result returned") + ". Proceeding with a generic research question instead."
+  }
+}
+
 const scope = await agent(
   "Decompose this research question into complementary search angles.\n\n" +
   "## Question\n" + QUESTION + "\n\n" +
@@ -195,6 +270,21 @@ const recordPodcastIssue = text => {
   if (podcastExtractionIssues.length < MAX_PODCAST_ISSUES_SHOWN) {
     podcastExtractionIssues = [...podcastExtractionIssues, text]
   }
+}
+
+// ─── Direct-reference pre-transcription follow-up (Part B) ───
+// Split from the Scope-phase transcription call above because `seen`/`normURL`/
+// `recordPodcastIssue` aren't declared until here — referencing them earlier would hit the
+// temporal dead zone. If the pre-transcribed reference was a URL, seed the dedup map so the
+// same URL resurfacing via web search is recognized as already-fetched and skipped rather than
+// re-transcribed a second time (local files never appear in web search results, so this only
+// applies to URL references). If transcription/extraction failed, surface it as a caveat via
+// the same mechanism as podcast-source failures, rather than silently dropping it.
+if (preTranscribedSource && /^https?:\/\//i.test(RAW_ARGS)) {
+  seen.set(normURL(RAW_ARGS), { angle: "direct-reference", title: preTranscribedSource.title })
+}
+if (preTranscribeFailureNote) {
+  recordPodcastIssue(preTranscribeFailureNote)
 }
 
 // ─── Prompts ───
@@ -375,7 +465,7 @@ const searchResults = await pipeline(
   }
 )
 
-const allSources = searchResults.flat().filter(Boolean)
+const allSources = [...(preTranscribedSource ? [preTranscribedSource] : []), ...searchResults.flat().filter(Boolean)]
 const allClaims = allSources.flatMap(s => s.claims)
 const impRank = { central: 0, supporting: 1, tangential: 2 }
 const qualRank = { primary: 0, secondary: 1, blog: 2, forum: 3, unreliable: 4 }

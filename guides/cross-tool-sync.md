@@ -202,11 +202,11 @@ Stored at `~/.codex/guides/*.md` and referenced from AGENTS.md.
 
 **Skipped (Claude-only):** README, codex-peer-review, parallel-review, retroactive-review, screenshot-orchestration, visual-verification
 
-### Commands (13 of ~18 synced)
+### Commands (14 of ~19 synced)
 
-**Synced:** checkpoint, context, create-bug, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process, deep-research
+**Synced:** checkpoint, context, create-bug, create-issue, design, iterate, learning-opportunity, new-project, post-mortem, review-prd, sprint, change-process, deep-research, transcribe
 
-**Synced as unsupported adapters (Claude-only infrastructure, no broken partial translation):** change-process (depends on the live `~/.claude/` write path and this sync step itself), deep-research (depends on the Workflow tool — multi-agent orchestration, subagent Bash access for podcast transcription — which Gemini/Codex don't have)
+**Synced as unsupported adapters (Claude-only infrastructure, no broken partial translation):** change-process (depends on the live `~/.claude/` write path and this sync step itself), deep-research and transcribe (both depend on the Workflow tool — multi-agent orchestration, subagent Bash access for podcast/local-file transcription — which Gemini/Codex don't have)
 
 **Skipped:** audit, sync-linear, sync-roadmap
 
