@@ -356,7 +356,7 @@ Developer runs SRE verification as Phase 6.5 of the deployment protocol (see `de
 
 **Read `~/.claude/guides/autonomous-iteration.md` for full protocol details.**
 
-When any automated check fails on staging or dev (SRE verification, staging verification, functional verification, visual verification), auto-iterate without involving User — subject to severity thresholds:
+When any automated check fails on staging or dev (SRE verification, staging verification, functional verification, visual verification, mobile functional verification, web UX verification), auto-iterate without involving User — subject to severity thresholds:
 
 <!-- canonical: autonomous-iteration.md — severity checklist inlined below -->
 
@@ -370,14 +370,30 @@ When any automated check fails on staging or dev (SRE verification, staging veri
 **ANY yes → ESCALATE to User. ALL no → AUTO-CONTINUE.**
 
 **Protocol:**
-1. **Log the failure** in the sprint file under Iteration Log
+1. **Log the failure** in the sprint file under Iteration Log — for functional/mobile/web-UX
+   verification failures, log the structured failure signature (`[flow name] / step [N] /
+   [category]`), not just raw output; this is what step 3a diffs against.
 2. **Run severity checklist** — if any check fails, escalate to User immediately
 3. **Check circuit breakers** — if any counter exceeded, escalate to User
+3a. **Same-failure-signature check** (functional/mobile/web-UX verification only): if this
+    flow's new failure signature is IDENTICAL to the immediately-prior logged signature for
+    the same flow (i.e. this would be the 3rd consecutive attempt with no signature change),
+    flag "check the flow spec/assertion against the actual UI before re-assigning" instead
+    of proceeding straight to step 4 — a repeated identical signature more often means the
+    flow/assertion itself is wrong than that the feature is broken. This check is independent
+    of the circuit breakers in step 3 (it can fire before any counter is exceeded).
 4. **Invoke Plan-Writer** (iteration-verification mode) to generate verification checklist
 5. **Spawn Developer** with failure context + verification checklist reference
 6. **Developer fixes → submits to Reviewer → deploys → verifies**
 7. **If verification passes:** Proceed to user handoff. Log success.
 8. **If verification fails:** Loop back to step 2. Circuit breaker counters increment.
+
+**SKIPPED results (mobile/web verification only) are not failures — do not run this loop for
+them.** SKIPPED means the verification infrastructure itself is unavailable (no Maestro MCP
+configured, no `maestro-runner` installed), not that the feature is broken. On the first
+SKIPPED result for a project, ask the User once whether to fix the environment or proceed
+without that verification; persist the decision in that project's `.sre/config.yaml` under
+`mobile_verification_skip_acknowledged: true/false` so future sprints don't re-ask.
 
 <!-- canonical: autonomous-iteration.md — circuit breakers inlined below -->
 
@@ -388,6 +404,8 @@ When any automated check fails on staging or dev (SRE verification, staging veri
 | Per-bug attempts | Same bug, same batch | 3 | Developer invokes Reviewer before 4th attempt |
 | Reviewer rounds | Same fix, review cycle | 3 | EM escalates to User |
 | SRE auto-iterate cycles | Same deploy, SRE checks | 3 | EM escalates to User |
+| Mobile verification cycles | Same deploy, mobile functional verification | 3 | EM escalates to User |
+| Web UX verification cycles | Same deploy, web functional/UX verification | 3 | EM escalates to User |
 | Per-issue batches | Same Linear issue, across batches | 5 | EM escalates with full attempt summary |
 
 Reviewer rounds are NOT counted as per-issue batches (separate counters).

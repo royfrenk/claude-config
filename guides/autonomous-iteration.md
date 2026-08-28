@@ -46,9 +46,27 @@ Before auto-continuing after a failed verification, EM runs these 5 checks again
 | Per-bug attempts | Same bug, same batch | 3 | Developer invokes Reviewer before 4th attempt |
 | Reviewer rounds | Same fix, review cycle | 3 | EM escalates to User |
 | SRE auto-iterate cycles | Same deploy, SRE checks | 3 | EM escalates to User |
+| Mobile verification cycles | Same deploy, mobile functional verification | 3 | EM escalates to User |
+| Web UX verification cycles | Same deploy, web functional/UX verification | 3 | EM escalates to User |
 | Per-issue batches | Same Linear issue, across batches | 5 | EM escalates with full attempt summary |
 
 **Reviewer rounds are NOT counted as per-issue batches.** These are separate counters.
+
+**Same-failure-signature check (functional/mobile/web-UX verification only):** independent
+of the counters above. If a flow's failure signature (`[flow name] / step [N] / [category]`
+— see `plan-writer.md`'s Functional Verification format) is IDENTICAL to the immediately-
+prior logged attempt for that same flow, EM flags "check the flow spec/assertion against the
+actual UI" before assigning another fix attempt — a repeated identical signature more often
+means the flow/assertion itself is wrong than that the feature is broken. This can fire
+before any circuit breaker counter is exceeded (as early as the 2nd identical signature,
+before what would be the 3rd attempt).
+
+**SKIPPED is not a failure.** For mobile/web verification, a SKIPPED result (verification
+infrastructure unavailable — no Maestro MCP, no `maestro-runner`) does not enter this loop at
+all. On the first SKIPPED result for a project, EM asks the User once whether to fix the
+environment or proceed without that verification, and persists the decision in that
+project's `.sre/config.yaml` (`mobile_verification_skip_acknowledged: true/false`) so future
+sprints don't re-ask.
 
 ---
 
@@ -58,7 +76,9 @@ When `/iterate` or `/sprint` SRE failure triggers autonomous iteration:
 
 ### Step 1: Log the failure
 
-Add to sprint file under Iteration Log with batch number and timestamp.
+Add to sprint file under Iteration Log with batch number and timestamp. For functional/
+mobile/web-UX verification failures, log the structured failure signature (`[flow name] /
+step [N] / [category]`), not just raw output — this is what Step 3a diffs against.
 
 ### Step 2: Run Severity Escalation Checklist
 
@@ -66,7 +86,13 @@ Evaluate the 5 questions against the proposed fix. If ANY answer is yes → esca
 
 ### Step 3: Check Circuit Breakers
 
-Check all 4 counters. If any counter exceeds its limit → escalate. Otherwise → continue.
+Check all counters. If any counter exceeds its limit → escalate. Otherwise → continue.
+
+### Step 3a: Same-Failure-Signature Check (functional/mobile/web-UX verification only)
+
+If this flow's new failure signature is IDENTICAL to the immediately-prior logged signature
+for the same flow, flag "check the flow spec/assertion before re-assigning" instead of
+proceeding straight to Step 4. See the Circuit Breakers section above for the full rule.
 
 ### Step 4: Invoke Plan-Writer (iteration-verification mode)
 
@@ -90,7 +116,7 @@ Developer submits to Reviewer. Standard review process applies.
 
 ### Step 7: Deploy and Verify
 
-Developer deploys to staging. Runs automated verification (Phase 6) and functional verification (Phase 6.3, using the plan-writer-generated checklist via visual-verifier Mode 5).
+Developer deploys to staging. Runs automated verification (Phase 6) and functional verification (Phase 6.3 Web / Phase 6.4 Mobile, using the plan-writer-generated checklist via visual-verifier Mode 5 / mobile-verifier).
 
 ### Step 8: Evaluate Results
 
@@ -128,8 +154,12 @@ Visual-verifier reads `#### Batch [N] — Verification Plan` from the spec file 
 
 - SRE deployment verification failure (staging/dev)
 - Automated staging verification failure (Phase 6)
-- Functional verification failure (Phase 6.3)
+- Functional verification failure — web (Phase 6.3) or mobile (Phase 6.4)
 - Visual verification failure (plan-writer-generated checklist)
+
+**Not triggered by a SKIPPED mobile/web verification result** — that means the verification
+infrastructure is unavailable, not that the feature is broken. See the SKIPPED handling in
+the Circuit Breakers section above.
 
 **NOT triggered by:**
 - User-reported bugs (these go through normal `/iterate` flow with User in the loop)

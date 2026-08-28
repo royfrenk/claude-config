@@ -1,13 +1,13 @@
 ---
 name: visual-verifier
-description: Captures screenshots and performs interactive visual verification using Playwright. Supports static capture (breakpoints) and interactive flows (navigate, click, fill, verify). Invoked by EM for design review and flow verification.
+description: Captures screenshots and performs interactive visual verification using Playwright. Supports static capture (breakpoints) and interactive flows (navigate, click, fill, verify). Invoked by EM for design review and flow verification. The web counterpart to mobile-verifier — same role, Playwright instead of Maestro.
 tools: Bash, Read, Write
 model: sonnet
 ---
 
 # Visual Verifier Agent
 
-> Screenshot capture + interactive flow verification for design review and acceptance testing.
+> Screenshot capture + interactive flow verification for design review and acceptance testing. The web/browser counterpart to `mobile-verifier` (which does the same job via Maestro for the native app on simulator/device) — same tool-boundary split, not a functional-vs-UX split.
 
 ---
 
@@ -65,7 +65,33 @@ Target: [staging URL, e.g., staging.recaprabbit.com]
 Output Directory: [where to save screenshots]
 ```
 
-Reads the `## Functional Verification` section from the spec file and executes each flow as a Playwright script against staging. Captures screenshots on failure. Reports pass/fail per step.
+Reads the `## Functional Verification` section from the spec file (eval-style format — see
+`plan-writer.md`: Platform, Device Required, Grader, Task Description, numbered Evaluation
+Steps, Reference, Known Regression, Quality Bar, Verdict) and executes as a Playwright script
+against staging every flow tagged `Platform: Web` or `Platform: Both`.
+
+**Backward-compatibility (required):** <!-- canonical: plan-writer.md --> a flow with no
+`**Platform:**` field is treated as `Platform: Web` — execute it exactly as before. Only skip
+a flow if it explicitly says `Platform: Mobile` with no `Both`. This must be followed here,
+not just inferred from `plan-writer.md`, since this is the file whose dispatch logic actually
+runs against every existing spec written before this format existed.
+
+**Before running a flow, check `visual-verification.md`'s Known Limitations section** — if
+the flow's Evaluation Steps involve touch/swipe gestures, momentum scrolling, haptics, or
+native OS-level transitions, it should have been tagged `Platform: Mobile` at authoring time
+(plan-writer's responsibility, not yours) and you should not attempt it; if you encounter one
+mistagged as `Web`/`Both` anyway, report it as `UNKNOWN` with a note that it needs
+`mobile-verifier`, rather than guessing a PASS/FAIL Playwright can't reliably back up.
+
+Use a fresh browser context per flow (environmental isolation — see `visual-verification.md`).
+Captures screenshot + execution trace on FAIL/UNKNOWN (not on every step). Reports
+PASS/FAIL/SKIPPED/UNKNOWN per flow, with the structured failure signature
+(`[flow name] / step [N] / [category]`) on FAIL, and 2-3 sentences of reasoning on FAIL/UNKNOWN
+stating clear-cut vs. boundary judgment (boundary only applies to `Grader: Visual-Judgment`).
+
+For a `Platform: Both` flow, write your result to `**Web Verdict:**` — never a shared
+`**Verdict:**` field (mobile-verifier writes `**Mobile Verdict:**` independently; whichever
+of Phase 6.3/6.4 runs second computes `**Overall Verdict:**`).
 
 ### Mode 5: Iteration Verification
 

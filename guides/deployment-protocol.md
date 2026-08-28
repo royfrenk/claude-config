@@ -226,20 +226,20 @@ npx playwright test tests/relevant.spec.ts --grep-invert @launch
 
 ---
 
-## Phase 6.3: Functional Verification
+## Phase 6.3: Functional Verification — Web
 
-**Prerequisite:** Phase 6 passed. **This phase runs when the spec has a `## Functional Verification` section.**
+**Prerequisite:** Phase 6 passed. **This phase runs when the spec has a `## Functional Verification` section with any flow tagged `Platform: Web`/`Both`, or any flow with no `Platform:` field at all — <!-- canonical: plan-writer.md --> an untagged flow is treated as `Platform: Web` and runs exactly as before.**
 
-Functional verification opens a real browser against staging and executes the feature flows defined in the spec file. This catches the class of bugs where "code deploys" but "feature doesn't work as a user would experience it" — broken downloads, invalid share links, missing RTL alignment, etc.
+Functional verification opens a real browser against staging and executes the feature flows defined in the spec file, using the eval-style flow format from `plan-writer.md` (Task Description, numbered Evaluation Steps, Verdict). This catches the class of bugs where "code deploys" but "feature doesn't work as a user would experience it" — broken downloads, invalid share links, missing RTL alignment, etc.
 
-### Step 1: Check Spec for Flows
+### Step 1: Check Spec for Qualifying Flows
 
 ```bash
 grep -c "## Functional Verification" docs/technical-specs/{ISSUE_ID}.md
 ```
 
-- If 0: Skip Phase 6.3 entirely, proceed to Phase 6.5
-- If 1: Continue
+- If 0: Skip Phase 6.3 entirely, proceed to Phase 6.4
+- If 1: Continue — visual-verifier will select the `Web`/`Both`/untagged flows itself
 
 ### Step 2: Spawn Visual-Verifier
 
@@ -254,9 +254,9 @@ Output Directory: screenshots/
 
 The visual-verifier will:
 1. Read the `## Functional Verification` section from the spec
-2. Set up an authenticated browser context (test user JWT)
-3. Execute each flow's steps as a Playwright script
-4. Report pass/fail per step with screenshots on failure
+2. Set up an authenticated browser context (test user JWT), with a fresh context per flow (environmental isolation)
+3. Execute each qualifying flow's Evaluation Steps as a Playwright script — asserting the resulting state, not a rigid path
+4. Report PASS/FAIL/SKIPPED/UNKNOWN per flow, with screenshot + trace on FAIL/UNKNOWN, and the structured failure signature on FAIL
 
 ### Step 3: Auth Setup
 
@@ -281,29 +281,75 @@ For public page flows (share links, public episodes), use a **separate browser c
 
 | Result | Action |
 |--------|--------|
-| **All flows PASS** | Log in sprint file. Proceed to Phase 6.5. |
-| **Any flow FAILS (attempt 1)** | Read failure report. Fix the issue. Re-run verification. |
-| **Any flow FAILS (attempt 2)** | Escalate to EM with failure report + screenshots. |
+| **All flows PASS** | Log in sprint file. Proceed to Phase 6.4. |
+| **Any flow FAILS or SKIPPED** | Report immediately to EM — no self-loop attempts here. Include the structured failure signature and screenshot/trace evidence. EM owns the fix loop (`autonomous-iteration.md`). Proceed to Phase 6.4 regardless — mobile verification runs independently of the web fix loop. |
 
 ### Step 5: Verification Report
 
 Append to the Phase 6 verification report:
 
 ```
-### Functional Verification
-| Flow | Steps | Passed | Failed | Status |
-|------|-------|--------|--------|--------|
-| PDF Export | 5 | 5 | 0 | ✅ |
-| Share Link | 9 | 9 | 0 | ✅ |
+### Functional Verification — Web
+| Flow | Platform | Verdict | Details |
+|------|----------|---------|---------|
+| PDF Export | Web | PASS | — |
+| Share Link | Both | PASS (web side) | Overall pending Phase 6.4 mobile result |
 
 Screenshots: [none — all passed] or [screenshots/func-flow1-step4-fail.png]
 ```
 
 ---
 
+## Phase 6.4: Functional Verification — Mobile
+
+**Prerequisite:** Phase 6.3 completed (passed, failed, or was skipped — Phase 6.4 always runs regardless of Phase 6.3's outcome). **This phase runs when the spec has a `## Functional Verification` section with any flow tagged `Platform: Mobile`/`Both`.**
+
+Mobile functional verification drives the app on iOS simulator (and physical device, for flows that need it) via Maestro, executing the same eval-style flows as Phase 6.3 but for mobile-tagged criteria — gesture thresholds, native transitions, swipe-to-dismiss, and anything Playwright can't reliably simulate (see `visual-verification.md`'s Known Limitations section).
+
+### Step 1: Check Spec for Qualifying Flows
+
+Same spec file as Phase 6.3. If no flow is tagged `Platform: Mobile` or `Platform: Both`, skip Phase 6.4 entirely, proceed to Phase 6.5.
+
+### Step 2: Spawn Mobile-Verifier
+
+```
+Mode: mobile
+Spec: docs/technical-specs/{ISSUE_ID}.md
+Target: simulator
+Output Directory: screenshots/
+```
+
+For any qualifying flow additionally tagged `Device Required: Yes`, mobile-verifier also runs a device-mode pass via `npx maestro-runner` as part of the same invocation — no separate spawn needed. See `mobile-verification.md` for the full protocol (Maestro YAML patterns, environmental isolation, device fallback).
+
+### Step 3: Handle Results
+
+| Result | Action |
+|--------|--------|
+| **All flows PASS** | Log in sprint file. Proceed to Phase 6.5. |
+| **Any flow FAILS** | Report immediately to EM with the structured failure signature and screenshot/trace evidence. EM owns the fix loop. |
+| **Any flow SKIPPED** (Maestro MCP or `maestro-runner` unavailable in this project) | Report to EM. This is NOT a fix-loop trigger — EM asks the User once per project whether to fix the environment or proceed without mobile verification, persisting the decision in `.sre/config.yaml` (`mobile_verification_skip_acknowledged`). |
+
+**Both-Platform flows:** for any flow tagged `Platform: Both`, this phase's mobile-verifier writes `**Mobile Verdict:**` alongside Phase 6.3's `**Web Verdict:**` (never a shared field). Compute `**Overall Verdict:**` here (FAIL wins; else UNKNOWN if either is UNKNOWN and neither FAILed; else SKIPPED if either is SKIPPED and the other isn't FAIL; else PASS) and report that computed result to EM, not the individual per-platform verdicts.
+
+### Step 4: Verification Report
+
+Append to the Phase 6 verification report:
+
+```
+### Functional Verification — Mobile
+| Flow | Platform | Device Required | Verdict | Details |
+|------|----------|------------------|---------|---------|
+| Drawer swipe-dismiss | Mobile | No | PASS | — |
+| Share Link | Both | No | Overall: PASS | Web PASS + Mobile PASS |
+
+Screenshots: [none — all passed] or [screenshots/mobile-flow1-step3-fail.png]
+```
+
+---
+
 ## Phase 6.5: SRE Deployment Verification
 
-**Prerequisite:** Phase 6.3 passed (or was skipped). **This phase is MANDATORY for every deployment.**
+**Prerequisite:** Phase 6.4 passed (or was skipped). **This phase is MANDATORY for every deployment.**
 
 SRE runs health checks, smoke tests, and log analysis against the live deployment. It gates user handoff — if SRE fails, the User never sees a broken deployment.
 

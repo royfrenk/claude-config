@@ -146,29 +146,75 @@ Read `docs/technical-specs/{ISSUE_ID}.md` and replace the "Implementation Plan" 
 
 ### Functional Verification
 
-**Purpose:** Browser-based verification that the feature works on staging as a real user would experience it. Developer spawns the visual-verifier agent (Mode 4) with these flows after deploying to staging. Only include this section when the feature has user-visible behavior that should be verified in a browser.
+**Purpose:** Verification that the feature works on staging as a real user would experience it — web via `visual-verifier` (Playwright), mobile via `mobile-verifier` (Maestro). Developer spawns the relevant agent(s) with these flows after deploying to staging. Only include this section when the feature has user-visible behavior worth verifying this way.
 
-**When to include:** Feature has user-facing UI, user interactions (clicks, downloads, navigation), or produces user-visible output (PDFs, share pages, emails). Skip for backend-only changes, database migrations, or internal API refactors.
+**When to include:** Feature has user-facing UI, user interactions (clicks, taps, gestures, downloads, navigation), or produces user-visible output (PDFs, share pages, emails). Skip for backend-only changes, database migrations, or internal API refactors.
 
 **Target:** [staging URL from CLAUDE.md]
-**Auth:** Test user (visual-verifier handles auth setup)
+**Auth:** Test user (web-verifier/mobile-verifier handles auth setup)
+
+**Backward-compatibility rule:** <!-- canonical: plan-writer.md --> a flow with no `**Platform:**` field is treated as `Platform: Web, Grader: Deterministic` and continues to run through `visual-verifier` exactly as it does today. Old-format flows (written before this rule existed) are NEVER auto-routed to `mobile-verifier` — they were never written or validated against mobile execution — and are NEVER silently marked SKIPPED. They keep their current, already-working behavior unless a human/Plan-Writer explicitly upgrades them to the format below. This exact rule is restated (marked `<!-- canonical: plan-writer.md -->`) in `developer.md` and `visual-verifier.md` — keep all three in sync if it ever changes.
+
+**Enforcement point for the Routing rule below:** when authoring each flow, read `visual-verification.md`'s Known Limitations section and apply the Routing rule — tag a gesture/momentum/native-transition flow `Platform: Mobile` (not `Web` or `Both`) at authoring time. This is a write-time decision you make here, not a runtime check web-verifier performs.
 
 #### Flow 1: [descriptive name]
-1. Navigate to [starting page]
-2. [Action — click, fill, select, etc.]
-3. Verify: [assertion — what should be true after the action]
-4. [Next action...]
-5. Verify: [next assertion...]
+**Platform:** Web | Mobile | Both
+**Device Required:** Yes | No — flag if behavior may differ from simulator/headless browser (native gestures, camera, haptics)
+**Grader:** Deterministic | Visual-Judgment | Manual
+**Task Description:** [what's being verified — pull from the component's `**Interactions:**` spec if one exists]
+
+**Evaluation Steps** (numbered, chain-of-thought — walked in order before verdict; steps
+assert the resulting STATE, not a rigid interaction path — a verifier is free to reach that
+state a different way, e.g. tap by accessibility label instead of coordinates):
+1. [Action] → confirm [state]
+2. [Action] → confirm [state]
+...
+
+**Reference:** [known-good screenshot/recording, if available — same role as a golden answer]
+**Known Regression:** [linked issue ID, if this criterion exists because of a prior bug]
+**Quality Bar:** [tolerance — e.g. "±50ms duration, ±10px layout"]
+
+**Verdict (per-verifier for `Platform: Both` flows — see Both-Platform Results below):**
+PASS | FAIL | SKIPPED (+ reason, e.g. `precondition-failed`, `device-mode-unavailable`) | UNKNOWN
+**On FAIL/UNKNOWN:** screenshot + execution trace + 2-3 sentence reasoning. Clear-cut vs.
+boundary judgment only applies to `Grader: Visual-Judgment` verdicts — a `Deterministic`
+grader's PASS/FAIL is always clear-cut (it's a boolean assertion); a `Visual-Judgment`
+verdict is "boundary" specifically when the measured value is within 1.5x the stated Quality
+Bar tolerance of the pass/fail threshold, "clear-cut" otherwise.
 
 #### Flow 2: [descriptive name]
-1. ...
+...
+
+**Both-Platform Results:** for a `Platform: Both` flow, web-verifier writes `**Web
+Verdict:**` and mobile-verifier writes `**Mobile Verdict:**` — never the same `**Verdict:**`
+line. Whichever of Phase 6.3/6.4 runs second computes `**Overall Verdict:**`: FAIL if either
+is FAIL; else UNKNOWN if either is UNKNOWN and neither is FAIL; else SKIPPED if either is
+SKIPPED and the other is PASS/SKIPPED; else PASS. `**Overall Verdict:**` is what routes to
+EM — SKIPPED routes like FAIL, never like a silent PASS.
+
+**Failure signature** (platform-agnostic, used by EM's "same failure signature twice" rule
+in `em.md`): `[flow name] / step [N] / [category]`, category one of `element-not-found`,
+`assertion-mismatch`, `timeout`, `crash`, `unexpected-state`.
+
+**Verdict-vocabulary mapping** (for `task-completion.md` acceptance-criteria tables):
+PASS → ✅, FAIL → ❌, SKIPPED or UNKNOWN → ⚠️ (carry the reason/reasoning into the Details column).
+
+**Routing rule:** flows whose Evaluation Steps involve touch/swipe gestures, momentum, or
+native transitions are mobile-verifier-authoritative even for a shared web component —
+Playwright's gesture simulation isn't trustworthy at threshold precision.
+
+**Grader v1 scope note:** only `Deterministic` and `Visual-Judgment` are implemented. An
+event-based grader (e.g. verifying an observability/analytics event fired) is a plausible
+future extension, not part of this format — do not tag a flow with it.
 
 **Writing good flows:**
 - Each flow tests ONE user journey (not a grab bag of checks)
-- Steps are browser-actionable (click, navigate, fill — not "check the code")
-- Every `Verify:` step has a concrete assertion (URL contains X, element Y is visible, file downloads, text content matches)
-- Include edge cases that broke before (e.g., RTL alignment, incognito access, expired tokens)
-- For public pages: include an incognito flow (new browser context, no auth cookies)
+- Grade outcomes, not paths — Evaluation Steps assert the resulting state; don't over-specify the literal interaction sequence
+- Every criterion is measurable: a number, a threshold, or a boolean — not an adjective standing alone ("smooth," "polished," "native-feeling" are not criteria)
+- One behavior per criterion, atomic — don't bundle "opens correctly and closes correctly and is accessible" into one flow
+- State the trigger AND what would falsify it (e.g. "swipe past 100px → dismisses; falsified by: drawer still visible after gesture")
+- Include a **Known Regression** link whenever this criterion exists because of a prior bug — a shipped UX regression becomes a permanent named criterion, not a one-time bug ticket
+- For public pages (web): include an incognito flow (new browser context, no auth cookies)
 ```
 
 Also update the file header:
@@ -217,7 +263,7 @@ Ready for User to review and approve.
 4. **Modular** - Each task is independently testable when possible
 5. **No scope creep** - Stick to what Explorer documented
 6. **Dependency analysis** - Always include Task Dependencies table with:
-7. **Functional verification** - If the spec has acceptance criteria involving user-visible behavior on staging (UI interactions, downloads, share links, public pages), translate them into a `## Functional Verification` section with browser-actionable flows. Skip for backend-only or internal changes.
+7. **Functional verification** - If the spec has acceptance criteria involving user-visible behavior on staging (UI interactions, downloads, share links, public pages, gestures, native transitions), translate them into a `## Functional Verification` section with the eval-style flow format above, tagging each flow `Platform: Web`/`Mobile`/`Both` per the Routing rule. Skip for backend-only or internal changes.
    - What each task depends on
    - Why the dependency exists
    - Files to modify (for conflict detection)

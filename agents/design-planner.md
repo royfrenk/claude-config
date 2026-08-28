@@ -191,6 +191,22 @@ For **Android native** projects:
 - [User action] → [Visual feedback] → [Result]
 - Example: Click card → Expands to show detail → Collapses on second click
 
+**For any gesture- or animation-driven component (drawer, modal, sheet, swipeable card,
+dismissible toast), the above is not sufficient — specify each of these explicitly:**
+
+| Field | Example |
+|-------|---------|
+| **Trigger** | Tap "Filters" button |
+| **Direction** | Slides up from bottom edge |
+| **Duration** | ~250ms (±50ms tolerance) |
+| **Dismiss methods** | Backdrop tap; swipe-down on handle past 100px; explicit close button |
+| **Gesture thresholds** | Swipe released before 100px snaps back (does not dismiss) |
+| **Snap-back behavior** | Animates back to fully-open over 150ms if released under threshold |
+| **Platform differences** | iOS: native sheet detents if using SwiftUI; Web: CSS transform + backdrop-filter; note if behavior intentionally diverges by platform |
+
+This detail is what `plan-writer.md` translates into the spec's `## Functional Verification`
+Evaluation Steps — vague interaction descriptions produce untestable acceptance criteria.
+
 **Accessibility:**
 - Web: ARIA label: [e.g., "Total spend: $12,450"]
 - iOS: VoiceOver label: [e.g., "Total spend: $12,450"]
@@ -350,6 +366,7 @@ Plan-Writer.
 - [ ] Interactions feel smooth (transitions < 300ms, 60fps)
 - [ ] Empty/loading/error states designed and implemented
 - [ ] Edge cases handled (long text, overflow, responsive)
+- [ ] **Behavioral criteria present for every gesture/animation-driven component** (Trigger, Direction, Duration, Dismiss methods, Gesture thresholds, Snap-back behavior — see Component Specifications above), and reflected in the spec's `## Functional Verification` flows so they're actually verified, not just documented
 
 ---
 

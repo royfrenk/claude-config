@@ -184,33 +184,68 @@ The Reviewer will verify your assessment. This catches functional gaps before re
 - Sprint diff file generation
 - Backend and frontend readiness checks (Phase 5.5)
 - Automated staging verification (Phase 6): API health, response validation, logs, E2E tests
-- Functional verification (Phase 6.3): browser-based feature verification via visual-verifier agent
+- Functional verification (Phase 6.3 Web, Phase 6.4 Mobile): feature verification via visual-verifier (Playwright) and mobile-verifier (Maestro) agents
 - Failure handling and circuit breakers (max 3 attempts)
 - Deployment CLI operations (Vercel, Railway, Netlify)
 
-### Phase 6.3: Functional Verification (When Spec Has Flows)
+### Phase 6.3: Functional Verification — Web (When Spec Has Web/Both Flows)
 
 **After Phase 6 passes**, check if the spec file has a `## Functional Verification` section:
 
 1. Read `docs/technical-specs/{ISSUE_ID}.md`
-2. If `## Functional Verification` section exists → spawn the visual-verifier agent:
+2. If it has flows tagged `Platform: Web` or `Platform: Both`, **or any flow with no
+   `Platform:` field at all (backward-compat: <!-- canonical: plan-writer.md --> untagged
+   flows are treated as `Platform: Web` and run exactly as before)** → spawn the
+   visual-verifier agent:
    ```
    Mode: functional
    Spec: docs/technical-specs/{ISSUE_ID}.md
    Target: [staging URL from CLAUDE.md]
    Output Directory: screenshots/
    ```
-3. If no `## Functional Verification` section → skip to Phase 6.5
+3. If no qualifying flows exist → skip to Phase 6.4
 
-**This is a HARD GATE when flows exist.** If any flow FAILS:
-- Read the failure report and screenshots
-- Fix the issue
-- Re-run Phase 3 verification loop (build/types/lint/tests)
-- Re-deploy (Phase 5)
-- Re-run functional verification (max 2 attempts)
-- After 2 failed attempts → escalate to EM with failure report
+**This is a HARD GATE when qualifying flows exist.** On any flow result:
+- **FAIL or SKIPPED:** report immediately to EM — do not self-loop. Include the structured
+  failure signature (`[flow name] / step [N] / [category]` — see `plan-writer.md`'s
+  Functional Verification format) and the screenshot/trace evidence. EM owns the fix loop
+  from here (see `em.md` Autonomous Iteration Protocol).
+- **PASS:** log to the sprint file, proceed to Phase 6.4. No separate EM report.
 
-If all flows PASS → proceed to Phase 6.5.
+Proceed to Phase 6.4 regardless of Phase 6.3's outcome — mobile verification runs
+independently; EM's iteration loop (if Phase 6.3 failed) happens in parallel with your
+progression, not as a blocker to starting Phase 6.4.
+
+### Phase 6.4: Functional Verification — Mobile (When Spec Has Mobile/Both Flows)
+
+1. Read `docs/technical-specs/{ISSUE_ID}.md` (same spec, already read in Phase 6.3).
+2. If it has flows tagged `Platform: Mobile` or `Platform: Both` → spawn the mobile-verifier
+   agent:
+   ```
+   Mode: mobile
+   Spec: docs/technical-specs/{ISSUE_ID}.md
+   Target: simulator
+   Output Directory: screenshots/
+   ```
+   For any flow additionally tagged `Device Required: Yes`, mobile-verifier also runs a
+   device-mode pass via `maestro-runner` — no separate invocation needed, it's part of the
+   same agent call.
+3. If no qualifying flows exist → skip to Phase 6.5
+
+**This is a HARD GATE when qualifying flows exist**, same reporting shape as Phase 6.3:
+- **FAIL:** report immediately to EM with the structured failure signature and evidence.
+- **SKIPPED** (Maestro MCP or `maestro-runner` unavailable in this project): report to EM —
+  EM does NOT invoke a fix loop for this (nothing in the app is broken), it asks the User
+  once per project whether to fix the environment or proceed without mobile verification
+  (see `em.md` SKIPPED Routing, persisted in `.sre/config.yaml`).
+- **PASS:** log to the sprint file, proceed to Phase 6.5.
+
+**Both-Platform flows:** if a flow was tagged `Platform: Both`, Phase 6.3 wrote
+`**Web Verdict:**` and this phase's mobile-verifier writes `**Mobile Verdict:**` — never
+the same field. After Phase 6.4 completes, compute `**Overall Verdict:**` for every
+`Both`-tagged flow (FAIL wins; else UNKNOWN if either is UNKNOWN and neither FAILed; else
+SKIPPED if either is SKIPPED and the other isn't FAIL; else PASS) and report that computed
+result, not the individual per-platform verdicts, to EM.
 
 ### Phase 6.5: SRE Deployment Verification (MANDATORY)
 

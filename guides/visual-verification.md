@@ -384,6 +384,44 @@ const isRtlCss = textAlign === 'rtl';
 
 ---
 
+## Known Limitations
+
+Playwright verifies hover/focus/click states and animation **duration** reliably (via
+`page.evaluate(() => document.getAnimations())` or measuring computed transition timing).
+What it does **not** reliably verify:
+
+- **Touch/swipe gesture thresholds** — Playwright can dispatch touch/pointer events, but
+  precise gesture-distance thresholds (e.g. "dismiss past 100px, snap back under") are not
+  trustworthy at the precision a real touchscreen gives you.
+- **Momentum scrolling physics** — no real inertial scroll model.
+- **Haptics** — not observable at all from a browser context.
+- **Native OS-level transitions** — anything happening outside the WebView (native tab bar
+  animations, native sheet presentation) is invisible to Playwright entirely.
+
+**Routing rule:** a flow whose Evaluation Steps involve any of the above is
+**mobile-verifier-authoritative** even if it's a shared web component that Playwright could
+technically click through — tag it `Platform: Mobile`, not `Web` or `Both`. This is applied
+by `plan-writer` at spec-authoring time (see `plan-writer.md`'s Functional Verification
+format), not as a runtime check performed here.
+
+## Environmental Isolation
+
+**Required, not optional.** Use a fresh browser context per flow (`browser.newContext()`) —
+never chain a flow onto a context that just failed a previous flow. A failure caused by
+leftover state from a prior flow (stale cookies, cached auth, leftover DOM state) is a
+correlated failure, not a real signal about the flow under test, and must not be reported as
+a feature bug.
+
+## Evidence Requirement on Failure
+
+Every FAIL or UNKNOWN verdict must carry a screenshot **and** the execution trace (the
+Playwright script's actual output, not a summary) — ties to `stability.md` Section 27: a
+failure report a human can't independently inspect is not acceptable. Include 2-3 sentences
+of reasoning stating whether the result is clear-cut or a boundary judgment call (only
+applicable to `Grader: Visual-Judgment` criteria — see `plan-writer.md`'s format).
+
+---
+
 ## Screenshot Naming Conventions
 
 | Mode | Pattern | Example |

@@ -793,6 +793,8 @@ project/
 | **Eval-Writer** | Writes quality benchmarks for subjective features | No | No |
 | **Developer** | Implements code, deploys to staging | Yes | No (but can run in parallel with other Developers) |
 | **Design-Reviewer** | Reviews UI implementations against design standards (runs BEFORE Code Reviewer for UI work) | No | No |
+| **Visual-Verifier** | Captures screenshots + executes web functional/UX verification flows via Playwright, post-staging-deploy (Phase 6.3) | No | No |
+| **Mobile-Verifier** | Executes mobile functional/UX verification flows via Maestro against iOS simulator and device, post-staging-deploy (Phase 6.4) | No | No |
 | **Reviewer** | Reviews code, approves/blocks deploys | No | Yes (sub-Reviewers for parallel review) |
 | **Security Reviewer** | Reviews diffs for security issues (PR mode) and runs full codebase audits (audit mode). Invoked after Code Reviewer approves. | No | No |
 | **External Model Delegate** | Consults external AI models (Gemini, Codex) for stuck bugs, implements their suggestions | Yes | No |

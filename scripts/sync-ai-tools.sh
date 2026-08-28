@@ -1038,6 +1038,6 @@ echo "    Commands: audit, sync-linear, sync-roadmap
     Other:    managed-agents/ (SRE), agents/sre.md, agents/em.md"
 echo "    Guides:   codex-peer-review,"
 echo "              parallel-review, retroactive-review,"
-echo "              screenshot-orchestration, visual-verification"
+echo "              screenshot-orchestration, visual-verification, mobile-verification"
 echo ""
 echo "Done."
