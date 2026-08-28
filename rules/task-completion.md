@@ -35,6 +35,7 @@ When pushing to `main` (production), output the same format AND **close any refe
 - For every referenced issue with a `bug` label (or filed via `/create-bug`):
   1. **Linear:** call `mcp__linear__save_issue` with `state: <Done UUID from CLAUDE.md>`.
   2. **Roadmap:** edit `docs/roadmap.md` — remove the row from `## Bugs` and append it to `## Recently Completed` (keep the ID and title; note the commit hash and date).
+  3. **Spec file** (if a project uses `~/.claude/guides/spec-file-lifecycle.md`): rename `docs/technical-specs/{ID}.IN-PROCESS.md` → `{ID}.CLOSED.md` and fix its roadmap.md link to match, same as EM's sprint-closure step — this rule exists precisely so an ad-hoc/`/iterate` push-to-`main` doesn't silently skip it just because it isn't going through a full sprint closure.
 - If unsure which issues the merge covers, list candidates and confirm with the user before closing.
 - Never leave a shipped bug issue in `Todo`, `In Progress`, or `In Review` in Linear, and never leave a closed bug under `## Bugs` in the roadmap after it hits `main`.
 

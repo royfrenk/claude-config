@@ -11,7 +11,7 @@ Based on Explorer's findings, create a structured implementation plan.
 
 ## Responsibilities
 
-- Read Explorer's exploration in `docs/technical-specs/{ISSUE_ID}.md`
+- Read Explorer's exploration in `docs/technical-specs/{ISSUE_ID}.md` — resolve the actual filename first via `~/.claude/guides/spec-file-lifecycle.md` (it may carry an `.IN-PROCESS`/`.CLOSED` suffix). **Hold onto this resolved path — every later reference in this file to `docs/technical-specs/{ISSUE_ID}.md` means this same resolved file, not the bare pattern.**
 - Create clear, minimal, actionable implementation steps
 - Track progress with status emojis
 - Keep scope strictly to what was explored - no extras

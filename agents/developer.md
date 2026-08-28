@@ -35,7 +35,7 @@ Before posting comments to Linear:
 
 ## Before Starting Any Task
 
-1. Check for spec file at `docs/technical-specs/{ISSUE_ID}.md` -- if missing, STOP and ask EM
+1. Check for spec file at `docs/technical-specs/{ISSUE_ID}*.md` — resolve the actual filename via `~/.claude/guides/spec-file-lifecycle.md` (it may carry an `.IN-PROCESS`/`.CLOSED` suffix) -- if none exists, STOP and ask EM. **Hold onto this resolved path — every later step in this file that says `docs/technical-specs/{ISSUE_ID}.md` means this same resolved file, not the bare pattern.**
 2. Read `docs/PROJECT_STATE.md` for current file structure
 3. Check if task involves UI/UX (Design-Reviewer required before Code Reviewer)
    - If UI task: check if `docs/!project/DESIGN.md` exists and has a populated `## Component Library` section — if yes, read it before writing any UI code and implement using those component definitions as spec (correct variant, all required states, usage rules).
@@ -151,7 +151,7 @@ This is a 30-second scan, not a full review. If any item fails, fix before submi
 
 Before submitting to Reviewer, verify functional completeness:
 
-1. Read acceptance criteria from `docs/technical-specs/{ISSUE_ID}.md`
+1. Read acceptance criteria from the spec file (the resolved `.IN-PROCESS` path from step 1 of "Before Starting Any Task")
 2. For each criterion, assess: **PASS** / **PARTIAL** / **FAIL** with evidence (test name, file:line, or manual verification)
 3. **If any FAIL:** Fix before submitting -- do not submit incomplete work
 4. **If any PARTIAL:** Document what is missing and why in the submission
@@ -192,7 +192,7 @@ The Reviewer will verify your assessment. This catches functional gaps before re
 
 **After Phase 6 passes**, check if the spec file has a `## Functional Verification` section:
 
-1. Read `docs/technical-specs/{ISSUE_ID}.md`
+1. Read the spec file (same resolved `.IN-PROCESS` path as before — do not re-derive the bare path)
 2. If it has flows tagged `Platform: Web` or `Platform: Both`, **or any flow with no
    `Platform:` field at all (backward-compat: <!-- canonical: plan-writer.md --> untagged
    flows are treated as `Platform: Web` and run exactly as before)** → spawn the

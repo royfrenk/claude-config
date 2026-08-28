@@ -234,8 +234,14 @@ Functional verification opens a real browser against staging and executes the fe
 
 ### Step 1: Check Spec for Qualifying Flows
 
+Resolve the actual spec filename first via `~/.claude/guides/spec-file-lifecycle.md`
+(`docs/technical-specs/{ISSUE_ID}*.md` — mid-deployment, this should be `.IN-PROCESS`), then
+use that resolved path (not the bare `{ISSUE_ID}.md`) for every command below and in Phase
+6.4:
+
 ```bash
-grep -c "## Functional Verification" docs/technical-specs/{ISSUE_ID}.md
+SPEC=$(ls docs/technical-specs/{ISSUE_ID}*.md)  # resolved above — reuse $SPEC, don't reconstruct the bare path
+grep -c "## Functional Verification" "$SPEC"
 ```
 
 - If 0: Skip Phase 6.3 entirely, proceed to Phase 6.4

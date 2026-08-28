@@ -60,6 +60,29 @@ Query Linear for all issues in the team (`mcp__linear__list_issues` with team fi
 - Issues in Linear but not in roadmap.md → Add to roadmap.md
 - Issues in roadmap.md but not in Linear → Flag for user decision
 
+**Ensure every Linear issue has a local spec** <!-- canonical: sync-roadmap.md, referenced by spec-file-lifecycle.md -->: for each issue pulled from Linear, check `docs/technical-specs/{ISSUE_ID}*.md` (resolve via `~/.claude/guides/spec-file-lifecycle.md` — glob, don't assume the bare path). If no file matches, create a minimal stub — this is NOT a full Explorer-quality spec, just enough that the ticket has local trace:
+
+```markdown
+# {ISSUE_ID}: {Linear issue title}
+
+**Status:** Backlog — no local exploration yet
+**Source:** Backfilled from Linear by /sync-roadmap on {date}
+
+## Summary
+
+{Linear issue description, verbatim or lightly summarized}
+
+## Exploration
+
+_To be added by Explorer during sprint work_
+
+## Implementation Plan
+
+_To be added by Plan-Writer_
+```
+
+This uses the same placeholder convention Explorer looks for (`_To be added by Explorer during sprint work_`) so picking the ticket up later for real work is a normal Explorer run, not a special case. Do this for every missing issue found in this step, not just ones about to be worked — the point is no ticket sits in Linear with zero local trace (this gap is how RAB-178 went unnoticed in this project despite being filed and roadmap-listed).
+
 ### Step 3: Push to Linear (roadmap.md → Linear)
 
 **Check for pending syncs:**

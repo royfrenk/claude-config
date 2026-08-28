@@ -88,14 +88,16 @@ Suggestion: [where to split based on file contents]
 
 ### D. Dead Technical Specs
 
-**What:** Spec files for issues that are "Done" or "Canceled" in roadmap.md. Candidates for archival.
+**What:** Spec files for issues that are "Done" or "Canceled" in roadmap.md, per `~/.claude/guides/spec-file-lifecycle.md`.
 
 **How:**
 1. Read `docs/roadmap.md`
 2. Extract issue IDs from "Recently Completed" section
-3. Check if `docs/technical-specs/{ISSUE_ID}.md` still exists for each
+3. Check `docs/technical-specs/{ISSUE_ID}*.md` for each — flag three failure modes: (a) no file at all matches (never had a local spec — see the "every Linear ticket gets a local spec" rule), (b) a file exists but is NOT suffixed `.CLOSED.md` (EM's sprint-closure rename was missed — a ticket should never be "Recently Completed" while its spec still says `.IN-PROCESS` or carries no suffix), or (c) roadmap.md's own `[spec](technical-specs/{ID}...)` link text doesn't match the actual resolved filename (a rename happened but the roadmap link pointing at it wasn't updated — a real dead link, not just a suffix mismatch; this exact bug happened once already in this project when 46 files were renamed and the links weren't caught until a follow-up audit).
 
-**Fix:** Move to `docs/technical-specs/archive/` (create directory if needed).
+**Fix:** For (a), create a stub spec per the template in `~/.claude/commands/sync-roadmap.md`. For (b), rename to `.CLOSED.md` — no content change, `mv` only. For (c), rewrite the roadmap.md link text to match the real filename — this must happen in the SAME pass as (b), never deferred, since a rename with no link update is worse than no rename (silent breakage vs. visible staleness). Deeper archival to `docs/technical-specs/archive/` is a separate, optional step for very old tickets, not required just because a ticket is `.CLOSED`.
+
+**Also check (d) abandoned `.IN-PROCESS` files:** glob `docs/technical-specs/*.IN-PROCESS.md` and cross-check each ID against `docs/roadmap.md`'s "Active Sprint" section. Any `.IN-PROCESS` file for an issue NOT referenced by the current active sprint (or when there is no active sprint at all) is stale — flag it per `~/.claude/guides/spec-file-lifecycle.md`'s "Abandoned `.IN-PROCESS` tickets" section. Don't auto-rename; surface it for a human/EM decision (resume vs. drop back to backlog).
 
 ### E. Orphaned Design Specs
 

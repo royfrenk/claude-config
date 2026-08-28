@@ -15,7 +15,7 @@ Save the current work state to the active spec file. Use this:
 
 1. **Identify the active spec file**
    - Check recent context for which issue you're working on
-   - Spec file is at `docs/technical-specs/{ISSUE_ID}.md`
+   - Resolve the actual filename via `~/.claude/guides/spec-file-lifecycle.md` (`docs/technical-specs/{ISSUE_ID}*.md` — mid-task, this should be `.IN-PROCESS`)
 
 2. **Update the spec file with checkpoint**
 

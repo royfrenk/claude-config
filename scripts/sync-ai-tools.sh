@@ -48,6 +48,7 @@ GUIDES=(
   roadmap-management.md
   rtl-i18n-checklist.md
   security-patterns.md
+  spec-file-lifecycle.md
   testing-patterns.md
 )
 

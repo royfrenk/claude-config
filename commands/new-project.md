@@ -571,6 +571,8 @@ Each issue gets a single spec file at `docs/technical-specs/{ISSUE_ID}.md`:
 3. Developer updates progress (🟥→🟨→🟩) as they work
 4. EM updates `docs/roadmap.md` to reflect status
 
+**Filename lifecycle:** the filename itself tracks ticket state via suffix — `{ISSUE_ID}.md` (new/not started) → `{ISSUE_ID}.IN-PROCESS.md` (EM renames at sprint assignment) → `{ISSUE_ID}.CLOSED.md` (EM renames at sprint closure). See `~/.claude/guides/spec-file-lifecycle.md` for the full convention, including how any agent should resolve the current filename (glob, never assume the bare path). Also part of this convention: every Linear issue gets at least a stub spec file — enforced in `sync-roadmap.md`'s Linear-pull step — so a ticket never sits in Linear/roadmap.md with zero local trace.
+
 ---
 
 ## What Goes Where

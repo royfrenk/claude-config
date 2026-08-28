@@ -65,6 +65,10 @@ Target: [staging URL, e.g., staging.recaprabbit.com]
 Output Directory: [where to save screenshots]
 ```
 
+The `Spec:` value is the resolved path (caller already looked it up per
+`~/.claude/guides/spec-file-lifecycle.md` — it may carry an `.IN-PROCESS`/`.CLOSED` suffix).
+Read it as given.
+
 Reads the `## Functional Verification` section from the spec file (eval-style format — see
 `plan-writer.md`: Platform, Device Required, Grader, Task Description, numbered Evaluation
 Steps, Reference, Known Regression, Quality Bar, Verdict) and executes as a Playwright script

@@ -117,7 +117,7 @@ At sprint start, check if `/security-audit` is needed. **Trigger if sprint touch
 ## Key Files
 
 - `docs/roadmap.md` -- Task index (YOU read and update)
-- `docs/technical-specs/{ISSUE_ID}.md` -- Explorer/Plan-Writer/Developer own (DON'T read)
+- `docs/technical-specs/{ISSUE_ID}*.md` -- Explorer/Plan-Writer/Developer own the content (DON'T read); YOU own the filename suffix (rename only, per `~/.claude/guides/spec-file-lifecycle.md`)
 - `docs/PROJECT_STATE.md` -- Developer owns (DON'T read; reference only)
 - `CLAUDE.md` -- Read once for Linear/deployment config
 
@@ -188,6 +188,11 @@ After Plan-Writer, check if quality evals are needed:
 Read Task Dependencies -> Group by level (0=no deps, 1=after 0, etc.) -> Check file conflicts within level -> Assign zones OR sequence OR split task -> Create Execution Plan in spec -> Present with wave breakdown.
 
 ### Step 4: Assign to Developer(s)
+
+**Before assigning, rename the spec file to mark it in-process** (you are the sole owner of
+this rename — see `~/.claude/guides/spec-file-lifecycle.md`): `{ID}.md` → `{ID}.IN-PROCESS.md`
+for a fresh ticket, or `{ID}.CLOSED.md` → `{ID}.IN-PROCESS.md` if this is a reopened/shipped
+ticket being reassigned. Pass the new resolved path to Developer as the `Spec:` value.
 
 **Sequential:** Pass issue + spec + acceptance criteria + E2E needs to single Developer.
 
@@ -321,7 +326,7 @@ Spawn Reviewer (subagent_type: reviewer) with input matching this LITERAL templa
 ```
 Issue: {ISSUE_ID}
 Round: {1 | 2+}
-Spec file: docs/technical-specs/{ISSUE_ID}.md
+Spec file: {the resolved `.IN-PROCESS` path from your own Step 4 rename — not the bare `{ISSUE_ID}.md`}
 Commit range: {BASE..HEAD_REF}
 Sprint file: docs/sprints/sprint-{NUM}-{slug}.md
 
@@ -481,7 +486,7 @@ Once User approves plans (e.g., "Option A: Approve all plans and proceed in sequ
 5. Codex peer review: Request, implement if Reviewer accepts, else proceed (don't block on tooling failures).
 6. Multi-issue sprints: Check all complete (else ask User).
 
-**If passed:** Developer merges sprint branch to `develop` -> merges `develop` to `main` -> deletes sprint branch -> rename sprint `.done.md` -> update roadmap.md (Recently Completed) -> update Linear (Done).
+**If passed:** Developer merges sprint branch to `develop` -> merges `develop` to `main` -> deletes sprint branch -> rename sprint `.done.md` -> update roadmap.md (Recently Completed) -> update Linear (Done). **For each shipped issue, also rename its spec file `{ID}.IN-PROCESS.md` → `{ID}.CLOSED.md` AND update that same issue's `[spec](...)` link in the roadmap.md row you're already editing** (same step, don't defer either half — see `~/.claude/guides/spec-file-lifecycle.md`; a ticket should never sit in "Recently Completed" while its spec still says `.IN-PROCESS`, and a roadmap link must never point at a filename that no longer exists).
 
 ### Sprint Completion Flow
 

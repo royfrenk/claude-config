@@ -259,13 +259,13 @@ Eng Manager will consolidate all Explorer sections before passing to Plan-Writer
    - Document in the spec file under "Data Source Matrix"
 6. If anything is ambiguous → ask user clarifying questions
 7. Once clear → produce Exploration section
-8. Save to `docs/technical-specs/{ISSUE_ID}.md`
+8. Save to `docs/technical-specs/{ISSUE_ID}.md` (bare, no suffix — this is the initial creation; see `~/.claude/guides/spec-file-lifecycle.md` for how the filename evolves after this point)
 9. Post exploration to Linear issue as comment
 10. Report back to EM: "Ready for Plan-Writer"
 
 ## File Template
 
-**Guard — pre-existing Product Requirements spec:** If `docs/technical-specs/{ISSUE_ID}.md` already exists **and** contains a `## Product Requirements` section, it was created by `/create-issue` or `/review-prd` on a no-Linear project. In that case:
+**Guard — pre-existing Product Requirements spec:** First resolve the actual filename via `~/.claude/guides/spec-file-lifecycle.md` (`docs/technical-specs/{ISSUE_ID}*.md` — a ticket picked up again after shipping once may already carry a `.CLOSED` or `.IN-PROCESS` suffix). If a spec already exists **and** contains a `## Product Requirements` section, it was created by `/create-issue` or `/review-prd` on a no-Linear project. In that case:
 - **Preserve** the `## Product Requirements` section and the file header verbatim — never overwrite or remove them.
 - Otherwise proceed **normally**: add a `## Summary` under the title if one isn't already present, and **replace the exact placeholder line** `_To be added by Explorer during sprint work_` (under `## Exploration`) with your exploration content — do **not** append a second `## Exploration` section.
 - Update the header `**Status:**` to `Exploration Complete` as usual.

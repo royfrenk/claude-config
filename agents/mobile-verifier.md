@@ -43,6 +43,11 @@ Target: simulator | device
 Output Directory: screenshots/
 ```
 
+The `Spec:` value passed to you is the resolved path (the caller already looked up the
+actual filename per `~/.claude/guides/spec-file-lifecycle.md` — it may carry an
+`.IN-PROCESS`/`.CLOSED` suffix). Read it as given; don't re-derive a bare `{ISSUE_ID}.md`
+path yourself.
+
 Reads the `## Functional Verification` section of the spec file and executes every flow
 tagged `Platform: Mobile` or `Platform: Both`. For a `Platform: Both` flow, write your result
 to `**Mobile Verdict:**` — never to a shared `**Verdict:**` field (see "Both-Platform Results"

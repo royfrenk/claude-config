@@ -96,6 +96,8 @@ proceeding straight to Step 4. See the Circuit Breakers section above for the fu
 
 ### Step 4: Invoke Plan-Writer (iteration-verification mode)
 
+Resolve the actual spec filename first via `~/.claude/guides/spec-file-lifecycle.md`
+(`docs/technical-specs/{ISSUE_ID}*.md` — this is mid-sprint, so it should be `.IN-PROCESS`).
 Spawn plan-writer with iteration context:
 ```
 Mode: iteration-verification
@@ -127,7 +129,8 @@ Developer deploys to staging. Runs automated verification (Phase 6) and function
 
 ## Visual-Verifier Mode 5: Iteration Verification
 
-When EM needs to verify iteration fixes, it spawns visual-verifier with:
+When EM needs to verify iteration fixes, it resolves the actual spec filename first (per
+`~/.claude/guides/spec-file-lifecycle.md`) and spawns visual-verifier with:
 
 ```
 Mode: iteration

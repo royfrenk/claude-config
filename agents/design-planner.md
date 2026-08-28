@@ -72,12 +72,14 @@ You are invoked by Engineering Manager when:
    # - What needs to change vs. what stays the same
    ```
 
-4. **Detect platform (for mobile work):**
+4. **Detect platform (for mobile work):** resolve the actual spec filename first via
+   `~/.claude/guides/spec-file-lifecycle.md` (`docs/technical-specs/{ISSUE_ID}*.md` — it may
+   carry an `.IN-PROCESS`/`.CLOSED` suffix), then:
    ```bash
    # Check if this is iOS, Android, or cross-platform
-   grep -i "ios\|iphone\|swift\|swiftui" docs/technical-specs/{ISSUE_ID}.md
-   grep -i "android\|kotlin\|jetpack compose" docs/technical-specs/{ISSUE_ID}.md
-   grep -i "react native\|flutter\|expo" docs/technical-specs/{ISSUE_ID}.md
+   grep -i "ios\|iphone\|swift\|swiftui" docs/technical-specs/{ISSUE_ID}*.md
+   grep -i "android\|kotlin\|jetpack compose" docs/technical-specs/{ISSUE_ID}*.md
+   grep -i "react native\|flutter\|expo" docs/technical-specs/{ISSUE_ID}*.md
    ```
 
    **Platform detection keywords:**

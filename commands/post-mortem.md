@@ -13,7 +13,7 @@ Capture what went wrong, why the agent failed, and what harness change would hav
 ### 1. Gather Context
 
 If issue ID provided:
-1. Read the spec file: `docs/technical-specs/{ISSUE_ID}.md`
+1. Read the spec file — resolve the actual filename first via `~/.claude/guides/spec-file-lifecycle.md` (`docs/technical-specs/{ISSUE_ID}*.md`, likely `.CLOSED` for a post-mortem on shipped work)
 2. Read the sprint file (find active or most recent `.done.md` referencing this issue)
 3. Read the **Phase Timeline** table from the sprint file to identify where delays occurred
 4. Read Linear comments (if `linear_enabled: true` in CLAUDE.md)
